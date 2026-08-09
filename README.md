@@ -56,3 +56,12 @@ strassenfest-hilchenbach/
 ## Impressum / Kontakt
 
 Die Inhalte in den Dialogen sind aktuell Platzhalter und müssen vor Veröffentlichung mit den echten Angaben ersetzt werden.
+
+
+## Update v3
+
+- neuer Hintergrund aus dem zuletzt freigegebenen Motiv
+- Karte weiter nach unten gesetzt für mehr Abstand unter „in Hilchenbach“
+- besseres Verhalten bei eingeblendeter Smartphone-Tastatur: Die Karte bleibt sichtbar und wird nach oben verlagert, statt oben abgeschnitten zu werden
+- Notizfeld vergrößert
+- Feuerwerk etwas größer, auffälliger und an zufälligen Stellen

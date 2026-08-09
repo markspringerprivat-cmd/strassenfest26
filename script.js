@@ -1,8 +1,6 @@
 (() => {
   "use strict";
 
-  // Optional: Hier später einen eigenen HTTPS-Endpunkt eintragen.
-  // Solange die URL leer bleibt, werden Demo-Anmeldungen nur lokal im Browser gespeichert.
   const SUBMIT_ENDPOINT = "";
   const STORAGE_KEY = "strassenfest-hilchenbach-registrations";
 
@@ -43,15 +41,35 @@
     Getränke: ["Alkoholisch", "Nicht alkoholisch", "Zuckerhaltig", "Nicht zuckerhaltig", "Gemischt"]
   };
 
+  const viewportState = {
+    baseHeight: 0
+  };
+
   function syncViewportHeight() {
-    const height = window.visualViewport?.height || window.innerHeight;
-    document.documentElement.style.setProperty("--app-height", `${Math.round(height)}px`);
+    const vv = window.visualViewport;
+    const visibleHeight = Math.round(vv?.height || window.innerHeight);
+    const innerHeight = Math.round(window.innerHeight);
+    const keyboardOpen = Boolean(vv && innerHeight - visibleHeight > 120);
+
+    if (!viewportState.baseHeight) {
+      viewportState.baseHeight = Math.max(visibleHeight, innerHeight);
+    }
+
+    if (!keyboardOpen) {
+      viewportState.baseHeight = Math.max(viewportState.baseHeight, visibleHeight, innerHeight);
+    }
+
+    document.documentElement.style.setProperty("--base-app-height", `${viewportState.baseHeight}px`);
+    document.documentElement.style.setProperty("--visible-height", `${visibleHeight}px`);
+    document.body.classList.toggle("keyboard-open", keyboardOpen);
   }
 
   syncViewportHeight();
   window.addEventListener("resize", syncViewportHeight, { passive: true });
   window.visualViewport?.addEventListener("resize", syncViewportHeight, { passive: true });
   window.visualViewport?.addEventListener("scroll", syncViewportHeight, { passive: true });
+  document.addEventListener("focusin", () => window.setTimeout(syncViewportHeight, 50));
+  document.addEventListener("focusout", () => window.setTimeout(syncViewportHeight, 120));
 
   function setStep(step) {
     state.step = step;
@@ -66,6 +84,7 @@
     });
 
     document.querySelector(".step-progress").classList.toggle("hidden", step === 4);
+    syncViewportHeight();
   }
 
   function normalizeName(value) {
@@ -191,6 +210,8 @@
       contribution.disabled = true;
       contribution.placeholder = "Bitte zuerst die Auswahl oben treffen";
     }
+
+    syncViewportHeight();
   });
 
   subtype.addEventListener("change", () => {
@@ -236,7 +257,7 @@
   }
 
   function ensurePeopleBeforeNext() {
-    const current = validateCurrentPerson({ allowEmpty: true });
+    const current = validateCurrentPerson({ allowEmpty = true });
     if (!current.ok) return false;
 
     if (!current.empty) {
@@ -478,7 +499,6 @@
     if (event.key === "Escape" && !modalBackdrop.hidden) closeModal();
   });
 
-  // Ruhiges, dezentes Feuerwerk im Hintergrund.
   const canvas = document.getElementById("fireworks");
   const ctx = canvas.getContext("2d");
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -490,13 +510,14 @@
       "255, 220, 116",
       "255, 171, 185",
       "255, 244, 218",
-      "209, 190, 255"
+      "209, 190, 255",
+      "120, 228, 255"
     ];
 
     let width = 0;
     let height = 0;
     let dpr = 1;
-    let nextLaunch = performance.now() + 1200;
+    let nextLaunch = performance.now() + 600;
 
     function resizeCanvas() {
       dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -512,48 +533,55 @@
     window.visualViewport?.addEventListener("resize", resizeCanvas, { passive: true });
 
     function launchRocket() {
-      const x = width * (0.18 + Math.random() * 0.64);
-      const targetY = height * (0.14 + Math.random() * 0.23);
+      const burstX = width * (0.08 + Math.random() * 0.84);
+      const burstY = height * (0.10 + Math.random() * 0.36);
+      const startX = burstX + (Math.random() - 0.5) * 60;
 
       rockets.push({
-        x,
-        y: height + 10,
-        vx: (Math.random() - 0.5) * 0.12,
-        vy: -(1.15 + Math.random() * 0.3),
-        targetY,
-        alpha: 0.34,
+        x: startX,
+        y: height + 18,
+        vx: (burstX - startX) / 65,
+        vy: -(1.7 + Math.random() * 0.5),
+        targetY: burstY,
+        alpha: 0.42,
         color: palette[Math.floor(Math.random() * palette.length)]
       });
     }
 
     function explode(rocket) {
-      const count = 17 + Math.floor(Math.random() * 7);
-      const speed = 0.45 + Math.random() * 0.25;
+      const count = 24 + Math.floor(Math.random() * 14);
+      const speed = 0.7 + Math.random() * 0.45;
+      const ringCount = Math.random() > 0.55 ? 2 : 1;
 
-      for (let i = 0; i < count; i += 1) {
-        const angle = (Math.PI * 2 * i) / count + Math.random() * 0.12;
-        const variation = 0.65 + Math.random() * 0.65;
+      for (let ring = 0; ring < ringCount; ring += 1) {
+        for (let i = 0; i < count; i += 1) {
+          const angle = (Math.PI * 2 * i) / count + Math.random() * 0.1;
+          const variation = (0.55 + Math.random() * 0.65) * (ring === 0 ? 1 : 0.58);
 
-        particles.push({
-          x: rocket.x,
-          y: rocket.y,
-          vx: Math.cos(angle) * speed * variation,
-          vy: Math.sin(angle) * speed * variation,
-          gravity: 0.008,
-          alpha: 0.24 + Math.random() * 0.12,
-          fade: 0.0024 + Math.random() * 0.0018,
-          size: 1 + Math.random() * 1.1,
-          color: rocket.color
-        });
+          particles.push({
+            x: rocket.x,
+            y: rocket.y,
+            vx: Math.cos(angle) * speed * variation,
+            vy: Math.sin(angle) * speed * variation,
+            gravity: 0.010,
+            alpha: 0.34 + Math.random() * 0.16,
+            fade: 0.0022 + Math.random() * 0.0015,
+            size: 1.2 + Math.random() * 2.1,
+            color: rocket.color
+          });
+        }
       }
     }
 
     function animate(now) {
       ctx.clearRect(0, 0, width, height);
 
-      if (now >= nextLaunch && document.visibilityState === "visible") {
-        launchRocket();
-        nextLaunch = now + 4700 + Math.random() * 3200;
+      if (document.visibilityState === "visible" && now >= nextLaunch) {
+        const burstTotal = Math.random() > 0.72 ? 2 : 1;
+        for (let i = 0; i < burstTotal; i += 1) {
+          launchRocket();
+        }
+        nextLaunch = now + 2500 + Math.random() * 2400;
       }
 
       for (let i = rockets.length - 1; i >= 0; i -= 1) {
@@ -564,14 +592,14 @@
         r.y += r.vy;
 
         ctx.beginPath();
-        ctx.moveTo(r.x, oldY + 7);
+        ctx.moveTo(r.x, oldY + 9);
         ctx.lineTo(r.x, r.y);
-        ctx.strokeStyle = `rgba(${r.color}, ${r.alpha * 0.62})`;
-        ctx.lineWidth = 1;
+        ctx.strokeStyle = `rgba(${r.color}, ${r.alpha * 0.8})`;
+        ctx.lineWidth = 1.4;
         ctx.stroke();
 
         ctx.beginPath();
-        ctx.arc(r.x, r.y, 1.4, 0, Math.PI * 2);
+        ctx.arc(r.x, r.y, 1.8, 0, Math.PI * 2);
         ctx.fillStyle = `rgba(${r.color}, ${r.alpha})`;
         ctx.fill();
 
@@ -587,7 +615,7 @@
         p.x += p.vx;
         p.y += p.vy;
         p.vy += p.gravity;
-        p.vx *= 0.997;
+        p.vx *= 0.996;
         p.alpha -= p.fade;
 
         if (p.alpha <= 0) {
