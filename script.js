@@ -76,94 +76,141 @@
   const existingContributionsList = document.getElementById("existingContributionsList");
 
 
-  function apiRequest(action, data = {}) {
-    if (!SUBMIT_ENDPOINT) {
-      return Promise.reject(new Error("Die Datenbank ist noch nicht verbunden."));
-    }
+  function secureRequestId(prefix = "sf") {
+    const bytes = new Uint8Array(18);
+    crypto.getRandomValues(bytes);
+    const random = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
+    return `${prefix}-${Date.now()}-${random}`;
+  }
 
-    const requestId = `sf-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
-    const frameName = `sf_api_${requestId.replace(/[^a-z0-9_]/gi, "_")}`;
-
+  function pollApiResult(requestId, deadline) {
     return new Promise((resolve, reject) => {
-      const iframe = document.createElement("iframe");
-      iframe.name = frameName;
-      iframe.className = "api-transport-frame";
-      iframe.setAttribute("aria-hidden", "true");
+      if (Date.now() >= deadline) {
+        reject(new Error(
+          "Die Verbindung zur Datenbank hat zu lange gebraucht. Bitte versuche es erneut."
+        ));
+        return;
+      }
 
-      const form = document.createElement("form");
-      form.method = "POST";
-      form.action = SUBMIT_ENDPOINT;
-      form.target = frameName;
-      form.className = "api-transport-form";
-
-      const payload = {
-        action,
-        ...data
-      };
-
-      const fields = {
-        transport: "iframe",
-        requestId,
-        payload: JSON.stringify(payload)
-      };
-
-      Object.entries(fields).forEach(([name, value]) => {
-        const input = document.createElement("input");
-        input.type = "hidden";
-        input.name = name;
-        input.value = value;
-        form.appendChild(input);
-      });
-
-      let settled = false;
+      const callbackName = `__sfApi_${requestId.replace(/[^a-z0-9_]/gi, "_")}_${Date.now()}`;
+      const script = document.createElement("script");
+      let callbackCalled = false;
 
       const cleanup = () => {
-        window.removeEventListener("message", onMessage);
-        window.clearTimeout(timeoutId);
-        form.remove();
-        iframe.remove();
+        script.remove();
+        try {
+          delete window[callbackName];
+        } catch {
+          window[callbackName] = undefined;
+        }
       };
 
-      const finish = (callback) => {
-        if (settled) return;
-        settled = true;
+      window[callbackName] = (message) => {
+        callbackCalled = true;
         cleanup();
-        callback();
-      };
 
-      const onMessage = (event) => {
-        // Apps Script kann die eigentliche HTML-Antwort in einem zusätzlichen
-        // Google-Sandbox-Frame ausführen. Dann ist event.source nicht zwingend
-        // identisch mit dem von uns angelegten Ziel-iframe.
-        // Deshalb korrelieren wir ausschließlich über den zufälligen requestId.
-        const message = event.data;
-        if (!message || message.channel !== "strassenfest-api") return;
-        if (message.requestId !== requestId) return;
+        if (!message || message.pending) {
+          window.setTimeout(() => {
+            pollApiResult(requestId, deadline).then(resolve, reject);
+          }, 320);
+          return;
+        }
 
         const result = message.result;
 
         if (result && result.ok) {
-          finish(() => resolve(result));
-        } else {
-          finish(() => reject(new Error(
-            result?.message || "Die Anfrage an die Datenbank ist fehlgeschlagen."
-          )));
+          resolve(result);
+          return;
         }
+
+        const error = new Error(
+          result?.message || "Die Anfrage an die Datenbank ist fehlgeschlagen."
+        );
+        error.code = result?.error || "";
+        reject(error);
       };
 
-      const timeoutId = window.setTimeout(() => {
-        finish(() => reject(new Error(
-          "Die Verbindung zur Datenbank hat zu lange gebraucht. Bitte versuche es erneut."
-        )));
-      }, 18000);
+      const url = new URL(SUBMIT_ENDPOINT);
+      url.searchParams.set("action", "poll");
+      url.searchParams.set("requestId", requestId);
+      url.searchParams.set("prefix", callbackName);
+      url.searchParams.set("_", String(Date.now()));
 
-      window.addEventListener("message", onMessage);
+      script.src = url.toString();
+      script.async = true;
 
-      apiTransportHost.appendChild(iframe);
-      apiTransportHost.appendChild(form);
+      script.onerror = () => {
+        cleanup();
 
-      form.submit();
+        if (Date.now() >= deadline) {
+          reject(new Error(
+            "Die Datenbank konnte nicht erreicht werden. Bitte versuche es erneut."
+          ));
+          return;
+        }
+
+        window.setTimeout(() => {
+          pollApiResult(requestId, deadline).then(resolve, reject);
+        }, 500);
+      };
+
+      script.onload = () => {
+        if (callbackCalled) return;
+
+        cleanup();
+
+        if (Date.now() >= deadline) {
+          reject(new Error(
+            "Die Datenbank hat keine verwertbare Antwort geliefert."
+          ));
+          return;
+        }
+
+        window.setTimeout(() => {
+          pollApiResult(requestId, deadline).then(resolve, reject);
+        }, 350);
+      };
+
+      document.head.appendChild(script);
     });
+  }
+
+  async function apiRequest(action, data = {}) {
+    if (!SUBMIT_ENDPOINT) {
+      throw new Error("Die Datenbank ist noch nicht verbunden.");
+    }
+
+    const requestId = secureRequestId("sf");
+    const deadline = Date.now() + 22000;
+
+    const payload = {
+      requestId,
+      action,
+      ...data
+    };
+
+    try {
+      // Die POST-Antwort selbst wird bewusst nicht gelesen. Google Apps Script
+      // leitet ContentService-Antworten auf googleusercontent.com um. Mit
+      // no-cors darf der Browser den Schreibauftrag trotzdem absenden.
+      await fetch(SUBMIT_ENDPOINT, {
+        method: "POST",
+        mode: "no-cors",
+        credentials: "omit",
+        redirect: "follow",
+        headers: {
+          "Content-Type": "text/plain;charset=UTF-8"
+        },
+        body: JSON.stringify(payload)
+      });
+    } catch (error) {
+      console.error("POST an Apps Script fehlgeschlagen:", error);
+      throw new Error(
+        "Die Datenbank konnte nicht erreicht werden. Bitte prüfe deine Internetverbindung."
+      );
+    }
+
+    return pollApiResult(requestId, deadline);
   }
 
   function getSavedRegistrationIdentity() {

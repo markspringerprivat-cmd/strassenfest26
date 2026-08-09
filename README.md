@@ -215,3 +215,18 @@ Positionierungsalgorithmus entfernt.
 - Die Zuordnung einer Antwort erfolgt über die zufällig erzeugte requestId.
 - Dadurch laufen Anmeldung, Bedarfsliste, „Meine Anmeldung“ und Admin-API
   nicht mehr in den 18-Sekunden-Timeout, nur weil event.source vom äußeren iframe abweicht.
+
+
+## Update v16 – robuste Apps-Script-Kommunikation
+
+Die bisherige iframe/postMessage-Rückgabe wurde vollständig ersetzt.
+
+Neuer Ablauf:
+1. Die Webseite sendet die Aktion per HTTPS-POST mit `fetch(..., mode: "no-cors")`.
+2. Apps Script verarbeitet die Aktion und legt das Ergebnis kurzzeitig unter einer
+   zufälligen Einmal-ID im Script-Cache ab.
+3. Die Webseite fragt ausschließlich diese Einmal-ID per JSONP ab.
+4. Passwort und Admin-Session-Token stehen niemals in der JSONP-/GET-URL.
+
+Das vermeidet die Google-HtmlService-Sandbox-/iframe-Probleme, die bei v14/v15
+zum Timeout geführt haben konnten.
