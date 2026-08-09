@@ -88,23 +88,21 @@
     lift: 32
   };
 
+  const KEYBOARD_THRESHOLD = 120;
+  const KEYBOARD_EDGE_GAP = 8;
+
   const viewport = {
     baseHeight: 0,
     baseWidth: 0,
-    stageTop: 0,
     keyboardOpen: false,
-    shift: 0,
-    focusGroup: null,
-    cardScrollBeforeKeyboard: 0,
-    peopleScrollBeforeKeyboard: 0,
-    settleTimer: null
+    closeTimer: null
   };
 
-  function currentVisibleHeight() {
+  function visualViewportHeight() {
     return Math.round(window.visualViewport?.height || window.innerHeight);
   }
 
-  function currentPageWidth() {
+  function pageWidth() {
     return Math.round(document.documentElement.clientWidth || window.innerWidth);
   }
 
@@ -115,248 +113,220 @@
       : null;
   }
 
-  function calculateStageTop(baseHeight, pageWidth) {
-    const { width, height, subtitleBottomY, lift } = BACKGROUND_GEOMETRY;
-    const backgroundBoxHeight = baseHeight + lift;
-    const scale = Math.max(pageWidth / width, backgroundBoxHeight / height);
-    const renderedHeight = height * scale;
-    const centeredImageOffset = (backgroundBoxHeight - renderedHeight) / 2;
-    const subtitleBottom = -lift + centeredImageOffset + subtitleBottomY * scale;
+  function calculateStageTop(baseHeight, width) {
+    const { width: imageWidth, height: imageHeight, subtitleBottomY, lift } = BACKGROUND_GEOMETRY;
+    const backgroundHeight = baseHeight + lift;
+    const scale = Math.max(width / imageWidth, backgroundHeight / imageHeight);
+    const renderedHeight = imageHeight * scale;
+    const centeredOffset = (backgroundHeight - renderedHeight) / 2;
+    const subtitleBottom = -lift + centeredOffset + subtitleBottomY * scale;
 
-    const gap = Math.max(8, Math.min(14, pageWidth * 0.027));
+    // Abstand zwischen "in Hilchenbach" und Kachel:
+    // ca. 8–14 CSS-Pixel und damit auf Smartphones unter ca. 0,5 cm.
+    const gap = Math.max(8, Math.min(14, width * 0.027));
     return Math.max(112, Math.round(subtitleBottom + gap));
   }
 
-  function updateCardAvailableHeight() {
+  function updateNormalGeometry() {
+    if (viewport.keyboardOpen) return;
+
+    viewport.baseHeight = visualViewportHeight();
+    viewport.baseWidth = pageWidth();
+
+    const stageTop = calculateStageTop(viewport.baseHeight, viewport.baseWidth);
     const footerHeight = Math.round(footerBar?.getBoundingClientRect().height || 50);
-    const available = Math.max(240, viewport.baseHeight - viewport.stageTop - footerHeight - 8);
-    document.documentElement.style.setProperty("--card-max-height", `${available}px`);
-  }
-
-  function setupStaticViewport(force = false) {
-    const visibleHeight = currentVisibleHeight();
-    const keyboardLikelyOpen = Boolean(
-      activeEditable() &&
-      viewport.baseHeight &&
-      viewport.baseHeight - visibleHeight > 120
-    );
-
-    if (!force && keyboardLikelyOpen) return;
-
-    viewport.baseHeight = visibleHeight;
-    viewport.baseWidth = currentPageWidth();
-    viewport.stageTop = calculateStageTop(viewport.baseHeight, viewport.baseWidth);
+    const cardHeight = Math.max(240, viewport.baseHeight - stageTop - footerHeight - 8);
 
     document.documentElement.style.setProperty("--base-height", `${viewport.baseHeight}px`);
-    document.documentElement.style.setProperty("--stage-top", `${viewport.stageTop}px`);
-    updateCardAvailableHeight();
+    document.documentElement.style.setProperty("--stage-top", `${stageTop}px`);
+    document.documentElement.style.setProperty("--card-max-height", `${cardHeight}px`);
   }
 
-  function focusGroupFor(active) {
-    return active?.closest?.(".person-row") ||
-      active?.closest?.(".field") ||
-      active ||
-      null;
+  function keyboardIsOpen() {
+    const vv = window.visualViewport;
+    const active = activeEditable();
+
+    return Boolean(
+      vv &&
+      active &&
+      viewport.baseHeight &&
+      viewport.baseHeight - Math.round(vv.height) > KEYBOARD_THRESHOLD
+    );
   }
 
-  function setStageShift(px) {
-    viewport.shift = Math.round(px || 0);
-    document.documentElement.style.setProperty("--stage-shift", `${viewport.shift}px`);
+  function applyKeyboardGeometry() {
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    const visibleTop = Math.round(vv.offsetTop || 0);
+    const visibleHeight = Math.round(vv.height);
+    const cardHeight = Math.max(180, visibleHeight - KEYBOARD_EDGE_GAP * 2);
+
+    // top wird relativ zum Layout-Viewport gesetzt. offsetTop sorgt dafür,
+    // dass die Kachel visuell immer exakt am oberen Rand des sichtbaren
+    // Browserbereichs bleibt – egal, ob iOS den VisualViewport verschiebt.
+    document.documentElement.style.setProperty(
+      "--keyboard-top",
+      `${visibleTop + KEYBOARD_EDGE_GAP}px`
+    );
+    document.documentElement.style.setProperty(
+      "--keyboard-card-height",
+      `${cardHeight}px`
+    );
+
+    // Kompensiert ausschließlich das iOS-Panning des Hintergrunds.
+    // Die Kachel selbst braucht keinerlei feldabhängige Verschiebung mehr.
+    document.documentElement.style.setProperty(
+      "--viewport-offset-y",
+      `${visibleTop}px`
+    );
   }
 
-  function clearSettleTimer() {
-    if (viewport.settleTimer) {
-      window.clearTimeout(viewport.settleTimer);
-      viewport.settleTimer = null;
-    }
-  }
-
-  function keepPersonRowVisible(active) {
-    const row = active?.closest?.(".person-row");
+  function scrollPersonRowIntoView(control) {
+    const row = control?.closest?.(".person-row");
     if (!row) return;
 
     const top = row.offsetTop;
     const bottom = top + row.offsetHeight;
     const visibleTop = peopleRows.scrollTop;
     const visibleBottom = visibleTop + peopleRows.clientHeight;
-    const padding = 8;
+    const margin = 8;
 
-    if (top < visibleTop + padding) {
-      peopleRows.scrollTop = Math.max(0, top - padding);
-    } else if (bottom > visibleBottom - padding) {
-      peopleRows.scrollTop += bottom - visibleBottom + padding;
+    if (top < visibleTop + margin) {
+      peopleRows.scrollTop = Math.max(0, top - margin);
+    } else if (bottom > visibleBottom - margin) {
+      peopleRows.scrollTop += bottom - visibleBottom + margin;
     }
   }
 
-  function keepElementVisibleInCard(element, margin = 18) {
-    if (!element) return;
+  function scrollControlIntoCard(control, margin = 18) {
+    if (!control) return;
 
-    const cardRect = wizardCard.getBoundingClientRect();
-    const rect = element.getBoundingClientRect();
+    scrollPersonRowIntoView(control);
 
-    if (rect.top < cardRect.top + margin) {
-      wizardCard.scrollTop += rect.top - cardRect.top - margin;
-    } else if (rect.bottom > cardRect.bottom - margin) {
-      wizardCard.scrollTop += rect.bottom - cardRect.bottom + margin;
-    }
-  }
-
-  function positionFocusGroupOnce(active, group) {
-    const vv = window.visualViewport;
-    if (!vv || !active || !group || !viewport.keyboardOpen) return;
-    if (focusGroupFor(document.activeElement) !== group) return;
-
-    keepPersonRowVisible(active);
-    keepElementVisibleInCard(group, 20);
+    const target = control.closest?.(".person-row") ||
+      control.closest?.(".field") ||
+      control;
 
     requestAnimationFrame(() => {
-      if (!viewport.keyboardOpen || focusGroupFor(document.activeElement) !== group) return;
+      const cardRect = wizardCard.getBoundingClientRect();
+      const targetRect = target.getBoundingClientRect();
 
-      const rect = group.getBoundingClientRect();
-      const visibleTop = Math.round(vv.offsetTop || 0) + 10;
-      const visibleBottom = Math.round((vv.offsetTop || 0) + vv.height) - 22;
-      const availableHeight = Math.max(120, visibleBottom - visibleTop);
-
-      let targetCenter = visibleTop + availableHeight * 0.42;
-      let delta = targetCenter - (rect.top + rect.height / 2);
-
-      if (rect.height > availableHeight * 0.42) {
-        if (rect.bottom + delta > visibleBottom) {
-          delta -= rect.bottom + delta - visibleBottom;
-        }
-        if (rect.top + delta < visibleTop) {
-          delta += visibleTop - (rect.top + delta);
-        }
+      if (targetRect.top < cardRect.top + margin) {
+        wizardCard.scrollTop += targetRect.top - cardRect.top - margin;
+      } else if (targetRect.bottom > cardRect.bottom - margin) {
+        wizardCard.scrollTop += targetRect.bottom - cardRect.bottom + margin;
       }
-
-      let nextShift = viewport.shift + delta;
-
-      const stageRect = registrationStage.getBoundingClientRect();
-      if (stageRect.top + delta < visibleTop) {
-        nextShift += visibleTop - (stageRect.top + delta);
-      }
-
-      setStageShift(nextShift);
     });
   }
 
-  function scheduleFocusPosition(active, group, delay = 170) {
-    clearSettleTimer();
-    viewport.settleTimer = window.setTimeout(() => {
-      viewport.settleTimer = null;
-      positionFocusGroupOnce(active, group);
-    }, delay);
+  function openKeyboardMode() {
+    if (viewport.keyboardOpen) return;
+
+    viewport.keyboardOpen = true;
+    document.body.classList.add("keyboard-open");
+    applyKeyboardGeometry();
+
+    // Die Kachel beginnt im Tastaturmodus oben bei ihrem eigenen Anfang.
+    // Nur falls das aktive Feld weiter unten liegt, wird anschließend
+    // innerhalb der Kachel dorthin gescrollt.
+    wizardCard.scrollTop = 0;
+
+    window.setTimeout(() => {
+      scrollControlIntoCard(activeEditable(), 20);
+    }, 80);
   }
 
-  function restoreClosedLayout() {
-    clearSettleTimer();
+  function closeKeyboardMode() {
+    if (!viewport.keyboardOpen) return;
+
     viewport.keyboardOpen = false;
-    viewport.focusGroup = null;
     document.body.classList.remove("keyboard-open");
-    setStageShift(0);
 
-    wizardCard.scrollTop = viewport.cardScrollBeforeKeyboard || 0;
-    peopleRows.scrollTop = viewport.peopleScrollBeforeKeyboard || 0;
+    document.documentElement.style.setProperty("--viewport-offset-y", "0px");
+    document.documentElement.style.removeProperty("--keyboard-top");
+    document.documentElement.style.removeProperty("--keyboard-card-height");
 
-    window.setTimeout(() => setupStaticViewport(true), 90);
+    // Gewünschter Ursprungszustand: Kachel und interne Listen wieder oben.
+    wizardCard.scrollTop = 0;
+    peopleRows.scrollTop = 0;
+
+    window.setTimeout(updateNormalGeometry, 80);
   }
 
-  function updateKeyboardState({ fromFocus = false } = {}) {
-    const vv = window.visualViewport;
-
-    if (!vv) {
-      setupStaticViewport(true);
+  function syncKeyboardMode() {
+    if (keyboardIsOpen()) {
+      openKeyboardMode();
+      applyKeyboardGeometry();
       return;
     }
 
-    if (!viewport.baseHeight) setupStaticViewport(true);
-
-    const active = activeEditable();
-    const keyboardOpen = Boolean(
-      active &&
-      viewport.baseHeight - Math.round(vv.height) > 120
-    );
-
-    if (!keyboardOpen) {
-      if (viewport.keyboardOpen) {
-        restoreClosedLayout();
-      } else {
-        setupStaticViewport(false);
-      }
+    if (viewport.keyboardOpen) {
+      closeKeyboardMode();
       return;
     }
 
-    if (!viewport.keyboardOpen) {
-      viewport.keyboardOpen = true;
-      viewport.cardScrollBeforeKeyboard = wizardCard.scrollTop;
-      viewport.peopleScrollBeforeKeyboard = peopleRows.scrollTop;
-      viewport.focusGroup = null;
-      document.body.classList.add("keyboard-open");
-    }
-
-    keepPersonRowVisible(active);
-
-    const group = focusGroupFor(active);
-
-    // Innerhalb derselben Tabellenzeile / desselben Eingabebereichs
-    // wird die Kartenposition genau NICHT neu berechnet.
-    if (group && group !== viewport.focusGroup) {
-      viewport.focusGroup = group;
-      scheduleFocusPosition(active, group, fromFocus ? 150 : 190);
-    }
+    updateNormalGeometry();
   }
 
   function resetKeyboardViewForStepChange() {
-    clearSettleTimer();
-
     const active = activeEditable();
     if (active) active.blur();
 
-    viewport.keyboardOpen = false;
-    viewport.focusGroup = null;
-    document.body.classList.remove("keyboard-open");
-    setStageShift(0);
+    closeKeyboardMode();
     wizardCard.scrollTop = 0;
   }
 
-  setupStaticViewport(true);
-  updateKeyboardState();
+  updateNormalGeometry();
 
+  // Normale Größenänderungen (Rotation, Browserleiste etc.).
   window.addEventListener("resize", () => {
-    if (viewport.keyboardOpen) return;
-    window.setTimeout(() => setupStaticViewport(true), 100);
+    if (!viewport.keyboardOpen) {
+      window.clearTimeout(viewport.closeTimer);
+      viewport.closeTimer = window.setTimeout(updateNormalGeometry, 80);
+    }
   }, { passive: true });
 
-  window.visualViewport?.addEventListener("resize", () => {
-    clearSettleTimer();
-    viewport.settleTimer = window.setTimeout(() => {
-      viewport.settleTimer = null;
-      updateKeyboardState();
-    }, 150);
-  }, { passive: true });
+  if (window.visualViewport) {
+    window.visualViewport.addEventListener("resize", () => {
+      window.clearTimeout(viewport.closeTimer);
+      viewport.closeTimer = window.setTimeout(syncKeyboardMode, 70);
+    }, { passive: true });
+
+    // iOS kann den sichtbaren Viewport beim Fokuswechsel verschieben.
+    // Die Kachel bleibt trotzdem oben angeheftet; es wird nur die feste
+    // --keyboard-top-Koordinate aktualisiert, ohne Animation oder Nachregeln.
+    window.visualViewport.addEventListener("scroll", () => {
+      if (viewport.keyboardOpen) applyKeyboardGeometry();
+    }, { passive: true });
+  }
 
   document.addEventListener("focusin", (event) => {
     if (!wizardCard.contains(event.target)) return;
 
-    const nextGroup = focusGroupFor(event.target);
+    window.setTimeout(() => {
+      syncKeyboardMode();
 
-    if (viewport.keyboardOpen && nextGroup === viewport.focusGroup) {
-      keepPersonRowVisible(event.target);
-      return;
-    }
-
-    window.setTimeout(() => updateKeyboardState({ fromFocus: true }), 35);
+      if (viewport.keyboardOpen) {
+        // Kein Verschieben der Kachel: ausschließlich der Karteninhalt
+        // wird zum gerade aktiven Feld gescrollt.
+        scrollControlIntoCard(event.target, 20);
+      }
+    }, 50);
   });
 
   document.addEventListener("focusout", () => {
-    window.setTimeout(() => updateKeyboardState(), 240);
+    // Spaltenwechsel innerhalb einer Zeile löst hier bewusst keine
+    // Kartenbewegung aus. Erst eine tatsächlich geschlossene Tastatur
+    // beendet den Modus.
+    window.clearTimeout(viewport.closeTimer);
+    viewport.closeTimer = window.setTimeout(syncKeyboardMode, 180);
   });
 
   document.addEventListener("touchmove", (event) => {
     if (event.target.closest(".wizard-card, .people-rows, .needs-table-wrap, .summary-content, .modal")) return;
     event.preventDefault();
   }, { passive: false });
-
 
   let validationToastTimer = null;
 
@@ -390,8 +360,7 @@
     const row = target.closest?.(".person-row");
     if (row) centerPersonRow(row);
 
-    const focusBox = row || target.closest?.(".field") || target;
-    keepElementVisibleInCard(focusBox, 22);
+    scrollControlIntoCard(target, 22);
   }
 
   function reportValidationError(message, target, { focus = true } = {}) {
@@ -407,7 +376,8 @@
       window.setTimeout(() => {
         target.focus({ preventScroll: true });
         scrollErrorIntoView(target);
-        updateKeyboardState({ fromFocus: true });
+        syncKeyboardMode();
+        if (viewport.keyboardOpen) scrollControlIntoCard(target, 22);
       }, 30);
     }
   }
@@ -522,7 +492,8 @@
           row.querySelectorAll("input").forEach((input) => { input.value = ""; });
         }
         first.focus({ preventScroll: true });
-        updateKeyboardState({ fromFocus: true });
+        syncKeyboardMode();
+        if (viewport.keyboardOpen) scrollControlIntoCard(target, 22);
       }, 110);
     }
   }

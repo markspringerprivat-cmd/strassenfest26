@@ -130,3 +130,21 @@ Die Inhalte in den Dialogen sind aktuell Platzhalter und müssen vor Veröffentl
 - Neue Personenzeilen bekommen eindeutige Feldnamen und Browser-Autofill ist deaktiviert; neue Zeilen werden explizit leer erzeugt.
 - Fehler erscheinen als deutliches Pop-up und die Ansicht springt automatisch zur Fehlerstelle.
 - Kacheln und Formularflächen sind leicht transparenter, sodass der Hintergrund dezent durchscheint.
+
+
+## Update v10
+
+Die Tastaturlogik wurde vollständig vereinfacht und der alte feldabhängige
+Positionierungsalgorithmus entfernt.
+
+- Sobald die Bildschirmtastatur geöffnet ist, wird die komplette Kachel am oberen
+  Rand des sichtbaren Browserbereichs angeheftet.
+- Die Kachel darf dabei den Titel „Straßenfest in Hilchenbach“ überdecken.
+- Beim Wechsel zwischen Vorname, Nachname und Alter bewegt sich die Kachel nicht mehr.
+- Falls ein Feld weiter unten liegt, scrollt ausschließlich der Inhalt innerhalb der Kachel.
+- Beim Schließen der Tastatur kehrt die Kachel an ihre normale Position direkt unter
+  „in Hilchenbach“ zurück.
+- Hintergrund und Footer werden nicht durch die Tastatur nach oben geschoben.
+- Die zuvor übereinanderliegenden v7/v8/v9-CSS-Override-Blöcke wurden entfernt und
+  zu einem einzigen v10-Block zusammengeführt.
+- Alte Viewport-Helfer für fokusabhängige Verschiebungen wurden aus JavaScript entfernt.
