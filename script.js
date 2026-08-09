@@ -122,20 +122,43 @@
 
   function updatePeoplePreview() {
     if (!state.people.length) {
-      peoplePreview.textContent = "Noch keine Person hinzugefügt.";
+      peoplePreview.innerHTML = `
+        <span class="people-icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm7-1a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM3.5 19a5 5 0 0 1 10 0m1.5 0a4.2 4.2 0 0 1 5.5-4"/></svg>
+        </span>
+        <span class="people-empty">Bisher keine Personen hinzugefügt.</span>
+      `;
       return;
     }
 
-    const visible = state.people.slice(-3).map((person) => `${person.name} (${person.age})`);
-    const hiddenCount = Math.max(0, state.people.length - visible.length);
-
-    peoplePreview.textContent =
-      `${state.people.length} ${state.people.length === 1 ? "Person" : "Personen"} hinzugefügt: ` +
-      `${hiddenCount ? `+${hiddenCount} weitere · ` : ""}${visible.join(" · ")}`;
+    peoplePreview.innerHTML = `
+      <span class="people-icon" aria-hidden="true">
+        <svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm7-1a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM3.5 19a5 5 0 0 1 10 0m1.5 0a4.2 4.2 0 0 1 5.5-4"/></svg>
+      </span>
+      <span class="people-list">
+        ${state.people.map((person, index) => `
+          <span class="person-chip">
+            ${escapeHtml(person.name)} · ${person.age}
+            <button type="button" data-remove-person="${index}" aria-label="${escapeHtml(person.name)} entfernen">×</button>
+          </span>
+        `).join("")}
+      </span>
+    `;
   }
 
   addPersonButton.addEventListener("click", () => {
     addCurrentPerson({ clear: true });
+  });
+
+  peoplePreview.addEventListener("click", (event) => {
+    const button = event.target.closest("[data-remove-person]");
+    if (!button) return;
+
+    const index = Number(button.dataset.removePerson);
+    if (!Number.isInteger(index) || index < 0 || index >= state.people.length) return;
+
+    state.people.splice(index, 1);
+    updatePeoplePreview();
   });
 
   category.addEventListener("change", () => {
@@ -339,7 +362,7 @@
     subtypeField.classList.add("hidden");
     contribution.disabled = true;
     contribution.placeholder = "Bitte zuerst die Auswahl oben treffen";
-    peoplePreview.textContent = "Noch keine Person hinzugefügt.";
+    updatePeoplePreview();
     personError.textContent = "";
     contributionError.textContent = "";
     submitStatus.textContent = "";

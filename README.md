@@ -2,6 +2,11 @@
 
 Mobile-first Einseiten-Webseite für die Anmeldung zum Straßenfest. Die Seite ist für GitHub Pages vorbereitet und besteht aus HTML, CSS und JavaScript.
 
+
+## Design-Update
+
+Die Anmeldebox ist jetzt im Stil des abgestimmten Mockups umgesetzt: halbtransparentes Indigo-/Violett-Glas, warmer goldener Leuchtrand, goldener Weiter-Button, passende Eingabefelder und eine schmale Icon-Navigation am unteren Bildschirmrand. Die Box sitzt direkt unter „in Hilchenbach“, während die Jahrmarkt-Szene sichtbar bleibt.
+
 ## Enthalten
 
 - Vollbild-Hintergrund auf Smartphones

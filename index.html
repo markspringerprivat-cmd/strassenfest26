@@ -18,6 +18,8 @@
 
     <main class="registration-stage" aria-label="Anmeldung zum Straßenfest">
       <section class="wizard-card" id="wizardCard">
+        <div class="card-glow" aria-hidden="true"></div>
+
         <div class="step-progress" aria-label="Fortschritt">
           <span class="progress-dot active" data-progress="1"></span>
           <span class="progress-dot" data-progress="2"></span>
@@ -26,44 +28,62 @@
 
         <form id="registrationForm" novalidate>
           <div class="step active" data-step="1">
-            <div class="step-heading">
-              <p class="eyebrow">Schritt 1 von 3</p>
-              <h1>Wer kommt mit?</h1>
-              <p>Trage Name und Alter ein. Weitere Personen kannst du direkt hinzufügen.</p>
+            <div class="step-heading hero-heading">
+              <div class="heading-icon" aria-hidden="true">🎉</div>
+              <div>
+                <p class="eyebrow">Schritt 1 von 3</p>
+                <h1>Anmeldung</h1>
+                <p>Melde dich und deine Begleitung an.</p>
+              </div>
             </div>
 
-            <div class="person-input-row">
-              <label class="field field-name">
-                <span>Name</span>
-                <input id="personName" name="personName" type="text" autocomplete="name"
-                       placeholder="z. B. Mark Springer" maxlength="80" />
-              </label>
+            <label class="field icon-field">
+              <span class="sr-only">Name</span>
+              <span class="input-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8Zm-7 8a7 7 0 0 1 14 0"/></svg>
+              </span>
+              <input id="personName" name="personName" type="text" autocomplete="name"
+                     placeholder="Name" maxlength="80" />
+            </label>
 
-              <label class="field field-age">
-                <span>Alter</span>
-                <input id="personAge" name="personAge" type="number" inputmode="numeric"
-                       min="0" max="120" placeholder="33" />
-              </label>
-            </div>
+            <label class="field icon-field">
+              <span class="sr-only">Alter</span>
+              <span class="input-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M5 10h14v10H5zM8 10V7m4 3V5m4 5V7M5 14c2 1.8 4 1.8 6 0 2 1.8 4 1.8 8 0"/></svg>
+              </span>
+              <input id="personAge" name="personAge" type="number" inputmode="numeric"
+                     min="0" max="120" placeholder="Alter" />
+            </label>
 
             <p class="field-error" id="personError" role="alert"></p>
 
-            <button class="add-person-button" id="addPersonButton" type="button">
-              <span class="plus" aria-hidden="true">+</span>
-              Weitere Person hinzufügen
-            </button>
-
+            <div class="people-label">Angemeldete Personen</div>
             <div class="people-preview" id="peoplePreview" aria-live="polite">
-              Noch keine Person hinzugefügt.
+              <span class="people-icon" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M8.5 11a3 3 0 1 0 0-6 3 3 0 0 0 0 6Zm7-1a2.5 2.5 0 1 0 0-5 2.5 2.5 0 0 0 0 5ZM3.5 19a5 5 0 0 1 10 0m1.5 0a4.2 4.2 0 0 1 5.5-4"/></svg>
+              </span>
+              <span class="people-empty">Bisher keine Personen hinzugefügt.</span>
             </div>
 
-            <button class="primary-button" type="button" data-next="2">Weiter</button>
+            <button class="add-person-button" id="addPersonButton" type="button">
+              <span class="plus" aria-hidden="true">+</span>
+              <span>Weitere Person hinzufügen</span>
+              <span class="button-chevron" aria-hidden="true">›</span>
+            </button>
+
+            <button class="primary-button" type="button" data-next="2">
+              <span>Weiter</span><span class="button-chevron" aria-hidden="true">›</span>
+            </button>
           </div>
 
           <div class="step" data-step="2">
-            <div class="step-heading compact-heading">
-              <p class="eyebrow">Schritt 2 von 3</p>
-              <h2>Was möchtest du mitbringen?</h2>
+            <div class="step-heading hero-heading">
+              <div class="heading-icon" aria-hidden="true">🧺</div>
+              <div>
+                <p class="eyebrow">Schritt 2 von 3</p>
+                <h2>Was bringst du mit?</h2>
+                <p>Wähle zuerst eine Kategorie aus.</p>
+              </div>
             </div>
 
             <label class="field">
@@ -84,7 +104,7 @@
             </label>
 
             <label class="field contribution-field">
-              <span>Was genau bringst du mit?</span>
+              <span>Notiz</span>
               <textarea id="contribution" name="contribution" rows="3" maxlength="220" disabled
                         placeholder="Bitte zuerst die Auswahl oben treffen"></textarea>
             </label>
@@ -93,15 +113,20 @@
 
             <div class="button-row">
               <button class="secondary-button" type="button" data-back="1">Zurück</button>
-              <button class="primary-button" type="button" data-next="3">Weiter</button>
+              <button class="primary-button" type="button" data-next="3">
+                <span>Weiter</span><span class="button-chevron" aria-hidden="true">›</span>
+              </button>
             </div>
           </div>
 
           <div class="step" data-step="3">
-            <div class="step-heading compact-heading">
-              <p class="eyebrow">Schritt 3 von 3</p>
-              <h2>Deine Anmeldung</h2>
-              <p>Bitte prüfe die Angaben vor dem Absenden.</p>
+            <div class="step-heading hero-heading">
+              <div class="heading-icon" aria-hidden="true">✓</div>
+              <div>
+                <p class="eyebrow">Schritt 3 von 3</p>
+                <h2>Deine Anmeldung</h2>
+                <p>Bitte prüfe deine Angaben.</p>
+              </div>
             </div>
 
             <div class="summary-panel">
@@ -119,7 +144,9 @@
 
             <div class="button-row">
               <button class="secondary-button" type="button" data-back="2">Zurück</button>
-              <button class="primary-button" type="submit">Anmeldung absenden</button>
+              <button class="primary-button" type="submit">
+                <span>Absenden</span><span class="button-chevron" aria-hidden="true">›</span>
+              </button>
             </div>
           </div>
 
@@ -137,11 +164,18 @@
     </main>
 
     <footer class="footer-bar" aria-label="Weitere Informationen">
-      <button type="button" data-modal="impressum">Impressum</button>
-      <span aria-hidden="true">•</span>
-      <button type="button" data-modal="kontakt">Kontakt</button>
-      <span aria-hidden="true">•</span>
-      <button type="button" data-modal="admin">Admin</button>
+      <button type="button" data-modal="impressum">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10h.01"/></svg>
+        <span>Impressum</span>
+      </button>
+      <button type="button" data-modal="kontakt">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v12H4zM4 7l8 6 8-6"/></svg>
+        <span>Kontakt</span>
+      </button>
+      <button type="button" data-modal="admin">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.8-3 8-7 10-4-2-7-5.2-7-10V6z"/></svg>
+        <span>Admin</span>
+      </button>
     </footer>
   </div>
 
