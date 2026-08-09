@@ -61,6 +61,8 @@
   const modalClose = document.getElementById("modalClose");
   const modalTitle = document.getElementById("modalTitle");
   const modalContent = document.getElementById("modalContent");
+  const validationToast = document.getElementById("validationToast");
+  const validationToastText = document.getElementById("validationToastText");
 
   const subtypeOptions = {
     Essen: ["Deftig", "Süß", "Beilage"],
@@ -94,7 +96,8 @@
     shift: 0,
     focusGroup: null,
     cardScrollBeforeKeyboard: 0,
-    focusTimer: null
+    peopleScrollBeforeKeyboard: 0,
+    settleTimer: null
   };
 
   function currentVisibleHeight() {
@@ -120,7 +123,6 @@
     const centeredImageOffset = (backgroundBoxHeight - renderedHeight) / 2;
     const subtitleBottom = -lift + centeredImageOffset + subtitleBottomY * scale;
 
-    // Maximal ungefähr 0,5 cm Abstand unter "in Hilchenbach".
     const gap = Math.max(8, Math.min(14, pageWidth * 0.027));
     return Math.max(112, Math.round(subtitleBottom + gap));
   }
@@ -133,12 +135,12 @@
 
   function setupStaticViewport(force = false) {
     const visibleHeight = currentVisibleHeight();
-    const editable = activeEditable();
     const keyboardLikelyOpen = Boolean(
-      editable && viewport.baseHeight && viewport.baseHeight - visibleHeight > 120
+      activeEditable() &&
+      viewport.baseHeight &&
+      viewport.baseHeight - visibleHeight > 120
     );
 
-    // Während die Tastatur offen ist wird die Grundgeometrie nicht neu berechnet.
     if (!force && keyboardLikelyOpen) return;
 
     viewport.baseHeight = visibleHeight;
@@ -150,24 +152,11 @@
     updateCardAvailableHeight();
   }
 
-  function keepFocusedRowVisible(active) {
-    const row = active?.closest?.(".person-row");
-    if (!row) return;
-
-    const rowTop = row.offsetTop;
-    const rowBottom = rowTop + row.offsetHeight;
-    const viewTop = peopleRows.scrollTop;
-    const viewBottom = viewTop + peopleRows.clientHeight;
-
-    if (rowTop < viewTop + 4) {
-      peopleRows.scrollTop = Math.max(0, rowTop - 4);
-    } else if (rowBottom > viewBottom - 4) {
-      peopleRows.scrollTop += rowBottom - viewBottom + 4;
-    }
-  }
-
   function focusGroupFor(active) {
-    return active?.closest?.(".person-row") || active?.closest?.(".field") || active || null;
+    return active?.closest?.(".person-row") ||
+      active?.closest?.(".field") ||
+      active ||
+      null;
   }
 
   function setStageShift(px) {
@@ -175,99 +164,124 @@
     document.documentElement.style.setProperty("--stage-shift", `${viewport.shift}px`);
   }
 
-  function syncViewportPan(useVisualOffset = viewport.keyboardOpen) {
-    const vv = window.visualViewport;
-    const y = useVisualOffset && vv ? Math.round(vv.offsetTop || 0) : 0;
-
-    // Nie horizontal verschieben.
-    document.documentElement.style.setProperty("--viewport-pan-x", "0px");
-    document.documentElement.style.setProperty("--viewport-pan-y", `${y}px`);
-  }
-
-  function clearFocusTimer() {
-    if (viewport.focusTimer) {
-      window.clearTimeout(viewport.focusTimer);
-      viewport.focusTimer = null;
+  function clearSettleTimer() {
+    if (viewport.settleTimer) {
+      window.clearTimeout(viewport.settleTimer);
+      viewport.settleTimer = null;
     }
   }
 
-  function restoreClosedLayout() {
-    clearFocusTimer();
-    viewport.keyboardOpen = false;
-    viewport.focusGroup = null;
+  function keepPersonRowVisible(active) {
+    const row = active?.closest?.(".person-row");
+    if (!row) return;
 
-    document.body.classList.remove("keyboard-open");
-    setStageShift(0);
-    syncViewportPan(false);
+    const top = row.offsetTop;
+    const bottom = top + row.offsetHeight;
+    const visibleTop = peopleRows.scrollTop;
+    const visibleBottom = visibleTop + peopleRows.clientHeight;
+    const padding = 8;
 
-    wizardCard.scrollTop = viewport.cardScrollBeforeKeyboard || 0;
-
-    window.setTimeout(() => setupStaticViewport(true), 80);
+    if (top < visibleTop + padding) {
+      peopleRows.scrollTop = Math.max(0, top - padding);
+    } else if (bottom > visibleBottom - padding) {
+      peopleRows.scrollTop += bottom - visibleBottom + padding;
+    }
   }
 
-  function positionFocusedGroup(active, group) {
+  function keepElementVisibleInCard(element, margin = 18) {
+    if (!element) return;
+
+    const cardRect = wizardCard.getBoundingClientRect();
+    const rect = element.getBoundingClientRect();
+
+    if (rect.top < cardRect.top + margin) {
+      wizardCard.scrollTop += rect.top - cardRect.top - margin;
+    } else if (rect.bottom > cardRect.bottom - margin) {
+      wizardCard.scrollTop += rect.bottom - cardRect.bottom + margin;
+    }
+  }
+
+  function positionFocusGroupOnce(active, group) {
     const vv = window.visualViewport;
-    if (!vv || !group || !viewport.keyboardOpen) return;
+    if (!vv || !active || !group || !viewport.keyboardOpen) return;
     if (focusGroupFor(document.activeElement) !== group) return;
 
-    syncViewportPan(true);
-    keepFocusedRowVisible(active);
+    keepPersonRowVisible(active);
+    keepElementVisibleInCard(group, 20);
 
     requestAnimationFrame(() => {
       if (!viewport.keyboardOpen || focusGroupFor(document.activeElement) !== group) return;
 
-      const currentGroup = focusGroupFor(document.activeElement);
-      if (!currentGroup) return;
+      const rect = group.getBoundingClientRect();
+      const visibleTop = Math.round(vv.offsetTop || 0) + 10;
+      const visibleBottom = Math.round((vv.offsetTop || 0) + vv.height) - 22;
+      const availableHeight = Math.max(120, visibleBottom - visibleTop);
 
-      const rect = currentGroup.getBoundingClientRect();
-      const visualTop = rect.top - (vv.offsetTop || 0);
-      const visualCenter = visualTop + rect.height / 2;
+      let targetCenter = visibleTop + availableHeight * 0.42;
+      let delta = targetCenter - (rect.top + rect.height / 2);
 
-      // Einmalige Zielposition der aktiven Zeile oberhalb der Tastatur.
-      const targetCenter = Math.max(118, Math.min(vv.height - 96, vv.height * 0.42));
-      const delta = targetCenter - visualCenter;
+      if (rect.height > availableHeight * 0.42) {
+        if (rect.bottom + delta > visibleBottom) {
+          delta -= rect.bottom + delta - visibleBottom;
+        }
+        if (rect.top + delta < visibleTop) {
+          delta += visibleTop - (rect.top + delta);
+        }
+      }
 
       let nextShift = viewport.shift + delta;
 
       const stageRect = registrationStage.getBoundingClientRect();
-      const stageVisualTop = stageRect.top - (vv.offsetTop || 0);
-      const nextStageVisualTop = stageVisualTop + delta;
-
-      if (nextStageVisualTop < 8) {
-        nextShift += 8 - nextStageVisualTop;
+      if (stageRect.top + delta < visibleTop) {
+        nextShift += visibleTop - (stageRect.top + delta);
       }
 
       setStageShift(nextShift);
     });
   }
 
-  function scheduleFocusedGroupPosition(active, group, delay = 90) {
-    clearFocusTimer();
-    viewport.focusTimer = window.setTimeout(() => {
-      viewport.focusTimer = null;
-      positionFocusedGroup(active, group);
+  function scheduleFocusPosition(active, group, delay = 170) {
+    clearSettleTimer();
+    viewport.settleTimer = window.setTimeout(() => {
+      viewport.settleTimer = null;
+      positionFocusGroupOnce(active, group);
     }, delay);
   }
 
-  function updateKeyboardPosition({ fromFocus = false } = {}) {
+  function restoreClosedLayout() {
+    clearSettleTimer();
+    viewport.keyboardOpen = false;
+    viewport.focusGroup = null;
+    document.body.classList.remove("keyboard-open");
+    setStageShift(0);
+
+    wizardCard.scrollTop = viewport.cardScrollBeforeKeyboard || 0;
+    peopleRows.scrollTop = viewport.peopleScrollBeforeKeyboard || 0;
+
+    window.setTimeout(() => setupStaticViewport(true), 90);
+  }
+
+  function updateKeyboardState({ fromFocus = false } = {}) {
     const vv = window.visualViewport;
+
     if (!vv) {
       setupStaticViewport(true);
       return;
     }
 
-    const visibleHeight = Math.round(vv.height);
     if (!viewport.baseHeight) setupStaticViewport(true);
 
     const active = activeEditable();
-    const keyboardOpen = Boolean(active && viewport.baseHeight - visibleHeight > 120);
+    const keyboardOpen = Boolean(
+      active &&
+      viewport.baseHeight - Math.round(vv.height) > 120
+    );
 
     if (!keyboardOpen) {
       if (viewport.keyboardOpen) {
         restoreClosedLayout();
       } else {
         setupStaticViewport(false);
-        syncViewportPan(false);
       }
       return;
     }
@@ -275,65 +289,140 @@
     if (!viewport.keyboardOpen) {
       viewport.keyboardOpen = true;
       viewport.cardScrollBeforeKeyboard = wizardCard.scrollTop;
+      viewport.peopleScrollBeforeKeyboard = peopleRows.scrollTop;
       viewport.focusGroup = null;
       document.body.classList.add("keyboard-open");
     }
 
-    // Nur Browser-Panning kompensieren. Kein Nachregeln der Kartenposition.
-    syncViewportPan(true);
-    keepFocusedRowVisible(active);
+    keepPersonRowVisible(active);
 
     const group = focusGroupFor(active);
 
-    // Die Position wird nur bei einem echten Wechsel der Zeile / des Eingabebereichs
-    // neu gesetzt. Vorname -> Nachname -> Alter in derselben Zeile bleibt absolut ruhig.
+    // Innerhalb derselben Tabellenzeile / desselben Eingabebereichs
+    // wird die Kartenposition genau NICHT neu berechnet.
     if (group && group !== viewport.focusGroup) {
       viewport.focusGroup = group;
-      scheduleFocusedGroupPosition(active, group, fromFocus ? 45 : 100);
+      scheduleFocusPosition(active, group, fromFocus ? 150 : 190);
     }
   }
 
+  function resetKeyboardViewForStepChange() {
+    clearSettleTimer();
+
+    const active = activeEditable();
+    if (active) active.blur();
+
+    viewport.keyboardOpen = false;
+    viewport.focusGroup = null;
+    document.body.classList.remove("keyboard-open");
+    setStageShift(0);
+    wizardCard.scrollTop = 0;
+  }
+
   setupStaticViewport(true);
-  updateKeyboardPosition();
+  updateKeyboardState();
 
   window.addEventListener("resize", () => {
-    window.setTimeout(() => updateKeyboardPosition(), 80);
+    if (viewport.keyboardOpen) return;
+    window.setTimeout(() => setupStaticViewport(true), 100);
   }, { passive: true });
 
   window.visualViewport?.addEventListener("resize", () => {
-    // Während iOS die Tastatur animiert, nur den sichtbaren Viewport-Versatz kompensieren.
-    if (viewport.keyboardOpen) syncViewportPan(true);
-
-    const wasOpen = viewport.keyboardOpen;
-    updateKeyboardPosition();
-
-    // Beim erstmaligen Öffnen wartet die Fokusposition kurz, bis die Tastaturhöhe stabil ist.
-    if (!wasOpen && viewport.keyboardOpen && viewport.focusGroup) {
-      scheduleFocusedGroupPosition(activeEditable(), viewport.focusGroup, 130);
-    }
-  }, { passive: true });
-
-  window.visualViewport?.addEventListener("scroll", () => {
-    // iOS verschiebt beim Feldwechsel gelegentlich den VisualViewport.
-    // Das wird direkt neutralisiert, ohne die Fokusposition neu zu berechnen.
-    if (viewport.keyboardOpen) syncViewportPan(true);
+    clearSettleTimer();
+    viewport.settleTimer = window.setTimeout(() => {
+      viewport.settleTimer = null;
+      updateKeyboardState();
+    }, 150);
   }, { passive: true });
 
   document.addEventListener("focusin", (event) => {
     if (!wizardCard.contains(event.target)) return;
-    window.setTimeout(() => updateKeyboardPosition({ fromFocus: true }), 25);
+
+    const nextGroup = focusGroupFor(event.target);
+
+    if (viewport.keyboardOpen && nextGroup === viewport.focusGroup) {
+      keepPersonRowVisible(event.target);
+      return;
+    }
+
+    window.setTimeout(() => updateKeyboardState({ fromFocus: true }), 35);
   });
 
   document.addEventListener("focusout", () => {
-    // Nicht zwischen Vorname/Nachname/Alter zurücksetzen.
-    window.setTimeout(() => updateKeyboardPosition(), 180);
+    window.setTimeout(() => updateKeyboardState(), 240);
   });
 
-  // Nur explizit dafür vorgesehene interne Bereiche dürfen scrollen.
   document.addEventListener("touchmove", (event) => {
     if (event.target.closest(".wizard-card, .people-rows, .needs-table-wrap, .summary-content, .modal")) return;
     event.preventDefault();
   }, { passive: false });
+
+
+  let validationToastTimer = null;
+
+  function clearValidationMarks() {
+    document.querySelectorAll(".validation-error-target").forEach((element) => {
+      element.classList.remove("validation-error-target");
+    });
+  }
+
+  function showValidationToast(message) {
+    if (!validationToast || !validationToastText) return;
+
+    validationToastText.textContent = message;
+    validationToast.hidden = false;
+
+    if (validationToastTimer) window.clearTimeout(validationToastTimer);
+    validationToastTimer = window.setTimeout(() => {
+      validationToast.hidden = true;
+    }, 4200);
+  }
+
+  function centerPersonRow(row) {
+    if (!row) return;
+    const desired = row.offsetTop - Math.max(0, (peopleRows.clientHeight - row.offsetHeight) / 2);
+    peopleRows.scrollTop = Math.max(0, desired);
+  }
+
+  function scrollErrorIntoView(target) {
+    if (!target) return;
+
+    const row = target.closest?.(".person-row");
+    if (row) centerPersonRow(row);
+
+    const focusBox = row || target.closest?.(".field") || target;
+    keepElementVisibleInCard(focusBox, 22);
+  }
+
+  function reportValidationError(message, target, { focus = true } = {}) {
+    clearValidationMarks();
+    showValidationToast(message);
+
+    const marker = target?.closest?.(".person-row") || target?.closest?.(".field") || target;
+    marker?.classList?.add("validation-error-target");
+
+    scrollErrorIntoView(target);
+
+    if (focus && target?.focus) {
+      window.setTimeout(() => {
+        target.focus({ preventScroll: true });
+        scrollErrorIntoView(target);
+        updateKeyboardState({ fromFocus: true });
+      }, 30);
+    }
+  }
+
+  validationToast?.addEventListener("click", () => {
+    validationToast.hidden = true;
+  });
+
+  document.addEventListener("input", (event) => {
+    event.target.closest?.(".validation-error-target")?.classList.remove("validation-error-target");
+  });
+
+  document.addEventListener("change", (event) => {
+    event.target.closest?.(".validation-error-target")?.classList.remove("validation-error-target");
+  });
 
   function setStep(step) {
     state.step = String(step);
@@ -347,20 +436,53 @@
     });
     stepProgress.classList.toggle("hidden", state.step === "done");
 
-    clearKeyboardAnchor();
-    setStageShift(0);
-    syncViewportPan(false);
-    wizardCard.scrollTop = 0;
-    window.setTimeout(updateKeyboardPosition, 20);
+    resetKeyboardViewForStepChange();
+    window.setTimeout(() => setupStaticViewport(true), 40);
   }
 
+  let personRowSerial = 0;
+
   function createPersonRow(data = {}) {
+    const rowId = ++personRowSerial;
     const row = document.createElement("div");
     row.className = "person-row";
+    row.dataset.rowId = String(rowId);
+
     row.innerHTML = `
-      <input type="text" class="person-first" autocomplete="given-name" maxlength="50" placeholder="z. B. Mark" aria-label="Vorname" value="${escapeAttr(data.firstName || "")}">
-      <input type="text" class="person-last" autocomplete="family-name" maxlength="60" placeholder="z. B. Springer" aria-label="Nachname" value="${escapeAttr(data.lastName || "")}">
-      <input type="number" class="person-age" inputmode="numeric" min="0" max="120" placeholder="33" aria-label="Alter" value="${data.age ?? ""}">
+      <input type="text"
+             class="person-first"
+             name="guest_first_${rowId}"
+             autocomplete="off"
+             autocapitalize="words"
+             spellcheck="false"
+             data-form-type="other"
+             data-lpignore="true"
+             maxlength="50"
+             placeholder="z. B. Mark"
+             aria-label="Vorname"
+             value="${escapeAttr(data.firstName || "")}">
+      <input type="text"
+             class="person-last"
+             name="guest_last_${rowId}"
+             autocomplete="off"
+             autocapitalize="words"
+             spellcheck="false"
+             data-form-type="other"
+             data-lpignore="true"
+             maxlength="60"
+             placeholder="z. B. Springer"
+             aria-label="Nachname"
+             value="${escapeAttr(data.lastName || "")}">
+      <input type="number"
+             class="person-age"
+             name="guest_age_${rowId}"
+             autocomplete="off"
+             inputmode="numeric"
+             min="0"
+             max="120"
+             placeholder="33"
+             aria-label="Alter"
+             value="${data.age ?? ""}">
       <button type="button" class="remove-person" aria-label="Person entfernen">×</button>
     `;
     return row;
@@ -374,13 +496,34 @@
   }
 
   function addPersonRow(data = {}, focus = false) {
+    const hasInitialData = Boolean(data.firstName || data.lastName || data.age !== undefined);
     const row = createPersonRow(data);
     peopleRows.appendChild(row);
     refreshRemoveButtons();
 
+    if (!hasInitialData) {
+      const inputs = [...row.querySelectorAll("input")];
+      inputs.forEach((input) => {
+        input.value = "";
+        input.setAttribute("value", "");
+      });
+
+      requestAnimationFrame(() => {
+        inputs.forEach((input) => { input.value = ""; });
+      });
+    }
+
     if (focus) {
-      peopleRows.scrollTop = peopleRows.scrollHeight;
-      window.setTimeout(() => row.querySelector(".person-first").focus({ preventScroll: true }), 30);
+      centerPersonRow(row);
+
+      window.setTimeout(() => {
+        const first = row.querySelector(".person-first");
+        if (!hasInitialData) {
+          row.querySelectorAll("input").forEach((input) => { input.value = ""; });
+        }
+        first.focus({ preventScroll: true });
+        updateKeyboardState({ fromFocus: true });
+      }, 110);
     }
   }
 
@@ -398,22 +541,40 @@
     const people = [];
 
     for (const [index, row] of rows.entries()) {
-      const firstName = row.querySelector(".person-first").value.replace(/\s+/g, " ").trim();
-      const lastName = row.querySelector(".person-last").value.replace(/\s+/g, " ").trim();
-      const rawAge = row.querySelector(".person-age").value;
+      const firstInput = row.querySelector(".person-first");
+      const lastInput = row.querySelector(".person-last");
+      const ageInput = row.querySelector(".person-age");
+
+      const firstName = firstInput.value.replace(/\s+/g, " ").trim();
+      const lastName = lastInput.value.replace(/\s+/g, " ").trim();
+      const rawAge = ageInput.value;
       const age = rawAge === "" ? NaN : Number(rawAge);
 
-      if (!firstName || !lastName || !Number.isFinite(age) || age < 0 || age > 120) {
-        personError.textContent = `Bitte in Zeile ${index + 1} Vorname, Nachname und ein gültiges Alter eintragen.`;
-        const target = !firstName ? row.querySelector(".person-first") : !lastName ? row.querySelector(".person-last") : row.querySelector(".person-age");
-        target.focus({ preventScroll: true });
-        updateKeyboardPosition();
+      let target = null;
+      let detail = "";
+
+      if (!firstName) {
+        target = firstInput;
+        detail = "Vorname fehlt.";
+      } else if (!lastName) {
+        target = lastInput;
+        detail = "Nachname fehlt.";
+      } else if (!Number.isFinite(age) || age < 0 || age > 120) {
+        target = ageInput;
+        detail = "Bitte ein Alter zwischen 0 und 120 Jahren eintragen.";
+      }
+
+      if (target) {
+        const message = `Fehler in Zeile ${index + 1}: ${detail}`;
+        personError.textContent = message;
+        reportValidationError(message, target);
         return null;
       }
 
       people.push({ firstName, lastName, age });
     }
 
+    clearValidationMarks();
     personError.textContent = "";
     return people;
   }
@@ -512,6 +673,7 @@
     state.contribution = "";
     contribution.value = "";
     contributionError.textContent = "";
+    clearValidationMarks();
     populateSubtype(state.category, "");
 
     if (!state.category) {
@@ -532,11 +694,13 @@
     contribution.value = "";
     contribution.disabled = !state.subtype;
     contribution.placeholder = state.subtype ? "Was genau möchtest du mitbringen?" : "Bitte zuerst beide Auswahlfelder treffen";
+    clearValidationMarks();
   });
 
   contribution.addEventListener("input", () => {
     state.contribution = contribution.value.trim();
     contributionError.textContent = "";
+    contribution.closest(".field")?.classList.remove("validation-error-target");
   });
 
   function validateContribution() {
@@ -546,24 +710,28 @@
 
     if (!state.presetContribution) {
       if (!state.category) {
-        contributionError.textContent = "Bitte zuerst eine Kategorie auswählen.";
-        category.focus({ preventScroll: true });
+        const message = "Bitte zuerst eine Kategorie auswählen.";
+        contributionError.textContent = message;
+        reportValidationError(message, category);
         return false;
       }
+
       if (subtypeOptions[state.category] && !state.subtype) {
-        contributionError.textContent = "Bitte auch die Unterkategorie auswählen.";
-        subtype.focus({ preventScroll: true });
+        const message = "Bitte auch die Unterkategorie auswählen.";
+        contributionError.textContent = message;
+        reportValidationError(message, subtype);
         return false;
       }
     }
 
     if (!state.contribution) {
-      contributionError.textContent = "Bitte kurz eintragen, was du mitbringen möchtest.";
-      contribution.focus({ preventScroll: true });
-      updateKeyboardPosition();
+      const message = "Bitte kurz eintragen, was du mitbringen möchtest.";
+      contributionError.textContent = message;
+      reportValidationError(message, contribution);
       return false;
     }
 
+    clearValidationMarks();
     contributionError.textContent = "";
     return true;
   }
@@ -676,7 +844,10 @@
 
   paymentContinue.addEventListener("click", () => {
     if (state.totalCost > 0 && !state.paymentMethod) {
-      paymentError.textContent = "Bitte einen Zahlungsweg auswählen.";
+      const message = "Bitte einen Zahlungsweg auswählen.";
+      paymentError.textContent = message;
+      const paymentChoices = document.querySelector(".payment-choice-grid");
+      reportValidationError(message, paymentChoices, { focus: false });
       return;
     }
     renderSummary();

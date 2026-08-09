@@ -30,7 +30,7 @@
           <span class="progress-dot" data-progress="5"></span>
         </div>
 
-        <form id="registrationForm" novalidate>
+        <form id="registrationForm" novalidate autocomplete="off">
           <section class="step active" data-step="1">
             <div class="step-heading hero-heading">
               <div class="heading-icon" aria-hidden="true">🎉</div>
@@ -290,6 +290,12 @@
         <span>Admin</span>
       </button>
     </footer>
+  </div>
+
+
+  <div class="validation-toast" id="validationToast" role="alert" aria-live="assertive" hidden>
+    <span class="validation-toast-icon" aria-hidden="true">!</span>
+    <span id="validationToastText"></span>
   </div>
 
   <div class="modal-backdrop" id="modalBackdrop" hidden>

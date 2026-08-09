@@ -119,3 +119,14 @@ Die Inhalte in den Dialogen sind aktuell Platzhalter und müssen vor Veröffentl
 - Während die Tastatur geöffnet ist sind Transform-Animationen der Karte deaktiviert.
 - Die Karte kann nie horizontal verschoben werden.
 - Beim Schließen der Tastatur wird die Ausgangslage wiederhergestellt.
+
+
+## Update v9
+
+- Goldgelbe, deutlichere Scrollbalken in allen vorgesehenen Scrollbereichen.
+- Smooth-Scrolling deaktiviert, damit Fokuswechsel nicht mehr sichtbar „wabern“.
+- Die Tastaturposition wird nur einmal pro Personenzeile bzw. Eingabebereich berechnet.
+- Das Notizfeld wird beim Schreiben stabil oberhalb der Tastatur sichtbar positioniert.
+- Neue Personenzeilen bekommen eindeutige Feldnamen und Browser-Autofill ist deaktiviert; neue Zeilen werden explizit leer erzeugt.
+- Fehler erscheinen als deutliches Pop-up und die Ansicht springt automatisch zur Fehlerstelle.
+- Kacheln und Formularflächen sind leicht transparenter, sodass der Hintergrund dezent durchscheint.
