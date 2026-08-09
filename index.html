@@ -1,0 +1,158 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#10246e" />
+  <meta name="color-scheme" content="dark" />
+  <title>Straßenfest in Hilchenbach – Anmeldung</title>
+  <meta name="description" content="Anmeldung zum Straßenfest in Hilchenbach" />
+  <link rel="preload" as="image" href="assets/strassenfest-hilchenbach.png" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell" id="appShell">
+    <div class="background" aria-hidden="true"></div>
+    <div class="background-shade" aria-hidden="true"></div>
+    <canvas id="fireworks" class="fireworks" aria-hidden="true"></canvas>
+
+    <main class="registration-stage" aria-label="Anmeldung zum Straßenfest">
+      <section class="wizard-card" id="wizardCard">
+        <div class="step-progress" aria-label="Fortschritt">
+          <span class="progress-dot active" data-progress="1"></span>
+          <span class="progress-dot" data-progress="2"></span>
+          <span class="progress-dot" data-progress="3"></span>
+        </div>
+
+        <form id="registrationForm" novalidate>
+          <div class="step active" data-step="1">
+            <div class="step-heading">
+              <p class="eyebrow">Schritt 1 von 3</p>
+              <h1>Wer kommt mit?</h1>
+              <p>Trage Name und Alter ein. Weitere Personen kannst du direkt hinzufügen.</p>
+            </div>
+
+            <div class="person-input-row">
+              <label class="field field-name">
+                <span>Name</span>
+                <input id="personName" name="personName" type="text" autocomplete="name"
+                       placeholder="z. B. Mark Springer" maxlength="80" />
+              </label>
+
+              <label class="field field-age">
+                <span>Alter</span>
+                <input id="personAge" name="personAge" type="number" inputmode="numeric"
+                       min="0" max="120" placeholder="33" />
+              </label>
+            </div>
+
+            <p class="field-error" id="personError" role="alert"></p>
+
+            <button class="add-person-button" id="addPersonButton" type="button">
+              <span class="plus" aria-hidden="true">+</span>
+              Weitere Person hinzufügen
+            </button>
+
+            <div class="people-preview" id="peoplePreview" aria-live="polite">
+              Noch keine Person hinzugefügt.
+            </div>
+
+            <button class="primary-button" type="button" data-next="2">Weiter</button>
+          </div>
+
+          <div class="step" data-step="2">
+            <div class="step-heading compact-heading">
+              <p class="eyebrow">Schritt 2 von 3</p>
+              <h2>Was möchtest du mitbringen?</h2>
+            </div>
+
+            <label class="field">
+              <span>Kategorie</span>
+              <select id="category" name="category">
+                <option value="">Bitte auswählen</option>
+                <option value="Spielzeug">Spielzeug</option>
+                <option value="Essen">Essen</option>
+                <option value="Getränke">Getränke</option>
+              </select>
+            </label>
+
+            <label class="field hidden" id="subtypeField">
+              <span id="subtypeLabel">Unterkategorie</span>
+              <select id="subtype" name="subtype">
+                <option value="">Bitte auswählen</option>
+              </select>
+            </label>
+
+            <label class="field contribution-field">
+              <span>Was genau bringst du mit?</span>
+              <textarea id="contribution" name="contribution" rows="3" maxlength="220" disabled
+                        placeholder="Bitte zuerst die Auswahl oben treffen"></textarea>
+            </label>
+
+            <p class="field-error" id="contributionError" role="alert"></p>
+
+            <div class="button-row">
+              <button class="secondary-button" type="button" data-back="1">Zurück</button>
+              <button class="primary-button" type="button" data-next="3">Weiter</button>
+            </div>
+          </div>
+
+          <div class="step" data-step="3">
+            <div class="step-heading compact-heading">
+              <p class="eyebrow">Schritt 3 von 3</p>
+              <h2>Deine Anmeldung</h2>
+              <p>Bitte prüfe die Angaben vor dem Absenden.</p>
+            </div>
+
+            <div class="summary-panel">
+              <div class="summary-block">
+                <span class="summary-label">Personen</span>
+                <div id="summaryPeople" class="summary-content"></div>
+              </div>
+              <div class="summary-block">
+                <span class="summary-label">Mitbringsel</span>
+                <div id="summaryContribution" class="summary-content"></div>
+              </div>
+            </div>
+
+            <p class="submit-status" id="submitStatus" role="status" aria-live="polite"></p>
+
+            <div class="button-row">
+              <button class="secondary-button" type="button" data-back="2">Zurück</button>
+              <button class="primary-button" type="submit">Anmeldung absenden</button>
+            </div>
+          </div>
+
+          <div class="step thank-you" data-step="4">
+            <div class="checkmark" aria-hidden="true">✓</div>
+            <p class="eyebrow">Geschafft</p>
+            <h2>Vielen Dank für deine Anmeldung!</h2>
+            <p>Wir freuen uns auf ein schönes Straßenfest in Hilchenbach.</p>
+            <button class="secondary-button restart-button" id="restartButton" type="button">
+              Neue Anmeldung
+            </button>
+          </div>
+        </form>
+      </section>
+    </main>
+
+    <footer class="footer-bar" aria-label="Weitere Informationen">
+      <button type="button" data-modal="impressum">Impressum</button>
+      <span aria-hidden="true">•</span>
+      <button type="button" data-modal="kontakt">Kontakt</button>
+      <span aria-hidden="true">•</span>
+      <button type="button" data-modal="admin">Admin</button>
+    </footer>
+  </div>
+
+  <div class="modal-backdrop" id="modalBackdrop" hidden>
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <button class="modal-close" id="modalClose" type="button" aria-label="Fenster schließen">×</button>
+      <h2 id="modalTitle"></h2>
+      <div id="modalContent"></div>
+    </section>
+  </div>
+
+  <script src="script.js" defer></script>
+</body>
+</html>
