@@ -3,23 +3,70 @@
 
   const SUBMIT_ENDPOINT = "";
   const STORAGE_KEY = "strassenfest-hilchenbach-registrations";
+  const ADULT_PRICE = 20;
+  const ADULT_AGE = 18;
 
   const state = {
-    step: 1,
+    step: "1",
     people: [],
     bringing: null,
     category: "",
     subtype: "",
     contribution: "",
-    summaryBackStep: 2
+    contributionOrigin: "choice",
+    presetContribution: false,
+    paymentMethod: null,
+    totalCost: 0
   };
+
+  const appShell = document.getElementById("appShell");
+  const registrationStage = document.getElementById("registrationStage");
+  const wizardCard = document.getElementById("wizardCard");
+  const form = document.getElementById("registrationForm");
+  const peopleRows = document.getElementById("peopleRows");
+  const personError = document.getElementById("personError");
+  const addPersonButton = document.getElementById("addPersonButton");
+  const peopleContinue = document.getElementById("peopleContinue");
+  const bringYes = document.getElementById("bringYes");
+  const bringNo = document.getElementById("bringNo");
+  const showNeeds = document.getElementById("showNeeds");
+  const needsTableBody = document.getElementById("needsTableBody");
+  const needsNote = document.getElementById("needsNote");
+  const contributionSelects = document.getElementById("contributionSelects");
+  const presetSelection = document.getElementById("presetSelection");
+  const presetSelectionText = document.getElementById("presetSelectionText");
+  const contributionIntro = document.getElementById("contributionIntro");
+  const category = document.getElementById("category");
+  const subtypeField = document.getElementById("subtypeField");
+  const subtypeLabel = document.getElementById("subtypeLabel");
+  const subtype = document.getElementById("subtype");
+  const contribution = document.getElementById("contribution");
+  const contributionError = document.getElementById("contributionError");
+  const contributionBack = document.getElementById("contributionBack");
+  const contributionContinue = document.getElementById("contributionContinue");
+  const paymentSummary = document.getElementById("paymentSummary");
+  const paymentMethodArea = document.getElementById("paymentMethodArea");
+  const noPaymentNote = document.getElementById("noPaymentNote");
+  const paymentError = document.getElementById("paymentError");
+  const paymentBack = document.getElementById("paymentBack");
+  const paymentContinue = document.getElementById("paymentContinue");
+  const summaryPeople = document.getElementById("summaryPeople");
+  const summaryContribution = document.getElementById("summaryContribution");
+  const summaryPayment = document.getElementById("summaryPayment");
+  const submitStatus = document.getElementById("submitStatus");
+  const restartButton = document.getElementById("restartButton");
+  const stepProgress = document.getElementById("stepProgress");
+  const modalBackdrop = document.getElementById("modalBackdrop");
+  const modalClose = document.getElementById("modalClose");
+  const modalTitle = document.getElementById("modalTitle");
+  const modalContent = document.getElementById("modalContent");
 
   const subtypeOptions = {
     Essen: ["Deftig", "Süß", "Beilage"],
     Getränke: ["Alkoholisch", "Nicht alkoholisch", "Zuckerhaltig", "Nicht zuckerhaltig", "Gemischt"]
   };
 
-  const needsDefinitions = [
+  const needsBuckets = [
     { category: "Spielzeug", subtype: "", label: "Spielzeug" },
     { category: "Essen", subtype: "Deftig", label: "Essen · Deftig" },
     { category: "Essen", subtype: "Süß", label: "Essen · Süß" },
@@ -31,210 +78,293 @@
     { category: "Getränke", subtype: "Gemischt", label: "Getränke · Gemischt" }
   ];
 
-  const peopleRows = document.getElementById("peopleRows");
-  const personError = document.getElementById("personError");
-  const addPersonButton = document.getElementById("addPersonButton");
-  const bringYes = document.getElementById("bringYes");
-  const bringNo = document.getElementById("bringNo");
-  const showNeeds = document.getElementById("showNeeds");
-  const needsPanel = document.getElementById("needsPanel");
-  const needsTableBody = document.getElementById("needsTableBody");
-  const needsNote = document.getElementById("needsNote");
-  const category = document.getElementById("category");
-  const subtypeField = document.getElementById("subtypeField");
-  const subtypeLabel = document.getElementById("subtypeLabel");
-  const subtype = document.getElementById("subtype");
-  const contribution = document.getElementById("contribution");
-  const contributionError = document.getElementById("contributionError");
-  const summaryPeople = document.getElementById("summaryPeople");
-  const summaryContribution = document.getElementById("summaryContribution");
-  const summaryBack = document.getElementById("summaryBack");
-  const form = document.getElementById("registrationForm");
-  const submitStatus = document.getElementById("submitStatus");
-  const restartButton = document.getElementById("restartButton");
-  const modalBackdrop = document.getElementById("modalBackdrop");
-  const modalClose = document.getElementById("modalClose");
-  const modalTitle = document.getElementById("modalTitle");
-  const modalContent = document.getElementById("modalContent");
+  const viewport = {
+    baseHeight: 0,
+    stageTop: 0,
+    keyboardOpen: false
+  };
 
-  let rowId = 0;
+  function setupStaticViewport() {
+    const current = Math.max(window.innerHeight, window.visualViewport?.height || 0);
+    if (!viewport.baseHeight || current > viewport.baseHeight - 20) {
+      viewport.baseHeight = current;
+    }
 
-  function freezeDocumentPosition() {
-    if (window.scrollX !== 0 || window.scrollY !== 0) window.scrollTo(0, 0);
+    viewport.stageTop = Math.max(220, Math.min(340, Math.round(viewport.baseHeight * 0.34)));
+    document.documentElement.style.setProperty("--base-height", `${viewport.baseHeight}px`);
+    document.documentElement.style.setProperty("--stage-top", `${viewport.stageTop}px`);
   }
 
-  window.addEventListener("scroll", freezeDocumentPosition, { passive: true });
-  document.addEventListener("focusin", () => setTimeout(freezeDocumentPosition, 0));
-  window.visualViewport?.addEventListener("scroll", freezeDocumentPosition, { passive: true });
+  function keepFocusedRowVisible(active) {
+    const row = active?.closest?.(".person-row");
+    if (!row) return;
 
-  function addPersonRow(values = {}) {
-    rowId += 1;
-    const row = document.createElement("div");
-    row.className = "person-row";
-    row.dataset.rowId = String(rowId);
-    row.innerHTML = `
-      <input type="text" autocomplete="given-name" maxlength="50" placeholder="Vorname" aria-label="Vorname" value="${escapeAttr(values.firstName || "")}">
-      <input type="text" autocomplete="family-name" maxlength="60" placeholder="Nachname" aria-label="Nachname" value="${escapeAttr(values.lastName || "")}">
-      <input class="age-input" type="number" inputmode="numeric" min="0" max="120" placeholder="Alter" aria-label="Alter" value="${escapeAttr(values.age ?? "")}">
-      <button class="remove-row" type="button" aria-label="Person entfernen">×</button>
-    `;
-    peopleRows.appendChild(row);
-    updateRemoveButtons();
-    return row;
+    const rowTop = row.offsetTop;
+    const rowBottom = rowTop + row.offsetHeight;
+    const viewTop = peopleRows.scrollTop;
+    const viewBottom = viewTop + peopleRows.clientHeight;
+
+    if (rowTop < viewTop + 4) {
+      peopleRows.scrollTop = Math.max(0, rowTop - 4);
+    } else if (rowBottom > viewBottom - 4) {
+      peopleRows.scrollTop += rowBottom - viewBottom + 4;
+    }
   }
 
-  function updateRemoveButtons() {
-    const rows = [...peopleRows.querySelectorAll(".person-row")];
-    rows.forEach((row) => {
-      const button = row.querySelector(".remove-row");
-      button.disabled = rows.length === 1;
+  function updateKeyboardPosition() {
+    const vv = window.visualViewport;
+    if (!vv) return;
+
+    const keyboardOpen = viewport.baseHeight - vv.height > 120;
+    viewport.keyboardOpen = keyboardOpen;
+    document.body.classList.toggle("keyboard-open", keyboardOpen);
+
+    if (!keyboardOpen) {
+      document.documentElement.style.setProperty("--stage-shift", "0px");
+      document.documentElement.style.setProperty("--visual-offset-y", "0px");
+      return;
+    }
+
+    const active = document.activeElement;
+    keepFocusedRowVisible(active);
+
+    const visibleTop = vv.offsetTop + 8;
+    const visibleBottom = vv.offsetTop + vv.height - 10;
+    const availableHeight = visibleBottom - visibleTop;
+    const cardHeight = wizardCard.offsetHeight;
+
+    let targetTop = viewport.stageTop;
+
+    if (cardHeight <= availableHeight) {
+      targetTop = Math.min(viewport.stageTop, visibleBottom - cardHeight);
+      targetTop = Math.max(visibleTop, targetTop);
+    } else {
+      targetTop = visibleTop;
+    }
+
+    document.documentElement.style.setProperty("--stage-shift", `${Math.round(targetTop - viewport.stageTop)}px`);
+    document.documentElement.style.setProperty("--visual-offset-y", `${Math.round(vv.offsetTop)}px`);
+
+    requestAnimationFrame(() => {
+      if (!active || !wizardCard.contains(active)) return;
+      const rect = active.getBoundingClientRect();
+      const safeBottom = vv.height - 18;
+      if (rect.bottom > safeBottom) {
+        const extra = rect.bottom - safeBottom + 12;
+        const currentShift = targetTop - viewport.stageTop;
+        document.documentElement.style.setProperty("--stage-shift", `${Math.round(currentShift - extra)}px`);
+      }
     });
   }
 
-  addPersonRow();
+  setupStaticViewport();
+  updateKeyboardPosition();
 
-  addPersonButton.addEventListener("click", () => {
-    personError.textContent = "";
-    const row = addPersonRow();
-    row.querySelector("input").focus({ preventScroll: true });
+  window.addEventListener("resize", () => {
+    if (!viewport.keyboardOpen) setupStaticViewport();
+    window.setTimeout(updateKeyboardPosition, 30);
+  }, { passive: true });
+
+  window.visualViewport?.addEventListener("resize", () => window.setTimeout(updateKeyboardPosition, 20), { passive: true });
+  window.visualViewport?.addEventListener("scroll", updateKeyboardPosition, { passive: true });
+
+  document.addEventListener("focusin", (event) => {
+    if (!wizardCard.contains(event.target)) return;
+    window.setTimeout(updateKeyboardPosition, 80);
+    window.setTimeout(updateKeyboardPosition, 260);
   });
+
+  document.addEventListener("focusout", () => {
+    window.setTimeout(updateKeyboardPosition, 120);
+    window.setTimeout(updateKeyboardPosition, 340);
+  });
+
+  function setStep(step) {
+    state.step = String(step);
+    document.querySelectorAll(".step").forEach((panel) => {
+      panel.classList.toggle("active", panel.dataset.step === state.step);
+    });
+
+    const progressStep = state.step === "needs" ? 2 : Number(state.step);
+    document.querySelectorAll(".progress-dot").forEach((dot) => {
+      dot.classList.toggle("active", Number(dot.dataset.progress) === progressStep);
+    });
+    stepProgress.classList.toggle("hidden", state.step === "done");
+
+    document.documentElement.style.setProperty("--stage-shift", "0px");
+    window.setTimeout(updateKeyboardPosition, 20);
+  }
+
+  function createPersonRow(data = {}) {
+    const row = document.createElement("div");
+    row.className = "person-row";
+    row.innerHTML = `
+      <input type="text" class="person-first" autocomplete="given-name" maxlength="50" placeholder="z. B. Mark" aria-label="Vorname" value="${escapeAttr(data.firstName || "")}">
+      <input type="text" class="person-last" autocomplete="family-name" maxlength="60" placeholder="z. B. Springer" aria-label="Nachname" value="${escapeAttr(data.lastName || "")}">
+      <input type="number" class="person-age" inputmode="numeric" min="0" max="120" placeholder="33" aria-label="Alter" value="${data.age ?? ""}">
+      <button type="button" class="remove-person" aria-label="Person entfernen">×</button>
+    `;
+    return row;
+  }
+
+  function refreshRemoveButtons() {
+    const rows = [...peopleRows.querySelectorAll(".person-row")];
+    rows.forEach((row) => {
+      row.querySelector(".remove-person").disabled = rows.length === 1;
+    });
+  }
+
+  function addPersonRow(data = {}, focus = false) {
+    const row = createPersonRow(data);
+    peopleRows.appendChild(row);
+    refreshRemoveButtons();
+
+    if (focus) {
+      peopleRows.scrollTop = peopleRows.scrollHeight;
+      window.setTimeout(() => row.querySelector(".person-first").focus({ preventScroll: true }), 30);
+    }
+  }
+
+  addPersonButton.addEventListener("click", () => addPersonRow({}, true));
 
   peopleRows.addEventListener("click", (event) => {
-    const button = event.target.closest(".remove-row");
-    if (!button || button.disabled) return;
-    button.closest(".person-row")?.remove();
-    updateRemoveButtons();
+    const removeButton = event.target.closest(".remove-person");
+    if (!removeButton || removeButton.disabled) return;
+    removeButton.closest(".person-row")?.remove();
+    refreshRemoveButtons();
   });
 
-  function readPeopleRows() {
+  function readPeople() {
     const rows = [...peopleRows.querySelectorAll(".person-row")];
     const people = [];
 
     for (const [index, row] of rows.entries()) {
-      const inputs = row.querySelectorAll("input");
-      const firstName = inputs[0].value.replace(/\s+/g, " ").trim();
-      const lastName = inputs[1].value.replace(/\s+/g, " ").trim();
-      const rawAge = inputs[2].value.trim();
-      const allBlank = !firstName && !lastName && !rawAge;
+      const firstName = row.querySelector(".person-first").value.replace(/\s+/g, " ").trim();
+      const lastName = row.querySelector(".person-last").value.replace(/\s+/g, " ").trim();
+      const rawAge = row.querySelector(".person-age").value;
+      const age = rawAge === "" ? NaN : Number(rawAge);
 
-      if (allBlank && rows.length > 1) continue;
-
-      if (!firstName) return { ok: false, message: `Bitte in Zeile ${index + 1} den Vornamen eintragen.`, focus: inputs[0] };
-      if (!lastName) return { ok: false, message: `Bitte in Zeile ${index + 1} den Nachnamen eintragen.`, focus: inputs[1] };
-
-      const age = Number(rawAge);
-      if (!rawAge || !Number.isFinite(age) || age < 0 || age > 120) {
-        return { ok: false, message: `Bitte in Zeile ${index + 1} ein gültiges Alter zwischen 0 und 120 eintragen.`, focus: inputs[2] };
+      if (!firstName || !lastName || !Number.isFinite(age) || age < 0 || age > 120) {
+        personError.textContent = `Bitte in Zeile ${index + 1} Vorname, Nachname und ein gültiges Alter eintragen.`;
+        const target = !firstName ? row.querySelector(".person-first") : !lastName ? row.querySelector(".person-last") : row.querySelector(".person-age");
+        target.focus({ preventScroll: true });
+        updateKeyboardPosition();
+        return null;
       }
 
       people.push({ firstName, lastName, age });
     }
 
-    if (!people.length) return { ok: false, message: "Bitte mindestens eine Person eintragen.", focus: rows[0]?.querySelector("input") };
-    return { ok: true, people };
-  }
-
-  function validatePeopleAndContinue() {
-    const result = readPeopleRows();
-    if (!result.ok) {
-      personError.textContent = result.message;
-      result.focus?.focus({ preventScroll: true });
-      return false;
-    }
-
-    state.people = result.people;
     personError.textContent = "";
-    return true;
+    return people;
   }
 
-  function setStep(step) {
-    state.step = step;
-    document.querySelectorAll(".step").forEach((panel) => {
-      panel.classList.toggle("active", Number(panel.dataset.step) === step);
-    });
-    document.querySelectorAll(".progress-dot").forEach((dot) => {
-      const dotStep = Number(dot.dataset.progress);
-      dot.classList.toggle("active", step <= 4 && dotStep === step);
-    });
-    document.querySelector(".step-progress").classList.toggle("hidden", step === 5);
-    freezeDocumentPosition();
-  }
-
-  document.querySelector('[data-next="2"]').addEventListener("click", () => {
-    if (!validatePeopleAndContinue()) return;
-    renderNeedsTable();
+  peopleContinue.addEventListener("click", () => {
+    const people = readPeople();
+    if (!people) return;
+    state.people = people;
     setStep(2);
   });
 
-  bringYes.addEventListener("click", () => {
+  function resetContribution() {
+    state.category = "";
+    state.subtype = "";
+    state.contribution = "";
+    state.presetContribution = false;
+    category.value = "";
+    subtype.innerHTML = '<option value="">Bitte auswählen</option>';
+    subtypeField.classList.add("hidden");
+    contribution.value = "";
+    contribution.disabled = true;
+    contribution.placeholder = "Bitte zuerst die Auswahl oben treffen";
+    contributionSelects.classList.remove("hidden");
+    presetSelection.classList.add("hidden");
+    contributionIntro.textContent = "Wähle die Kategorie und beschreibe kurz deinen Beitrag.";
+    contributionError.textContent = "";
+  }
+
+  function populateSubtype(categoryValue, selected = "") {
+    subtype.innerHTML = '<option value="">Bitte auswählen</option>';
+    if (!subtypeOptions[categoryValue]) {
+      subtypeField.classList.add("hidden");
+      return;
+    }
+
+    subtypeField.classList.remove("hidden");
+    subtypeLabel.textContent = categoryValue === "Essen" ? "Art des Essens" : "Art des Getränks";
+    subtypeOptions[categoryValue].forEach((item) => {
+      const option = document.createElement("option");
+      option.value = item;
+      option.textContent = item;
+      subtype.appendChild(option);
+    });
+    subtype.value = selected;
+  }
+
+  function openNormalContribution() {
     state.bringing = true;
-    state.summaryBackStep = 3;
+    state.contributionOrigin = "choice";
+    resetContribution();
     setStep(3);
-  });
+  }
+
+  function openPresetContribution(categoryValue, subtypeValue) {
+    state.bringing = true;
+    state.contributionOrigin = "needs";
+    state.category = categoryValue;
+    state.subtype = subtypeValue || "";
+    state.contribution = "";
+    state.presetContribution = true;
+
+    category.value = categoryValue;
+    populateSubtype(categoryValue, subtypeValue || "");
+    contribution.value = "";
+    contribution.disabled = false;
+    contribution.placeholder = "Was genau möchtest du mitbringen?";
+
+    contributionSelects.classList.add("hidden");
+    presetSelection.classList.remove("hidden");
+    presetSelectionText.textContent = subtypeValue ? `${categoryValue} · ${subtypeValue}` : categoryValue;
+    contributionIntro.textContent = "Der Bereich ist bereits ausgewählt. Trage nur noch ein, was du mitbringst.";
+    contributionError.textContent = "";
+    setStep(3);
+  }
+
+  bringYes.addEventListener("click", openNormalContribution);
 
   bringNo.addEventListener("click", () => {
     state.bringing = false;
     state.category = "";
     state.subtype = "";
     state.contribution = "";
-    state.summaryBackStep = 2;
-    renderSummary();
+    state.paymentMethod = null;
+    preparePayment();
     setStep(4);
   });
 
   showNeeds.addEventListener("click", () => {
-    renderNeedsTable();
-    needsPanel.classList.toggle("hidden");
-  });
-
-  function configureContributionFields(selectedCategory = "", selectedSubtype = "") {
-    category.value = selectedCategory;
-    state.category = selectedCategory;
-    state.subtype = "";
-    subtype.innerHTML = '<option value="">Bitte auswählen</option>';
-
-    if (subtypeOptions[selectedCategory]) {
-      subtypeField.classList.remove("hidden");
-      subtypeLabel.textContent = selectedCategory === "Essen" ? "Art des Essens" : "Art des Getränks";
-      subtypeOptions[selectedCategory].forEach((item) => {
-        const option = document.createElement("option");
-        option.value = item;
-        option.textContent = item;
-        subtype.appendChild(option);
-      });
-      subtype.value = selectedSubtype || "";
-      state.subtype = subtype.value;
-      contribution.disabled = !state.subtype;
-      contribution.placeholder = state.subtype ? "z. B. Nudelsalat, Kuchen, Cola, Wasser …" : "Bitte zuerst beide Auswahlfelder treffen";
-    } else if (selectedCategory === "Spielzeug") {
-      subtypeField.classList.add("hidden");
-      contribution.disabled = false;
-      contribution.placeholder = "z. B. Wikingerschach, Federball, Straßenkreide …";
-    } else {
-      subtypeField.classList.add("hidden");
-      contribution.disabled = true;
-      contribution.placeholder = "Bitte zuerst die Auswahl oben treffen";
-    }
-  }
-
-  needsTableBody.addEventListener("click", (event) => {
-    const button = event.target.closest("[data-need-index]");
-    if (!button) return;
-    const def = needsDefinitions[Number(button.dataset.needIndex)];
-    if (!def) return;
-    state.bringing = true;
-    state.summaryBackStep = 3;
-    state.contribution = "";
-    contribution.value = "";
-    configureContributionFields(def.category, def.subtype);
-    setStep(3);
+    renderNeeds();
+    setStep("needs");
   });
 
   category.addEventListener("change", () => {
+    state.category = category.value;
+    state.subtype = "";
     state.contribution = "";
     contribution.value = "";
     contributionError.textContent = "";
-    configureContributionFields(category.value, "");
+    populateSubtype(state.category, "");
+
+    if (!state.category) {
+      contribution.disabled = true;
+      contribution.placeholder = "Bitte zuerst die Auswahl oben treffen";
+    } else if (state.category === "Spielzeug") {
+      contribution.disabled = false;
+      contribution.placeholder = "z. B. Wikingerschach, Federball, Straßenkreide …";
+    } else {
+      contribution.disabled = true;
+      contribution.placeholder = "Bitte zuerst beide Auswahlfelder treffen";
+    }
   });
 
   subtype.addEventListener("change", () => {
@@ -242,7 +372,7 @@
     state.contribution = "";
     contribution.value = "";
     contribution.disabled = !state.subtype;
-    contribution.placeholder = state.subtype ? "z. B. Nudelsalat, Kuchen, Cola, Wasser …" : "Bitte zuerst beide Auswahlfelder treffen";
+    contribution.placeholder = state.subtype ? "Was genau möchtest du mitbringen?" : "Bitte zuerst beide Auswahlfelder treffen";
   });
 
   contribution.addEventListener("input", () => {
@@ -251,114 +381,173 @@
   });
 
   function validateContribution() {
-    state.category = category.value;
-    state.subtype = subtype.value;
+    state.category = category.value || state.category;
+    state.subtype = subtype.value || state.subtype;
     state.contribution = contribution.value.trim();
 
-    if (!state.category) {
-      contributionError.textContent = "Bitte zuerst eine Kategorie auswählen.";
-      category.focus({ preventScroll: true });
-      return false;
+    if (!state.presetContribution) {
+      if (!state.category) {
+        contributionError.textContent = "Bitte zuerst eine Kategorie auswählen.";
+        category.focus({ preventScroll: true });
+        return false;
+      }
+      if (subtypeOptions[state.category] && !state.subtype) {
+        contributionError.textContent = "Bitte auch die Unterkategorie auswählen.";
+        subtype.focus({ preventScroll: true });
+        return false;
+      }
     }
-    if (subtypeOptions[state.category] && !state.subtype) {
-      contributionError.textContent = "Bitte auch die Unterkategorie auswählen.";
-      subtype.focus({ preventScroll: true });
-      return false;
-    }
+
     if (!state.contribution) {
       contributionError.textContent = "Bitte kurz eintragen, was du mitbringen möchtest.";
       contribution.focus({ preventScroll: true });
+      updateKeyboardPosition();
       return false;
     }
+
     contributionError.textContent = "";
     return true;
   }
 
-  document.querySelector('[data-next="4"]').addEventListener("click", () => {
+  contributionBack.addEventListener("click", () => {
+    setStep(state.contributionOrigin === "needs" ? "needs" : 2);
+  });
+
+  contributionContinue.addEventListener("click", () => {
     if (!validateContribution()) return;
-    state.bringing = true;
-    state.summaryBackStep = 3;
-    renderSummary();
+    state.paymentMethod = null;
+    preparePayment();
     setStep(4);
   });
 
-  document.querySelectorAll("[data-back]").forEach((button) => {
-    button.addEventListener("click", () => setStep(Number(button.dataset.back)));
-  });
-
-  summaryBack.addEventListener("click", () => setStep(state.summaryBackStep));
-
-  function renderSummary() {
-    summaryPeople.innerHTML = state.people.map((person) => `
-      <div class="summary-person">
-        <span>${escapeHtml(person.firstName)}</span>
-        <span>${escapeHtml(person.lastName)}</span>
-        <span>${person.age}</span>
-      </div>
-    `).join("");
-
-    if (!state.bringing) {
-      summaryContribution.innerHTML = "<strong>Nein</strong> – es wird nichts mitgebracht.";
-      return;
-    }
-
-    const type = state.subtype ? `${state.category} · ${state.subtype}` : state.category;
-    summaryContribution.innerHTML = `<div><strong>${escapeHtml(type)}</strong></div><div>${escapeHtml(state.contribution)}</div>`;
-  }
-
   function getLocalRegistrations() {
     try {
-      const data = JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
-      return Array.isArray(data) ? data : [];
+      return JSON.parse(localStorage.getItem(STORAGE_KEY) || "[]");
     } catch {
       return [];
     }
   }
 
   function normalizeStoredContribution(entry) {
-    const c = entry?.contribution;
-    if (!c || entry?.bringing === false) return null;
-    if (typeof c !== "object") return null;
-    if (!c.category) return null;
+    if (!entry || entry.bringing === false || !entry.contribution) return null;
     return {
-      category: String(c.category),
-      subtype: c.subtype ? String(c.subtype) : "",
-      note: c.note ? String(c.note) : ""
+      category: entry.contribution.category || "",
+      subtype: entry.contribution.subtype || "",
+      note: entry.contribution.note || ""
     };
   }
 
-  function renderNeedsTable() {
+  function renderNeeds() {
     const registrations = getLocalRegistrations();
-    const counts = new Map(needsDefinitions.map((d) => [`${d.category}|${d.subtype}`, 0]));
-    const examples = new Map(needsDefinitions.map((d) => [`${d.category}|${d.subtype}`, []]));
+    const contributions = registrations.map(normalizeStoredContribution).filter(Boolean);
 
-    registrations.forEach((entry) => {
-      const c = normalizeStoredContribution(entry);
-      if (!c) return;
-      const key = `${c.category}|${c.subtype}`;
-      if (!counts.has(key)) return;
-      counts.set(key, counts.get(key) + 1);
-      if (c.note && examples.get(key).length < 2) examples.get(key).push(c.note);
-    });
-
-    needsTableBody.innerHTML = needsDefinitions.map((def, index) => {
-      const key = `${def.category}|${def.subtype}`;
-      const count = counts.get(key) || 0;
-      const sample = examples.get(key) || [];
-      const title = sample.length ? `${def.label} – z. B. ${sample.map(escapeHtml).join(", ")}` : def.label;
+    needsTableBody.innerHTML = needsBuckets.map((bucket) => {
+      const matches = contributions.filter((item) => item.category === bucket.category && (item.subtype || "") === bucket.subtype);
+      const notes = matches.map((item) => item.note).filter(Boolean).slice(0, 2);
       return `
-        <tr title="${escapeAttr(title)}">
-          <td>${escapeHtml(def.label)}</td>
-          <td>${count}</td>
-          <td><button type="button" class="need-add" data-need-index="${index}" aria-label="${escapeAttr(def.label)} hinzufügen">+</button></td>
-        </tr>
-      `;
+        <tr>
+          <td>
+            <span class="needs-label">${escapeHtml(bucket.label)}</span>
+            <span class="needs-items">${notes.length ? escapeHtml(notes.join(" · ")) : "Noch nichts eingetragen"}</span>
+          </td>
+          <td>${matches.length}</td>
+          <td><button type="button" class="need-add" data-need-category="${escapeAttr(bucket.category)}" data-need-subtype="${escapeAttr(bucket.subtype)}" aria-label="${escapeAttr(bucket.label)} auswählen">+</button></td>
+        </tr>`;
     }).join("");
 
     needsNote.textContent = registrations.length
-      ? "Die Zahlen basieren auf den auf diesem Gerät gespeicherten Anmeldungen."
-      : "Noch keine gespeicherten Beiträge vorhanden. Du kannst trotzdem über + einen Bereich auswählen.";
+      ? "Die Anzeige basiert derzeit auf den auf diesem Gerät gespeicherten Anmeldungen. Mit der späteren Datenbank werden hier alle Anmeldungen zusammengeführt."
+      : "Noch keine gespeicherten Beiträge vorhanden. Du kannst trotzdem einen Bereich über + auswählen.";
   }
+
+  needsTableBody.addEventListener("click", (event) => {
+    const button = event.target.closest(".need-add");
+    if (!button) return;
+    openPresetContribution(button.dataset.needCategory, button.dataset.needSubtype || "");
+  });
+
+  function calculateCost() {
+    const rows = state.people.map((person) => ({
+      ...person,
+      price: person.age >= ADULT_AGE ? ADULT_PRICE : 0
+    }));
+    return {
+      rows,
+      total: rows.reduce((sum, person) => sum + person.price, 0)
+    };
+  }
+
+  function preparePayment() {
+    const cost = calculateCost();
+    state.totalCost = cost.total;
+
+    paymentSummary.innerHTML = `
+      ${cost.rows.map((person) => `
+        <div class="payment-person">
+          <span>${escapeHtml(person.firstName)} ${escapeHtml(person.lastName)} · ${person.age} Jahre</span>
+          <span>${person.price.toFixed(2).replace(".", ",")} €</span>
+        </div>`).join("")}
+      <div class="payment-total"><span>Gesamt</span><strong>${cost.total.toFixed(2).replace(".", ",")} €</strong></div>`;
+
+    document.querySelectorAll(".payment-choice").forEach((button) => button.classList.remove("selected"));
+    paymentError.textContent = "";
+
+    if (cost.total === 0) {
+      state.paymentMethod = "none";
+      paymentMethodArea.classList.add("hidden");
+      noPaymentNote.classList.remove("hidden");
+    } else {
+      state.paymentMethod = null;
+      paymentMethodArea.classList.remove("hidden");
+      noPaymentNote.classList.add("hidden");
+    }
+  }
+
+  document.querySelectorAll(".payment-choice").forEach((button) => {
+    button.addEventListener("click", () => {
+      state.paymentMethod = button.dataset.payment;
+      document.querySelectorAll(".payment-choice").forEach((item) => item.classList.toggle("selected", item === button));
+      paymentError.textContent = "";
+    });
+  });
+
+  paymentBack.addEventListener("click", () => {
+    setStep(state.bringing ? 3 : 2);
+  });
+
+  paymentContinue.addEventListener("click", () => {
+    if (state.totalCost > 0 && !state.paymentMethod) {
+      paymentError.textContent = "Bitte einen Zahlungsweg auswählen.";
+      return;
+    }
+    renderSummary();
+    setStep(5);
+  });
+
+  function paymentMethodLabel() {
+    if (state.paymentMethod === "briefkasten") return "Barzahlung in den Briefkasten – Nassauer Straße 1, Springer, im Umschlag mit Namen.";
+    if (state.paymentMethod === "abholung") return "Persönliche Abholung am 30. August ab 18 Uhr.";
+    return "Keine Zahlung erforderlich.";
+  }
+
+  function renderSummary() {
+    summaryPeople.innerHTML = state.people
+      .map((person) => `<div>${escapeHtml(person.firstName)} ${escapeHtml(person.lastName)} · ${person.age} Jahre</div>`)
+      .join("");
+
+    if (!state.bringing) {
+      summaryContribution.textContent = "Es wird nichts mitgebracht.";
+    } else {
+      const type = state.subtype ? `${state.category} · ${state.subtype}` : state.category;
+      summaryContribution.innerHTML = `<div><strong>${escapeHtml(type)}</strong></div><div>${escapeHtml(state.contribution)}</div>`;
+    }
+
+    summaryPayment.innerHTML = `<div><strong>${state.totalCost.toFixed(2).replace(".", ",")} €</strong></div><div>${escapeHtml(paymentMethodLabel())}</div>`;
+  }
+
+  document.querySelectorAll("[data-go]").forEach((button) => {
+    button.addEventListener("click", () => setStep(button.dataset.go));
+  });
 
   function buildPayload() {
     return {
@@ -370,7 +559,13 @@
         category: state.category,
         subtype: state.subtype || null,
         note: state.contribution
-      } : null
+      } : null,
+      payment: {
+        adultAgeFrom: ADULT_AGE,
+        adultPrice: ADULT_PRICE,
+        total: state.totalCost,
+        method: state.paymentMethod
+      }
     };
   }
 
@@ -395,14 +590,14 @@
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    if (state.step !== 4) return;
+    if (state.step !== "5") return;
     submitStatus.textContent = "Wird gesendet …";
     const submitButton = form.querySelector('button[type="submit"]');
     submitButton.disabled = true;
     try {
       await submitRegistration(buildPayload());
       submitStatus.textContent = "";
-      setStep(5);
+      setStep("done");
     } catch (error) {
       console.error(error);
       submitStatus.textContent = "Die Anmeldung konnte gerade nicht gesendet werden. Bitte später erneut versuchen.";
@@ -412,20 +607,22 @@
   });
 
   restartButton.addEventListener("click", () => {
-    state.step = 1;
+    state.step = "1";
     state.people = [];
     state.bringing = null;
     state.category = "";
     state.subtype = "";
     state.contribution = "";
-    state.summaryBackStep = 2;
+    state.contributionOrigin = "choice";
+    state.presetContribution = false;
+    state.paymentMethod = null;
+    state.totalCost = 0;
     form.reset();
     peopleRows.innerHTML = "";
     addPersonRow();
-    needsPanel.classList.add("hidden");
-    configureContributionFields("", "");
+    resetContribution();
     personError.textContent = "";
-    contributionError.textContent = "";
+    paymentError.textContent = "";
     submitStatus.textContent = "";
     setStep(1);
   });
@@ -466,13 +663,11 @@
     }
 
     const entries = registrations.slice().reverse().map((entry) => {
-      const people = (entry.people || []).map((person) => {
-        if (person.firstName || person.lastName) return `${escapeHtml(person.firstName || "")} ${escapeHtml(person.lastName || "")} (${person.age})`;
-        return `${escapeHtml(person.name || "Unbekannt")} (${person.age})`;
-      }).join(", ");
+      const people = (entry.people || []).map((person) => `${escapeHtml(person.firstName || person.name || "")} ${escapeHtml(person.lastName || "")} (${person.age})`).join(", ");
       const c = normalizeStoredContribution(entry);
       const contributionText = c ? `${escapeHtml(c.category)}${c.subtype ? ` · ${escapeHtml(c.subtype)}` : ""}: ${escapeHtml(c.note)}` : "Bringt nichts mit";
-      return `<div class="admin-entry"><strong>${people}</strong><br>${contributionText}</div>`;
+      const pay = entry.payment?.total ?? 0;
+      return `<div class="admin-entry"><strong>${people}</strong><br>${contributionText}<br>Zahlung: ${Number(pay).toFixed(2).replace(".", ",")} €</div>`;
     }).join("");
 
     modalContent.innerHTML = `
@@ -504,7 +699,9 @@
   modalBackdrop.addEventListener("click", (event) => { if (event.target === modalBackdrop) modalBackdrop.hidden = true; });
   window.addEventListener("keydown", (event) => { if (event.key === "Escape" && !modalBackdrop.hidden) modalBackdrop.hidden = true; });
 
-  // Ruhiges, aber sichtbarer ausgeprägtes Feuerwerk an zufälligen Positionen.
+  addPersonRow();
+
+  // Ruhiges Feuerwerk: etwas größer und häufiger, aber mit langen, weichen Abständen.
   const canvas = document.getElementById("fireworks");
   const ctx = canvas.getContext("2d");
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -523,7 +720,7 @@
     let width = 0;
     let height = 0;
     let dpr = 1;
-    let nextLaunch = performance.now() + 500;
+    let nextLaunch = performance.now() + 450;
 
     function resizeCanvas() {
       dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -535,20 +732,20 @@
     }
 
     resizeCanvas();
-    window.addEventListener("resize", resizeCanvas, { passive: true });
+    window.addEventListener("resize", () => { if (!viewport.keyboardOpen) resizeCanvas(); }, { passive: true });
 
     function launchRocket(delayOffset = 0) {
       setTimeout(() => {
-        const targetX = width * (0.08 + Math.random() * 0.84);
-        const targetY = height * (0.10 + Math.random() * 0.38);
-        const startX = targetX + (Math.random() - 0.5) * 80;
+        const targetX = width * (0.07 + Math.random() * 0.86);
+        const targetY = height * (0.10 + Math.random() * 0.36);
+        const startX = targetX + (Math.random() - 0.5) * 85;
         rockets.push({
           x: startX,
           y: height + 15,
           vx: (targetX - startX) / 62,
-          vy: -(1.85 + Math.random() * 0.48),
+          vy: -(1.82 + Math.random() * 0.48),
           targetY,
-          alpha: 0.46,
+          alpha: 0.45,
           color: palette[Math.floor(Math.random() * palette.length)]
         });
       }, delayOffset);

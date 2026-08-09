@@ -76,3 +76,12 @@ Die Inhalte in den Dialogen sind aktuell Platzhalter und müssen vor Veröffentl
 - „Nein“ führt direkt zur Übersicht.
 - Größeres Notizfeld.
 - Feuerwerk etwas größer und häufiger, weiterhin ruhig.
+
+## Update v5
+
+- Anmeldebox auf Smartphones breiter gemacht.
+- Teilnehmerliste als echte Tabelle mit Vorname, Nachname und Alter; zusätzliche Personen erzeugen neue Zeilen.
+- Hintergrund bleibt bei eingeblendeter Tastatur statisch. Nur die Anmeldebox wird so weit nach oben verschoben, dass die aktive Eingabe sichtbar bleibt; nach dem Schließen der Tastatur fährt sie zurück.
+- „Was wird noch gebraucht?“ ist jetzt eine eigene Kachel/Ansicht mit Statistik. Ein Klick auf + öffnet das Mitbringsel-Formular mit bereits voreingestellter Kategorie bzw. Unterkategorie.
+- Neuer Zahlungsschritt mit Kostenübersicht (20 € ab 18 Jahren) und zwei Zahlungswegen: Briefkasten oder persönliche Abholung.
+- Abschlussübersicht enthält jetzt auch die Zahlung.

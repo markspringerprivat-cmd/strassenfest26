@@ -12,27 +12,30 @@
 </head>
 <body>
   <div class="app-shell" id="appShell">
-    <div class="background" aria-hidden="true"></div>
-    <div class="background-shade" aria-hidden="true"></div>
-    <canvas id="fireworks" class="fireworks" aria-hidden="true"></canvas>
+    <div class="static-background" aria-hidden="true">
+      <div class="background"></div>
+      <div class="background-shade"></div>
+      <canvas id="fireworks" class="fireworks"></canvas>
+    </div>
 
-    <main class="registration-stage" aria-label="Anmeldung zum Straßenfest">
+    <main class="registration-stage" id="registrationStage" aria-label="Anmeldung zum Straßenfest">
       <section class="wizard-card" id="wizardCard">
         <div class="card-glow" aria-hidden="true"></div>
 
-        <div class="step-progress" aria-label="Fortschritt">
+        <div class="step-progress" id="stepProgress" aria-label="Fortschritt">
           <span class="progress-dot active" data-progress="1"></span>
           <span class="progress-dot" data-progress="2"></span>
           <span class="progress-dot" data-progress="3"></span>
           <span class="progress-dot" data-progress="4"></span>
+          <span class="progress-dot" data-progress="5"></span>
         </div>
 
         <form id="registrationForm" novalidate>
-          <div class="step active" data-step="1">
+          <section class="step active" data-step="1">
             <div class="step-heading hero-heading">
               <div class="heading-icon" aria-hidden="true">🎉</div>
               <div>
-                <p class="eyebrow">Schritt 1 von 4</p>
+                <p class="eyebrow">Schritt 1 von 5</p>
                 <h1>Anmeldung</h1>
                 <p>Wer nimmt am Straßenfest teil?</p>
               </div>
@@ -55,16 +58,16 @@
               <span>Person hinzufügen</span>
             </button>
 
-            <button class="primary-button" type="button" data-next="2">
+            <button class="primary-button" id="peopleContinue" type="button">
               <span>Weiter</span><span class="button-chevron" aria-hidden="true">›</span>
             </button>
-          </div>
+          </section>
 
-          <div class="step" data-step="2">
+          <section class="step" data-step="2">
             <div class="step-heading hero-heading">
               <div class="heading-icon" aria-hidden="true">🧺</div>
               <div>
-                <p class="eyebrow">Schritt 2 von 4</p>
+                <p class="eyebrow">Schritt 2 von 5</p>
                 <h2>Möchtest du was mitbringen?</h2>
                 <p>Wähle eine der drei Möglichkeiten.</p>
               </div>
@@ -78,7 +81,7 @@
 
               <button type="button" class="choice-button" id="bringNo">
                 <span class="choice-icon" aria-hidden="true">–</span>
-                <span><strong>Nein</strong><small>Direkt zur Übersicht</small></span>
+                <span><strong>Nein</strong><small>Ohne Mitbringsel weiter</small></span>
               </button>
 
               <button type="button" class="choice-button choice-needed" id="showNeeds">
@@ -87,12 +90,23 @@
               </button>
             </div>
 
-            <section class="needs-panel hidden" id="needsPanel" aria-live="polite">
+            <button class="secondary-button step-back-single" type="button" data-go="1">Zurück</button>
+          </section>
+
+          <section class="step" data-step="needs">
+            <div class="step-heading hero-heading">
+              <div class="heading-icon" aria-hidden="true">📋</div>
+              <div>
+                <p class="eyebrow">Bedarf prüfen</p>
+                <h2>Was wird noch gebraucht?</h2>
+                <p>Sieh dir an, was bisher geplant ist.</p>
+              </div>
+            </div>
+
+            <section class="needs-panel" aria-live="polite">
               <div class="needs-panel-heading">
-                <div>
-                  <strong>Was ist bisher geplant?</strong>
-                  <span>Tippe rechts auf +, um eine Auswahl zu übernehmen.</span>
-                </div>
+                <strong>Was ist bisher geplant?</strong>
+                <span>Tippe rechts auf +, um den Bereich zu übernehmen.</span>
               </div>
               <div class="needs-table-wrap">
                 <table class="needs-table">
@@ -109,57 +123,104 @@
               <p class="needs-note" id="needsNote"></p>
             </section>
 
-            <button class="secondary-button step-back-single" type="button" data-back="1">Zurück</button>
-          </div>
+            <button class="secondary-button step-back-single" type="button" data-go="2">Zurück</button>
+          </section>
 
-          <div class="step" data-step="3">
+          <section class="step" data-step="3">
             <div class="step-heading hero-heading">
               <div class="heading-icon" aria-hidden="true">📝</div>
               <div>
-                <p class="eyebrow">Schritt 3 von 4</p>
+                <p class="eyebrow">Schritt 3 von 5</p>
                 <h2>Was bringst du mit?</h2>
-                <p>Wähle die Kategorie und beschreibe kurz deinen Beitrag.</p>
+                <p id="contributionIntro">Wähle die Kategorie und beschreibe kurz deinen Beitrag.</p>
               </div>
             </div>
 
-            <label class="field">
-              <span>Kategorie</span>
-              <select id="category" name="category">
-                <option value="">Bitte auswählen</option>
-                <option value="Spielzeug">Spielzeug</option>
-                <option value="Essen">Essen</option>
-                <option value="Getränke">Getränke</option>
-              </select>
-            </label>
+            <div class="preset-selection hidden" id="presetSelection">
+              <span>Vorausgewählt</span>
+              <strong id="presetSelectionText"></strong>
+            </div>
 
-            <label class="field hidden" id="subtypeField">
-              <span id="subtypeLabel">Unterkategorie</span>
-              <select id="subtype" name="subtype">
-                <option value="">Bitte auswählen</option>
-              </select>
-            </label>
+            <div id="contributionSelects">
+              <label class="field">
+                <span>Kategorie</span>
+                <select id="category" name="category">
+                  <option value="">Bitte auswählen</option>
+                  <option value="Spielzeug">Spielzeug</option>
+                  <option value="Essen">Essen</option>
+                  <option value="Getränke">Getränke</option>
+                </select>
+              </label>
+
+              <label class="field hidden" id="subtypeField">
+                <span id="subtypeLabel">Unterkategorie</span>
+                <select id="subtype" name="subtype">
+                  <option value="">Bitte auswählen</option>
+                </select>
+              </label>
+            </div>
 
             <label class="field contribution-field">
               <span>Notiz</span>
-              <textarea id="contribution" name="contribution" rows="5" maxlength="260" disabled
+              <textarea id="contribution" name="contribution" rows="6" maxlength="300" disabled
                         placeholder="Bitte zuerst die Auswahl oben treffen"></textarea>
             </label>
 
             <p class="field-error" id="contributionError" role="alert"></p>
 
             <div class="button-row">
-              <button class="secondary-button" type="button" data-back="2">Zurück</button>
-              <button class="primary-button" type="button" data-next="4">
+              <button class="secondary-button" type="button" id="contributionBack">Zurück</button>
+              <button class="primary-button" type="button" id="contributionContinue">
                 <span>Weiter</span><span class="button-chevron" aria-hidden="true">›</span>
               </button>
             </div>
-          </div>
+          </section>
 
-          <div class="step" data-step="4">
+          <section class="step" data-step="4">
+            <div class="step-heading hero-heading">
+              <div class="heading-icon" aria-hidden="true">€</div>
+              <div>
+                <p class="eyebrow">Schritt 4 von 5</p>
+                <h2>Zahlung</h2>
+                <p>20 € pro erwachsener Person ab 18 Jahren.</p>
+              </div>
+            </div>
+
+            <div class="payment-summary" id="paymentSummary"></div>
+
+            <div id="paymentMethodArea">
+              <div class="section-label">Zahlungsweg</div>
+              <div class="payment-choice-grid">
+                <button type="button" class="payment-choice" data-payment="briefkasten">
+                  <span class="payment-choice-title">Barzahlung in den Briefkasten</span>
+                  <span class="payment-choice-text">Bitte den Betrag in einem Umschlag mit Namen in den Briefkasten <strong>Nassauer Straße 1, Springer</strong> einwerfen.</span>
+                </button>
+
+                <button type="button" class="payment-choice" data-payment="abholung">
+                  <span class="payment-choice-title">Persönliche Abholung</span>
+                  <span class="payment-choice-text">Am <strong>30. August ab 18 Uhr</strong> kommt jemand persönlich vorbei, um das Geld abzuholen.</span>
+                </button>
+              </div>
+              <p class="field-error" id="paymentError" role="alert"></p>
+            </div>
+
+            <div class="no-payment-note hidden" id="noPaymentNote">
+              Für diese Anmeldung fällt keine Zahlung an.
+            </div>
+
+            <div class="button-row">
+              <button class="secondary-button" type="button" id="paymentBack">Zurück</button>
+              <button class="primary-button" type="button" id="paymentContinue">
+                <span>Weiter</span><span class="button-chevron" aria-hidden="true">›</span>
+              </button>
+            </div>
+          </section>
+
+          <section class="step" data-step="5">
             <div class="step-heading hero-heading">
               <div class="heading-icon" aria-hidden="true">✓</div>
               <div>
-                <p class="eyebrow">Schritt 4 von 4</p>
+                <p class="eyebrow">Schritt 5 von 5</p>
                 <h2>Deine Anmeldung</h2>
                 <p>Bitte prüfe deine Angaben vor dem Absenden.</p>
               </div>
@@ -174,19 +235,23 @@
                 <span class="summary-label">Mitbringsel</span>
                 <div id="summaryContribution" class="summary-content"></div>
               </div>
+              <div class="summary-block">
+                <span class="summary-label">Zahlung</span>
+                <div id="summaryPayment" class="summary-content"></div>
+              </div>
             </div>
 
             <p class="submit-status" id="submitStatus" role="status" aria-live="polite"></p>
 
             <div class="button-row">
-              <button class="secondary-button" type="button" id="summaryBack">Zurück</button>
+              <button class="secondary-button" type="button" data-go="4">Zurück</button>
               <button class="primary-button" type="submit">
                 <span>Absenden</span><span class="button-chevron" aria-hidden="true">›</span>
               </button>
             </div>
-          </div>
+          </section>
 
-          <div class="step thank-you" data-step="5">
+          <section class="step thank-you" data-step="done">
             <div class="checkmark" aria-hidden="true">✓</div>
             <p class="eyebrow">Geschafft</p>
             <h2>Vielen Dank für deine Anmeldung!</h2>
@@ -194,7 +259,7 @@
             <button class="secondary-button restart-button" id="restartButton" type="button">
               Neue Anmeldung
             </button>
-          </div>
+          </section>
         </form>
       </section>
     </main>
