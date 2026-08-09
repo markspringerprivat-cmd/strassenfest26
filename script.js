@@ -19,7 +19,6 @@
     totalCost: 0
   };
 
-  const appShell = document.getElementById("appShell");
   const registrationStage = document.getElementById("registrationStage");
   const wizardCard = document.getElementById("wizardCard");
   const footerBar = document.querySelector(".footer-bar");
@@ -88,15 +87,51 @@
     lift: 32
   };
 
+  const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+  function canAnimate() {
+    return !reducedMotion.matches;
+  }
+
+  function animateElement(element, keyframes, options = {}) {
+    if (!element || !canAnimate() || typeof element.animate !== "function") return null;
+    return element.animate(keyframes, {
+      duration: 220,
+      easing: "cubic-bezier(.22, 1, .36, 1)",
+      fill: "none",
+      ...options
+    });
+  }
+
+  function animateButtonPress(button) {
+    animateElement(button, [
+      { transform: "scale(1)" },
+      { transform: "scale(.985)", offset: .42 },
+      { transform: "scale(1)" }
+    ], { duration: 180, easing: "cubic-bezier(.2,.8,.2,1)" });
+  }
+
+  function animateCreated(element) {
+    animateElement(element, [
+      { opacity: 0, transform: "translateY(-5px) scale(.992)" },
+      { opacity: 1, transform: "translateY(0) scale(1)" }
+    ], { duration: 240 });
+  }
+
+
   const KEYBOARD_THRESHOLD = 120;
   const KEYBOARD_EDGE_GAP = 8;
+  const RETURN_DURATION = 430;
 
   const viewport = {
     baseHeight: 0,
     baseWidth: 0,
     keyboardOpen: false,
-    closeTimer: null
+    closeTimer: null,
+    returning: false
   };
+
+  const staticBackground = document.querySelector(".static-background");
 
   function visualViewportHeight() {
     return Math.round(window.visualViewport?.height || window.innerHeight);
@@ -120,15 +155,12 @@
     const renderedHeight = imageHeight * scale;
     const centeredOffset = (backgroundHeight - renderedHeight) / 2;
     const subtitleBottom = -lift + centeredOffset + subtitleBottomY * scale;
-
-    // Abstand zwischen "in Hilchenbach" und Kachel:
-    // ca. 8–14 CSS-Pixel und damit auf Smartphones unter ca. 0,5 cm.
     const gap = Math.max(8, Math.min(14, width * 0.027));
     return Math.max(112, Math.round(subtitleBottom + gap));
   }
 
   function updateNormalGeometry() {
-    if (viewport.keyboardOpen) return;
+    if (viewport.keyboardOpen || viewport.returning) return;
 
     viewport.baseHeight = visualViewportHeight();
     viewport.baseWidth = pageWidth();
@@ -142,16 +174,19 @@
     document.documentElement.style.setProperty("--card-max-height", `${cardHeight}px`);
   }
 
-  function keyboardIsOpen() {
+  function keyboardViewportReduced() {
     const vv = window.visualViewport;
-    const active = activeEditable();
-
     return Boolean(
       vv &&
-      active &&
       viewport.baseHeight &&
       viewport.baseHeight - Math.round(vv.height) > KEYBOARD_THRESHOLD
     );
+  }
+
+  function keyboardShouldStayOpen() {
+    // Wenn der Fokus beim Tippen kurz zwischen zwei Feldern wechselt,
+    // bleibt der Modus aktiv, solange der VisualViewport noch verkleinert ist.
+    return keyboardViewportReduced() && Boolean(activeEditable() || viewport.keyboardOpen);
   }
 
   function applyKeyboardGeometry() {
@@ -162,24 +197,9 @@
     const visibleHeight = Math.round(vv.height);
     const cardHeight = Math.max(180, visibleHeight - KEYBOARD_EDGE_GAP * 2);
 
-    // top wird relativ zum Layout-Viewport gesetzt. offsetTop sorgt dafür,
-    // dass die Kachel visuell immer exakt am oberen Rand des sichtbaren
-    // Browserbereichs bleibt – egal, ob iOS den VisualViewport verschiebt.
-    document.documentElement.style.setProperty(
-      "--keyboard-top",
-      `${visibleTop + KEYBOARD_EDGE_GAP}px`
-    );
-    document.documentElement.style.setProperty(
-      "--keyboard-card-height",
-      `${cardHeight}px`
-    );
-
-    // Kompensiert ausschließlich das iOS-Panning des Hintergrunds.
-    // Die Kachel selbst braucht keinerlei feldabhängige Verschiebung mehr.
-    document.documentElement.style.setProperty(
-      "--viewport-offset-y",
-      `${visibleTop}px`
-    );
+    document.documentElement.style.setProperty("--keyboard-top", `${visibleTop + KEYBOARD_EDGE_GAP}px`);
+    document.documentElement.style.setProperty("--keyboard-card-height", `${cardHeight}px`);
+    document.documentElement.style.setProperty("--viewport-offset-y", `${visibleTop}px`);
   }
 
   function scrollPersonRowIntoView(control) {
@@ -221,81 +241,171 @@
   }
 
   function openKeyboardMode() {
-    if (viewport.keyboardOpen) return;
+    if (viewport.keyboardOpen || viewport.returning) return;
 
     viewport.keyboardOpen = true;
     document.body.classList.add("keyboard-open");
     applyKeyboardGeometry();
-
-    // Die Kachel beginnt im Tastaturmodus oben bei ihrem eigenen Anfang.
-    // Nur falls das aktive Feld weiter unten liegt, wird anschließend
-    // innerhalb der Kachel dorthin gescrollt.
     wizardCard.scrollTop = 0;
 
-    window.setTimeout(() => {
-      scrollControlIntoCard(activeEditable(), 20);
-    }, 80);
+    window.setTimeout(() => scrollControlIntoCard(activeEditable(), 20), 80);
   }
 
-  function closeKeyboardMode() {
-    if (!viewport.keyboardOpen) return;
+  async function closeKeyboardMode({ animate = true } = {}) {
+    if (!viewport.keyboardOpen && !viewport.returning) return;
+
+    window.clearTimeout(viewport.closeTimer);
+
+    const firstStage = registrationStage.getBoundingClientRect();
+    const currentBackgroundOffset = Number.parseFloat(
+      getComputedStyle(document.documentElement).getPropertyValue("--viewport-offset-y")
+    ) || 0;
 
     viewport.keyboardOpen = false;
-    document.body.classList.remove("keyboard-open");
+    viewport.returning = true;
 
+    // Normalen Zielzustand vorbereiten. Der Footer bleibt bis zum Start
+    // seiner eigenen Einblendanimation unsichtbar, damit kein einzelner
+    // heller Zwischenframe aufblitzt.
+    footerBar.style.opacity = "0";
+    document.body.classList.remove("keyboard-open");
+    document.body.classList.add("keyboard-returning");
     document.documentElement.style.setProperty("--viewport-offset-y", "0px");
     document.documentElement.style.removeProperty("--keyboard-top");
     document.documentElement.style.removeProperty("--keyboard-card-height");
 
-    // Gewünschter Ursprungszustand: Kachel und interne Listen wieder oben.
+    // Jetzt darf die normale Geometrie neu bestimmt werden.
+    viewport.returning = false;
+    updateNormalGeometry();
+    viewport.returning = true;
+
+    const lastStage = registrationStage.getBoundingClientRect();
+    const deltaY = firstStage.top - lastStage.top;
+
+    const shouldAnimate = animate && canAnimate() && Math.abs(deltaY) > 1;
+
+    if (shouldAnimate) {
+      const stageAnimation = animateElement(registrationStage, [
+        { transform: `translateX(-50%) translateY(${deltaY}px)` },
+        { transform: "translateX(-50%) translateY(0)" }
+      ], {
+        duration: RETURN_DURATION,
+        easing: "cubic-bezier(.22, 1, .36, 1)",
+        fill: "both"
+      });
+
+      const backgroundAnimation = currentBackgroundOffset
+        ? animateElement(staticBackground, [
+            { transform: `translateY(${currentBackgroundOffset}px)` },
+            { transform: "translateY(0)" }
+          ], {
+            duration: RETURN_DURATION,
+            easing: "cubic-bezier(.22, 1, .36, 1)",
+            fill: "both"
+          })
+        : null;
+
+      const footerAnimation = animateElement(footerBar, [
+        { opacity: 0, transform: "translateY(4px)" },
+        { opacity: 1, transform: "translateY(0)" }
+      ], {
+        duration: 300,
+        delay: 120,
+        easing: "cubic-bezier(.22,1,.36,1)",
+        fill: "both"
+      });
+
+      footerAnimation?.finished
+        .catch(() => {})
+        .finally(() => {
+          footerAnimation?.cancel();
+          footerBar.style.removeProperty("opacity");
+        });
+
+      animateElement(wizardCard, [
+        { opacity: .985 },
+        { opacity: 1 }
+      ], { duration: RETURN_DURATION });
+
+      try {
+        await stageAnimation?.finished;
+      } catch {
+        // Animation wurde durch einen neuen Fokus abgebrochen.
+      }
+
+      stageAnimation?.cancel();
+      backgroundAnimation?.cancel();
+    }
+
     wizardCard.scrollTop = 0;
     peopleRows.scrollTop = 0;
 
-    window.setTimeout(updateNormalGeometry, 80);
+    if (!shouldAnimate) {
+      footerBar.style.removeProperty("opacity");
+    }
+
+    viewport.returning = false;
+    document.body.classList.remove("keyboard-returning");
+    updateNormalGeometry();
   }
 
   function syncKeyboardMode() {
-    if (keyboardIsOpen()) {
+    if (keyboardShouldStayOpen()) {
       openKeyboardMode();
       applyKeyboardGeometry();
       return;
     }
 
-    if (viewport.keyboardOpen) {
-      closeKeyboardMode();
+    if (viewport.keyboardOpen && !keyboardViewportReduced()) {
+      void closeKeyboardMode({ animate: true });
       return;
     }
 
-    updateNormalGeometry();
+    if (!viewport.keyboardOpen && !viewport.returning) {
+      updateNormalGeometry();
+    }
   }
 
   function resetKeyboardViewForStepChange() {
     const active = activeEditable();
     if (active) active.blur();
 
-    closeKeyboardMode();
     wizardCard.scrollTop = 0;
+
+    // Ist die Tastatur beim Klick auf "Weiter" noch physisch sichtbar,
+    // bleibt die Kachel kurz oben angeheftet. Sobald der VisualViewport
+    // wieder seine normale Höhe hat, übernimmt die normale Rückkehranimation.
+    if (viewport.keyboardOpen && keyboardViewportReduced()) {
+      return;
+    }
+
+    if (viewport.keyboardOpen || viewport.returning) {
+      viewport.keyboardOpen = false;
+      viewport.returning = false;
+      document.body.classList.remove("keyboard-open", "keyboard-returning");
+      document.documentElement.style.setProperty("--viewport-offset-y", "0px");
+      document.documentElement.style.removeProperty("--keyboard-top");
+      document.documentElement.style.removeProperty("--keyboard-card-height");
+    }
+
+    updateNormalGeometry();
   }
 
   updateNormalGeometry();
 
-  // Normale Größenänderungen (Rotation, Browserleiste etc.).
   window.addEventListener("resize", () => {
-    if (!viewport.keyboardOpen) {
-      window.clearTimeout(viewport.closeTimer);
-      viewport.closeTimer = window.setTimeout(updateNormalGeometry, 80);
-    }
+    if (viewport.keyboardOpen || viewport.returning) return;
+
+    window.clearTimeout(viewport.closeTimer);
+    viewport.closeTimer = window.setTimeout(updateNormalGeometry, 90);
   }, { passive: true });
 
   if (window.visualViewport) {
     window.visualViewport.addEventListener("resize", () => {
       window.clearTimeout(viewport.closeTimer);
-      viewport.closeTimer = window.setTimeout(syncKeyboardMode, 70);
+      viewport.closeTimer = window.setTimeout(syncKeyboardMode, 90);
     }, { passive: true });
 
-    // iOS kann den sichtbaren Viewport beim Fokuswechsel verschieben.
-    // Die Kachel bleibt trotzdem oben angeheftet; es wird nur die feste
-    // --keyboard-top-Koordinate aktualisiert, ohne Animation oder Nachregeln.
     window.visualViewport.addEventListener("scroll", () => {
       if (viewport.keyboardOpen) applyKeyboardGeometry();
     }, { passive: true });
@@ -306,21 +416,14 @@
 
     window.setTimeout(() => {
       syncKeyboardMode();
-
-      if (viewport.keyboardOpen) {
-        // Kein Verschieben der Kachel: ausschließlich der Karteninhalt
-        // wird zum gerade aktiven Feld gescrollt.
-        scrollControlIntoCard(event.target, 20);
-      }
-    }, 50);
+      if (viewport.keyboardOpen) scrollControlIntoCard(event.target, 20);
+    }, 55);
   });
 
   document.addEventListener("focusout", () => {
-    // Spaltenwechsel innerhalb einer Zeile löst hier bewusst keine
-    // Kartenbewegung aus. Erst eine tatsächlich geschlossene Tastatur
-    // beendet den Modus.
+    // Nicht beim Wechsel Vorname -> Nachname -> Alter zurückspringen.
     window.clearTimeout(viewport.closeTimer);
-    viewport.closeTimer = window.setTimeout(syncKeyboardMode, 180);
+    viewport.closeTimer = window.setTimeout(syncKeyboardMode, 220);
   });
 
   document.addEventListener("touchmove", (event) => {
@@ -341,6 +444,11 @@
 
     validationToastText.textContent = message;
     validationToast.hidden = false;
+
+    animateElement(validationToast, [
+      { opacity: 0, transform: "translateX(-50%) translateY(-6px) scale(.99)" },
+      { opacity: 1, transform: "translateX(-50%) translateY(0) scale(1)" }
+    ], { duration: 220 });
 
     if (validationToastTimer) window.clearTimeout(validationToastTimer);
     validationToastTimer = window.setTimeout(() => {
@@ -395,10 +503,17 @@
   });
 
   function setStep(step) {
-    state.step = String(step);
-    document.querySelectorAll(".step").forEach((panel) => {
-      panel.classList.toggle("active", panel.dataset.step === state.step);
-    });
+    const nextStep = String(step);
+    const currentPanel = document.querySelector(".step.active");
+    const nextPanel = document.querySelector(`.step[data-step="${CSS.escape(nextStep)}"]`);
+
+    if (!nextPanel || nextPanel === currentPanel) return;
+
+    state.step = nextStep;
+    resetKeyboardViewForStepChange();
+
+    currentPanel?.classList.remove("active");
+    nextPanel.classList.add("active");
 
     const progressStep = state.step === "needs" ? 2 : Number(state.step);
     document.querySelectorAll(".progress-dot").forEach((dot) => {
@@ -406,8 +521,18 @@
     });
     stepProgress.classList.toggle("hidden", state.step === "done");
 
-    resetKeyboardViewForStepChange();
-    window.setTimeout(() => setupStaticViewport(true), 40);
+    wizardCard.scrollTop = 0;
+    updateNormalGeometry();
+
+    animateElement(nextPanel, [
+      { opacity: 0, transform: "translateY(7px) scale(.996)" },
+      { opacity: 1, transform: "translateY(0) scale(1)" }
+    ], { duration: 260 });
+
+    animateElement(wizardCard, [
+      { transform: "scale(.997)" },
+      { transform: "scale(1)" }
+    ], { duration: 230 });
   }
 
   let personRowSerial = 0;
@@ -468,8 +593,10 @@
   function addPersonRow(data = {}, focus = false) {
     const hasInitialData = Boolean(data.firstName || data.lastName || data.age !== undefined);
     const row = createPersonRow(data);
+
     peopleRows.appendChild(row);
     refreshRemoveButtons();
+    animateCreated(row);
 
     if (!hasInitialData) {
       const inputs = [...row.querySelectorAll("input")];
@@ -488,22 +615,40 @@
 
       window.setTimeout(() => {
         const first = row.querySelector(".person-first");
+
         if (!hasInitialData) {
           row.querySelectorAll("input").forEach((input) => { input.value = ""; });
         }
+
         first.focus({ preventScroll: true });
         syncKeyboardMode();
-        if (viewport.keyboardOpen) scrollControlIntoCard(target, 22);
-      }, 110);
+
+        if (viewport.keyboardOpen) {
+          scrollControlIntoCard(first, 20);
+        }
+      }, 120);
     }
   }
 
   addPersonButton.addEventListener("click", () => addPersonRow({}, true));
 
-  peopleRows.addEventListener("click", (event) => {
+  peopleRows.addEventListener("click", async (event) => {
     const removeButton = event.target.closest(".remove-person");
     if (!removeButton || removeButton.disabled) return;
-    removeButton.closest(".person-row")?.remove();
+
+    const row = removeButton.closest(".person-row");
+    if (!row) return;
+
+    const animation = animateElement(row, [
+      { opacity: 1, transform: "translateY(0) scale(1)" },
+      { opacity: 0, transform: "translateY(-5px) scale(.985)" }
+    ], { duration: 180, easing: "cubic-bezier(.4,0,.2,1)" });
+
+    try {
+      await animation?.finished;
+    } catch {}
+
+    row.remove();
     refreshRemoveButtons();
   });
 
@@ -952,6 +1097,17 @@
     }
     if (type === "admin") renderAdminModal();
     modalBackdrop.hidden = false;
+
+    animateElement(modalBackdrop, [
+      { opacity: 0 },
+      { opacity: 1 }
+    ], { duration: 180 });
+
+    animateElement(modalBackdrop.querySelector(".modal"), [
+      { opacity: 0, transform: "translateY(7px) scale(.985)" },
+      { opacity: 1, transform: "translateY(0) scale(1)" }
+    ], { duration: 230 });
+
     modalClose.focus({ preventScroll: true });
   }
 
@@ -999,6 +1155,13 @@
   modalClose.addEventListener("click", () => { modalBackdrop.hidden = true; });
   modalBackdrop.addEventListener("click", (event) => { if (event.target === modalBackdrop) modalBackdrop.hidden = true; });
   window.addEventListener("keydown", (event) => { if (event.key === "Escape" && !modalBackdrop.hidden) modalBackdrop.hidden = true; });
+
+
+  document.addEventListener("click", (event) => {
+    const button = event.target.closest("button");
+    if (!button || button.disabled) return;
+    animateButtonPress(button);
+  });
 
   addPersonRow();
 

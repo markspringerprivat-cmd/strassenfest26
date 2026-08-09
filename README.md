@@ -148,3 +148,23 @@ Positionierungsalgorithmus entfernt.
 - Die zuvor übereinanderliegenden v7/v8/v9-CSS-Override-Blöcke wurden entfernt und
   zu einem einzigen v10-Block zusammengeführt.
 - Alte Viewport-Helfer für fokusabhängige Verschiebungen wurden aus JavaScript entfernt.
+
+
+## Update v11
+
+- Sanfte Rückkehranimation nach dem Schließen der Tastatur:
+  Die oben angeheftete Kachel gleitet mit einer kurzen Ease-out-Bewegung zurück an ihre
+  normale Position unter „in Hilchenbach“.
+- Der durch mobile Browser verschobene Hintergrund gleitet im selben Zeitraum zurück.
+- Footer blendet nach dem Tastaturmodus sanft wieder ein.
+- Seitenwechsel über „Weiter“, „Zurück“, „Ja/Nein“, „Was wird noch gebraucht?“ usw.
+  verwenden kurze, ruhige Einblend-/Verschiebebewegungen.
+- Neue Personenzeilen erscheinen mit einer kleinen Fade-/Slide-Bewegung;
+  entfernte Zeilen verschwinden ebenfalls weich.
+- Buttons erhalten eine kurze, dezente Druckanimation.
+- Pop-ups/Fehlermeldungen und Modalfenster erscheinen sanfter.
+- Tote bzw. fehlerhafte Fragmente aus v10 wurden entfernt:
+  ein veralteter Geometrie-Aufruf sowie eine falsche Variable beim Fokus einer
+  neu hinzugefügten Person.
+- Die gestapelten v10-CSS-Overrides wurden entfernt und die mobile Interaktions-
+  und Animationslogik in einem gemeinsamen Block zusammengeführt.

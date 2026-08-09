@@ -1,7 +1,6 @@
 :root {
   --base-height: 100vh;
   --stage-top: 306px;
-  --stage-shift: 0px;
   --background-lift: 32px;
   --text: #ffffff;
   --muted: rgba(246, 240, 255, 0.76);
@@ -121,7 +120,7 @@ button { touch-action: manipulation; }
   width: min(calc(100vw - 28px), 470px);
   max-width: calc(100vw - 28px);
   transform: translateX(-50%);
-  transition: top 180ms ease;
+  transition: top 180ms cubic-bezier(.22,1,.36,1);
 }
 
 .wizard-card {
@@ -179,7 +178,6 @@ button { touch-action: manipulation; }
   position: relative;
   z-index: 1;
   display: none;
-  animation: stepIn 220ms ease both;
 }
 
 .step.active { display: block; }
@@ -726,7 +724,7 @@ input, select, textarea {
 
 
 /* ================================================================
-   v10 – vereinfachtes, statisches Tastatur-Layout
+   Mobile interaction + motion
    ================================================================ */
 
 :root {
@@ -737,10 +735,10 @@ input, select, textarea {
   --scroll-gold: #ffc23e;
   --scroll-gold-light: #ffe07a;
   --scroll-track: rgba(18, 14, 65, .34);
+  --motion-ease: cubic-bezier(.22, 1, .36, 1);
 }
 
-/* Der Hintergrund bleibt an seiner ursprünglichen Bildposition.
-   Bei iOS-Panning wird nur exakt dessen offsetTop kompensiert. */
+/* Statische Hintergrundebene */
 .static-background {
   position: fixed;
   z-index: 0;
@@ -750,11 +748,11 @@ input, select, textarea {
   width: 100%;
   height: calc(var(--base-height) + var(--background-lift));
   transform: translateY(var(--viewport-offset-y));
-  transition: none !important;
+  transition: none;
   pointer-events: none;
 }
 
-/* Normale Position: direkt unter "in Hilchenbach". */
+/* Normale Position direkt unter "in Hilchenbach" */
 .registration-stage {
   position: fixed;
   z-index: 3;
@@ -764,7 +762,7 @@ input, select, textarea {
   max-width: calc(100vw - 28px);
   max-height: var(--card-max-height);
   transform: translateX(-50%);
-  transition: top 180ms ease;
+  transition: top 180ms var(--motion-ease);
 }
 
 .wizard-card {
@@ -774,11 +772,10 @@ input, select, textarea {
   overflow-x: hidden;
   overscroll-behavior: contain;
   touch-action: pan-y;
-  scroll-behavior: auto !important;
+  scroll-behavior: auto;
   scrollbar-gutter: stable;
   padding-right: clamp(16px, 4.2vw, 23px);
 
-  /* etwas transparentere Glasoptik */
   background:
     linear-gradient(145deg,
       rgba(62, 45, 126, .48),
@@ -789,9 +786,8 @@ input, select, textarea {
   -webkit-backdrop-filter: blur(14px) saturate(126%);
 }
 
-/* Tastatur offen:
-   keine feldabhängige Mathematik mehr. Die komplette Kachel hängt
-   immer am oberen Rand des sichtbaren Browserbereichs. */
+/* Tastatur offen: Kachel bleibt stumpf oben angeheftet.
+   Keine Animation innerhalb des Tippmodus. */
 body.keyboard-open .registration-stage {
   top: var(--keyboard-top) !important;
   max-height: var(--keyboard-card-height) !important;
@@ -802,10 +798,13 @@ body.keyboard-open .wizard-card {
   max-height: var(--keyboard-card-height) !important;
 }
 
-/* Der Footer bleibt an seiner normalen Stelle im Hintergrund und
-   wird während der Tastatureingabe nicht nach oben geschoben. */
+body.keyboard-returning .registration-stage {
+  transition: none !important;
+}
+
 .footer-bar {
   position: fixed;
+  transition: opacity 220ms var(--motion-ease);
 }
 
 body.keyboard-open .footer-bar {
@@ -814,7 +813,7 @@ body.keyboard-open .footer-bar {
   pointer-events: none;
 }
 
-/* Zurück/Weiter bleiben bei langen Schritten innerhalb der Kachel erreichbar. */
+/* Navigationsleiste innerhalb langer Kacheln */
 .step-actions {
   position: sticky;
   z-index: 8;
@@ -842,7 +841,42 @@ body.keyboard-open .footer-bar {
   margin-bottom: 0;
 }
 
-/* Goldgelbe Scrollbalken in allen vorgesehenen Scrollbereichen. */
+/* Ruhige Micro-Transitions */
+button,
+.choice-button,
+.payment-choice,
+.person-row,
+.summary-block,
+.payment-summary,
+.needs-panel,
+.field input,
+.field select,
+.field textarea,
+.person-row input {
+  transition:
+    border-color 150ms ease,
+    box-shadow 180ms ease,
+    background-color 180ms ease,
+    opacity 180ms ease;
+}
+
+.primary-button:hover,
+.secondary-button:hover,
+.add-person-button:hover,
+.choice-button:hover,
+.payment-choice:hover,
+.need-add:hover {
+  filter: brightness(1.025);
+}
+
+.payment-choice.selected {
+  transition:
+    border-color 200ms var(--motion-ease),
+    box-shadow 220ms var(--motion-ease),
+    background 220ms var(--motion-ease);
+}
+
+/* Goldene Scrollbalken */
 .wizard-card,
 .people-rows,
 .needs-table-wrap,
@@ -861,7 +895,7 @@ body.keyboard-open .footer-bar {
 .summary-content::-webkit-scrollbar,
 .modal::-webkit-scrollbar,
 .admin-list::-webkit-scrollbar {
-  display: block;
+  display: block !important;
   width: 7px;
   height: 7px;
 }
@@ -895,7 +929,7 @@ body.keyboard-open .footer-bar {
   touch-action: pan-y;
 }
 
-/* Weitere transparente Unterkacheln. */
+/* Leicht transparente Unterkacheln */
 .people-table,
 .needs-panel,
 .payment-summary,
@@ -936,7 +970,7 @@ body.keyboard-open .footer-bar {
   background: rgba(255, 188, 51, .065);
 }
 
-/* Validierungsmarkierung + Pop-up aus v9, jetzt konsolidiert. */
+/* Validierung */
 .validation-error-target {
   position: relative;
   border-radius: 14px;
@@ -1006,7 +1040,7 @@ body.keyboard-open .footer-bar {
   background: rgba(255,255,255,.065);
 }
 
-/* Mobile Safari: keine Seitenverschiebung und kein Auto-Zoom. */
+/* Mobile Safari: Seite bleibt selbst unbeweglich */
 html,
 body,
 .app-shell {
@@ -1032,5 +1066,15 @@ textarea {
 @media (min-width: 800px) {
   .registration-stage {
     width: min(455px, 42vw);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .registration-stage,
+  .footer-bar,
+  button,
+  .choice-button,
+  .payment-choice {
+    transition: none !important;
   }
 }
