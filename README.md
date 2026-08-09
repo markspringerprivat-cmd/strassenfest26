@@ -177,3 +177,34 @@ Positionierungsalgorithmus entfernt.
 - Die Personenliste springt automatisch zum neu angelegten Eintrag.
 - Die Kachel selbst bleibt im Tastaturmodus oben angeheftet; nur der interne Listen-/Karteninhalt wird zum neuen Feld bewegt.
 - Auf `scrollIntoView()` wird bewusst verzichtet, damit mobile Browser nicht die gesamte Seite verschieben.
+
+
+## Update v13
+
+- Google-Apps-Script-Web-App angebunden:
+  https://script.google.com/macros/s/AKfycbyR2jC7NmY5h2q__ZLJo-SeuNpGoXoJO-JNyNahOlkVybBKZoRlS1Mb859Gov8Hb3pkEw/exec
+- Serverkommunikation erfolgt über einen versteckten iframe/form-Transport mit `postMessage`,
+  damit die GitHub-Pages-Seite nicht von CORS-Problemen beim Lesen der Apps-Script-Antwort
+  abhängig ist.
+- Neue Anmeldungen werden zentral gespeichert; der Server liefert den persönlichen Anmeldecode.
+- „Was wird noch gebraucht?“ liest die zentrale Statistik aus Google Sheets.
+- Auf der Startseite gibt es „Meine Anmeldung“.
+- Gespeicherter Code + Nachname werden lokal auf dem Gerät gemerkt und für den Wiederaufruf verwendet.
+- Alternativ kann eine Anmeldung manuell per Code + Nachname geladen werden.
+- Nach erfolgreicher Anmeldung werden Code und gespeicherte Daten angezeigt.
+- „Alle Daten als PDF herunterladen“ erzeugt clientseitig eine PDF-Datei.
+
+
+## Update v14
+
+- Footer-Admin öffnet eine separate `admin.html`.
+- Geschützter Admin-Bereich mit Passwortlogin und serverseitiger Sitzung.
+- Übersicht: jede einzelne Person, Suche, Filter und Sortierung.
+- Bezahlstatus pro Person mit automatischer Speicherung.
+- Neues Google-Sheet-Blatt `zahlungen` für Bezahlstatus.
+- Einkauf-Reiter mit erhaltenem Betrag, Einkaufssumme und Restbudget.
+- Einkaufsposten: Kategorie, Bezeichnung, Betrag, Notiz; Änderungen werden automatisch gespeichert.
+- Neues Google-Sheet-Blatt `einkauf`.
+- Mitbringsel-Kategorie `Sonstiges`.
+- Beim Auswählen eines Mitbringsel-Bereichs werden bereits vorhandene konkrete Einträge angezeigt.
+- Das konkrete Mitbringsel/Notizfeld bleibt Pflichtfeld.

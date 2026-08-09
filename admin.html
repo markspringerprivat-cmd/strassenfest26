@@ -1,0 +1,189 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+  <meta name="theme-color" content="#10246e" />
+  <meta name="color-scheme" content="dark" />
+  <title>Straßenfest in Hilchenbach – Admin</title>
+  <meta name="robots" content="noindex,nofollow" />
+  <link rel="stylesheet" href="admin.css" />
+</head>
+<body>
+  <div class="admin-background" aria-hidden="true"></div>
+
+  <main class="admin-shell">
+    <header class="admin-header">
+      <div>
+        <a class="back-link" href="index.html">← Zur Anmeldung</a>
+        <p class="eyebrow">Straßenfest in Hilchenbach</p>
+        <h1>Admin-Bereich</h1>
+      </div>
+      <button id="logoutButton" class="ghost-button hidden" type="button">Abmelden</button>
+    </header>
+
+    <section class="login-card" id="loginCard">
+      <div class="lock-icon" aria-hidden="true">⌾</div>
+      <p class="eyebrow">Geschützter Bereich</p>
+      <h2>Admin-Anmeldung</h2>
+      <p class="login-copy">Hier werden Teilnehmer-, Zahlungs- und Einkaufsdaten verwaltet.</p>
+      <form id="loginForm">
+        <label class="admin-field">
+          <span>Passwort</span>
+          <input id="adminPassword" type="password" autocomplete="current-password" required />
+        </label>
+        <p class="status-line error" id="loginError" role="alert"></p>
+        <button class="primary-button" id="loginButton" type="submit">Anmelden</button>
+      </form>
+    </section>
+
+    <section class="admin-app hidden" id="adminApp">
+      <nav class="tab-bar" aria-label="Admin-Bereiche">
+        <button type="button" class="tab-button active" data-tab="overview">Übersicht</button>
+        <button type="button" class="tab-button" data-tab="shopping">Einkauf</button>
+      </nav>
+
+      <section class="tab-panel active" data-panel="overview">
+        <div class="metric-grid" id="overviewMetrics">
+          <article class="metric-card">
+            <span>Personen</span>
+            <strong id="metricPeople">0</strong>
+          </article>
+          <article class="metric-card">
+            <span>Zu zahlen</span>
+            <strong id="metricDue">0,00 €</strong>
+          </article>
+          <article class="metric-card metric-positive">
+            <span>Bezahlt</span>
+            <strong id="metricPaid">0,00 €</strong>
+          </article>
+          <article class="metric-card">
+            <span>Noch offen</span>
+            <strong id="metricOpen">0,00 €</strong>
+          </article>
+        </div>
+
+        <section class="admin-card">
+          <div class="card-heading">
+            <div>
+              <p class="eyebrow">Teilnehmer</p>
+              <h2>Übersicht</h2>
+            </div>
+            <div class="save-indicator" id="overviewSaveStatus" aria-live="polite">Aktuell</div>
+          </div>
+
+          <div class="toolbar">
+            <label class="search-box">
+              <span class="sr-only">Suchen</span>
+              <input id="peopleSearch" type="search" placeholder="Name, Code oder Mitbringsel suchen …" />
+            </label>
+
+            <label>
+              <span>Bezahlstatus</span>
+              <select id="paymentFilter">
+                <option value="all">Alle</option>
+                <option value="open">Offen</option>
+                <option value="paid">Bezahlt</option>
+                <option value="free">Kostenlos</option>
+              </select>
+            </label>
+
+            <label>
+              <span>Mitbringsel</span>
+              <select id="categoryFilter">
+                <option value="all">Alle</option>
+                <option value="Essen">Essen</option>
+                <option value="Getränke">Getränke</option>
+                <option value="Spielzeug">Spielzeug</option>
+                <option value="Sonstiges">Sonstiges</option>
+                <option value="none">Nichts</option>
+              </select>
+            </label>
+
+            <label>
+              <span>Sortieren</span>
+              <select id="peopleSort">
+                <option value="lastName-asc">Nachname A–Z</option>
+                <option value="lastName-desc">Nachname Z–A</option>
+                <option value="firstName-asc">Vorname A–Z</option>
+                <option value="age-asc">Alter aufsteigend</option>
+                <option value="age-desc">Alter absteigend</option>
+                <option value="paid-open">Offene Zahlungen zuerst</option>
+                <option value="created-desc">Neueste Anmeldung zuerst</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="result-line">
+            <span id="peopleResultCount">0 Personen</span>
+            <button id="refreshOverview" class="text-button" type="button">Neu laden</button>
+          </div>
+
+          <div class="people-list" id="adminPeopleList" aria-live="polite"></div>
+        </section>
+      </section>
+
+      <section class="tab-panel" data-panel="shopping">
+        <div class="finance-grid">
+          <article class="finance-card finance-main">
+            <span>Bereits erhalten</span>
+            <strong id="shoppingPaid">0,00 €</strong>
+            <small>Summe aller als bezahlt markierten Personen</small>
+          </article>
+          <article class="finance-card">
+            <span>Einkäufe</span>
+            <strong id="shoppingExpenses">0,00 €</strong>
+          </article>
+          <article class="finance-card" id="remainingCard">
+            <span>Noch übrig</span>
+            <strong id="shoppingRemaining">0,00 €</strong>
+          </article>
+        </div>
+
+        <section class="admin-card">
+          <div class="card-heading">
+            <div>
+              <p class="eyebrow">Budget</p>
+              <h2>Einkaufsliste</h2>
+            </div>
+            <div class="save-indicator" id="shoppingSaveStatus" aria-live="polite">Aktuell</div>
+          </div>
+
+          <p class="card-intro">
+            Posten werden nach Änderungen automatisch gespeichert. Kategorie, Bezeichnung und Betrag können jederzeit angepasst werden.
+          </p>
+
+          <button id="addExpenseButton" class="add-expense-button" type="button">+ Posten hinzufügen</button>
+
+          <div class="expense-list" id="expenseList"></div>
+
+          <div class="expense-total">
+            <span>Summe Einkauf</span>
+            <strong id="expenseTotalBottom">0,00 €</strong>
+          </div>
+
+          <div class="budget-bottom">
+            <div>
+              <span>Bereits erhalten</span>
+              <strong id="shoppingPaidBottom">0,00 €</strong>
+            </div>
+            <div>
+              <span>Abzüglich Einkäufe</span>
+              <strong id="shoppingExpensesBottom">0,00 €</strong>
+            </div>
+            <div class="budget-bottom-result">
+              <span>Noch übrig</span>
+              <strong id="shoppingRemainingBottom">0,00 €</strong>
+            </div>
+          </div>
+        </section>
+      </section>
+    </section>
+  </main>
+
+  <div id="apiTransportHost" class="api-transport-host" aria-hidden="true"></div>
+  <div class="toast hidden" id="adminToast" role="status" aria-live="polite"></div>
+
+  <script src="admin.js" defer></script>
+</body>
+</html>

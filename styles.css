@@ -663,7 +663,7 @@ button { touch-action: manipulation; }
   -webkit-backdrop-filter: blur(10px);
 }
 
-.footer-bar button { border: 0; background: transparent; color: rgba(255, 255, 255, 0.88); padding: 6px 2px; display: grid; justify-items: center; gap: 4px; cursor: pointer; font-size: .63rem; }
+.footer-bar button, .footer-bar a { border: 0; background: transparent; color: rgba(255, 255, 255, 0.88); padding: 6px 2px; display: grid; justify-items: center; gap: 4px; cursor: pointer; font-size: .63rem; text-decoration: none; }
 .footer-bar svg { width: 20px; height: 20px; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; }
 
 .modal-backdrop { position: fixed; z-index: 20; inset: 0; display: grid; place-items: center; padding: 18px; background: rgba(3, 5, 24, 0.62); backdrop-filter: blur(5px); -webkit-backdrop-filter: blur(5px); }
@@ -1077,4 +1077,338 @@ textarea {
   .payment-choice {
     transition: none !important;
   }
+}
+
+
+/* ================================================================
+   v13 – Datenbank, persönliche Anmeldung und PDF
+   ================================================================ */
+
+.api-transport-host,
+.api-transport-frame,
+.api-transport-form {
+  position: fixed !important;
+  width: 1px !important;
+  height: 1px !important;
+  left: -10000px !important;
+  top: -10000px !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+  border: 0 !important;
+}
+
+.my-registration-button {
+  display: grid;
+  grid-template-columns: 34px 1fr;
+  align-items: center;
+  gap: 10px;
+  width: 100%;
+  min-height: 48px;
+  padding: 8px 12px;
+  border: 1px solid rgba(214, 197, 244, .24);
+  border-radius: 14px;
+  background: rgba(47, 37, 106, .26);
+  color: white;
+  text-align: left;
+  cursor: pointer;
+}
+
+.my-registration-icon {
+  display: grid;
+  place-items: center;
+  width: 31px;
+  height: 31px;
+  border: 1px solid rgba(255, 198, 67, .65);
+  border-radius: 50%;
+  color: var(--accent-light);
+  font-size: 1.1rem;
+}
+
+.my-registration-button strong,
+.my-registration-button small {
+  display: block;
+}
+
+.my-registration-button strong {
+  font-size: .76rem;
+}
+
+.my-registration-button small {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: .62rem;
+}
+
+.access-code-card {
+  margin: 13px 0 10px;
+  padding: 12px;
+  border: 1.4px solid rgba(255, 199, 64, .78);
+  border-radius: 16px;
+  background: rgba(47, 37, 106, .31);
+  box-shadow: inset 0 0 18px rgba(255, 190, 48, .04);
+}
+
+.access-code {
+  display: block;
+  margin: 5px 0 6px;
+  color: var(--accent-light);
+  font-size: clamp(1.25rem, 6vw, 1.65rem);
+  letter-spacing: .075em;
+  word-break: break-word;
+}
+
+.access-code-card p {
+  margin: 0 0 9px;
+  color: var(--muted);
+  font-size: .68rem;
+  line-height: 1.35;
+}
+
+.code-copy-button {
+  min-height: 34px;
+  padding: 6px 11px;
+  border: 1px solid rgba(255, 199, 64, .6);
+  border-radius: 10px;
+  background: rgba(255, 193, 57, .08);
+  color: var(--accent-light);
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.saved-summary {
+  margin-top: 10px;
+  padding: 11px;
+  border: 1px solid rgba(193, 156, 255, .24);
+  border-radius: 15px;
+  background: rgba(37, 29, 98, .22);
+}
+
+.saved-summary-content,
+.modal-registration-details {
+  display: grid;
+  gap: 9px;
+  margin-top: 7px;
+  font-size: .69rem;
+  line-height: 1.35;
+}
+
+.saved-detail-group {
+  display: grid;
+  gap: 4px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid rgba(255,255,255,.09);
+}
+
+.saved-detail-group:last-child {
+  padding-bottom: 0;
+  border-bottom: 0;
+}
+
+.saved-detail-label {
+  color: var(--accent-light);
+  font-size: .59rem;
+  font-weight: 850;
+  letter-spacing: .07em;
+  text-transform: uppercase;
+}
+
+.saved-person-line {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 8px;
+}
+
+.done-actions,
+.modal-action-stack {
+  display: grid;
+  gap: 8px;
+  margin-top: 11px;
+}
+
+.done-actions .restart-button {
+  margin-top: 0;
+}
+
+.lookup-form {
+  display: grid;
+  gap: 2px;
+}
+
+.modal-access-code {
+  margin: 3px 0 12px;
+  padding: 10px 12px;
+  border: 1px solid rgba(255, 199, 64, .55);
+  border-radius: 13px;
+  background: rgba(255, 193, 57, .06);
+}
+
+.modal-access-code span,
+.modal-access-code strong {
+  display: block;
+}
+
+.modal-access-code span {
+  color: var(--muted);
+  font-size: .66rem;
+}
+
+.modal-access-code strong {
+  margin-top: 3px;
+  color: var(--accent-light);
+  font-size: 1.05rem;
+  letter-spacing: .06em;
+}
+
+.modal-loading,
+.needs-loading {
+  color: var(--muted);
+  text-align: center;
+}
+
+.needs-loading {
+  padding: 20px 10px !important;
+}
+
+.thank-you {
+  text-align: left;
+}
+
+.thank-you > .checkmark,
+.thank-you > .eyebrow,
+.thank-you > h2,
+.thank-you > p {
+  text-align: center;
+}
+
+@media (max-height: 730px) {
+  .access-code-card {
+    margin-top: 9px;
+    padding: 10px;
+  }
+
+  .saved-summary {
+    padding: 9px;
+  }
+
+  .done-actions {
+    gap: 7px;
+  }
+}
+
+
+/* ================================================================
+   v14 – Mitbringsel-Abgleich + Admin-Link
+   ================================================================ */
+
+.existing-contributions {
+  margin: 2px 0 10px;
+  padding: 10px;
+  border: 1px solid rgba(255, 211, 101, .34);
+  border-radius: 14px;
+  background: rgba(255, 197, 64, .055);
+}
+
+.existing-contributions-head {
+  display: grid;
+  grid-template-columns: 28px 1fr;
+  gap: 8px;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
+.existing-contributions-icon {
+  display: grid;
+  place-items: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 9px;
+  background: rgba(255, 199, 64, .12);
+}
+
+.existing-contributions-head strong,
+.existing-contributions-head small {
+  display: block;
+}
+
+.existing-contributions-head strong {
+  color: var(--accent-light);
+  font-size: .69rem;
+  line-height: 1.25;
+}
+
+.existing-contributions-head small {
+  margin-top: 2px;
+  color: var(--muted);
+  font-size: .6rem;
+}
+
+.existing-contributions-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  max-height: 100px;
+  overflow-y: auto;
+  padding-right: 3px;
+  scrollbar-width: thin;
+  scrollbar-color: var(--scroll-gold) var(--scroll-track);
+}
+
+.existing-contributions-list::-webkit-scrollbar {
+  width: 7px;
+}
+
+.existing-contributions-list::-webkit-scrollbar-track {
+  background: var(--scroll-track);
+  border-radius: 999px;
+}
+
+.existing-contributions-list::-webkit-scrollbar-thumb {
+  background: linear-gradient(var(--scroll-gold-light), var(--scroll-gold));
+  border-radius: 999px;
+}
+
+.existing-contribution-item,
+.existing-contribution-empty {
+  border: 1px solid rgba(212, 185, 255, .22);
+  border-radius: 999px;
+  background: rgba(44, 34, 106, .42);
+  color: rgba(255,255,255,.9);
+  font-size: .62rem;
+  line-height: 1.25;
+}
+
+.existing-contribution-item {
+  padding: 5px 8px;
+}
+
+.existing-contribution-empty {
+  width: 100%;
+  padding: 7px 9px;
+  border-radius: 10px;
+  color: var(--muted);
+}
+
+.required-mark {
+  display: inline-block;
+  margin-left: 4px;
+  padding: 2px 5px;
+  border-radius: 999px;
+  background: rgba(255, 190, 52, .14);
+  color: var(--accent-light);
+  font-size: .53rem;
+  font-weight: 850;
+  letter-spacing: .05em;
+  text-transform: uppercase;
+}
+
+.field-help {
+  display: block;
+  margin-top: 5px;
+  color: var(--muted);
+  font-size: .59rem;
+  line-height: 1.3;
+}
+
+.footer-admin-link {
+  -webkit-tap-highlight-color: transparent;
 }

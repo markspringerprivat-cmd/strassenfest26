@@ -1,8 +1,9 @@
 (() => {
   "use strict";
 
-  const SUBMIT_ENDPOINT = "";
+  const SUBMIT_ENDPOINT = "https://script.google.com/macros/s/AKfycbyR2jC7NmY5h2q__ZLJo-SeuNpGoXoJO-JNyNahOlkVybBKZoRlS1Mb859Gov8Hb3pkEw/exec";
   const STORAGE_KEY = "strassenfest-hilchenbach-registrations";
+  const MY_REGISTRATION_KEY = "strassenfest-hilchenbach-my-registration";
   const ADULT_PRICE = 20;
   const ADULT_AGE = 18;
 
@@ -16,7 +17,8 @@
     contributionOrigin: "choice",
     presetContribution: false,
     paymentMethod: null,
-    totalCost: 0
+    totalCost: 0,
+    savedRegistration: null
   };
 
   const registrationStage = document.getElementById("registrationStage");
@@ -62,6 +64,289 @@
   const modalContent = document.getElementById("modalContent");
   const validationToast = document.getElementById("validationToast");
   const validationToastText = document.getElementById("validationToastText");
+  const myRegistrationButton = document.getElementById("myRegistrationButton");
+  const myRegistrationHint = document.getElementById("myRegistrationHint");
+  const accessCode = document.getElementById("accessCode");
+  const copyAccessCode = document.getElementById("copyAccessCode");
+  const doneSummary = document.getElementById("doneSummary");
+  const downloadPdfButton = document.getElementById("downloadPdfButton");
+  const openSavedRegistrationButton = document.getElementById("openSavedRegistrationButton");
+  const apiTransportHost = document.getElementById("apiTransportHost");
+  const existingContributions = document.getElementById("existingContributions");
+  const existingContributionsList = document.getElementById("existingContributionsList");
+
+
+  function apiRequest(action, data = {}) {
+    if (!SUBMIT_ENDPOINT) {
+      return Promise.reject(new Error("Die Datenbank ist noch nicht verbunden."));
+    }
+
+    const requestId = `sf-${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+    const frameName = `sf_api_${requestId.replace(/[^a-z0-9_]/gi, "_")}`;
+
+    return new Promise((resolve, reject) => {
+      const iframe = document.createElement("iframe");
+      iframe.name = frameName;
+      iframe.className = "api-transport-frame";
+      iframe.setAttribute("aria-hidden", "true");
+
+      const form = document.createElement("form");
+      form.method = "POST";
+      form.action = SUBMIT_ENDPOINT;
+      form.target = frameName;
+      form.className = "api-transport-form";
+
+      const payload = {
+        action,
+        ...data
+      };
+
+      const fields = {
+        transport: "iframe",
+        requestId,
+        payload: JSON.stringify(payload)
+      };
+
+      Object.entries(fields).forEach(([name, value]) => {
+        const input = document.createElement("input");
+        input.type = "hidden";
+        input.name = name;
+        input.value = value;
+        form.appendChild(input);
+      });
+
+      let settled = false;
+
+      const cleanup = () => {
+        window.removeEventListener("message", onMessage);
+        window.clearTimeout(timeoutId);
+        form.remove();
+        iframe.remove();
+      };
+
+      const finish = (callback) => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+        callback();
+      };
+
+      const onMessage = (event) => {
+        if (event.source !== iframe.contentWindow) return;
+
+        const message = event.data;
+        if (!message || message.channel !== "strassenfest-api") return;
+        if (message.requestId !== requestId) return;
+
+        const result = message.result;
+
+        if (result && result.ok) {
+          finish(() => resolve(result));
+        } else {
+          finish(() => reject(new Error(
+            result?.message || "Die Anfrage an die Datenbank ist fehlgeschlagen."
+          )));
+        }
+      };
+
+      const timeoutId = window.setTimeout(() => {
+        finish(() => reject(new Error(
+          "Die Datenbank antwortet gerade nicht. Bitte versuche es noch einmal."
+        )));
+      }, 18000);
+
+      window.addEventListener("message", onMessage);
+
+      apiTransportHost.appendChild(iframe);
+      apiTransportHost.appendChild(form);
+
+      form.submit();
+    });
+  }
+
+  function getSavedRegistrationIdentity() {
+    try {
+      const saved = JSON.parse(localStorage.getItem(MY_REGISTRATION_KEY) || "null");
+      if (!saved?.code || !saved?.lastName) return null;
+      return {
+        code: String(saved.code),
+        lastName: String(saved.lastName)
+      };
+    } catch {
+      return null;
+    }
+  }
+
+  function saveRegistrationIdentity(registration) {
+    const firstLastName = registration?.people?.[0]?.lastName || "";
+    if (!registration?.accessCode || !firstLastName) return;
+
+    localStorage.setItem(MY_REGISTRATION_KEY, JSON.stringify({
+      code: registration.accessCode,
+      lastName: firstLastName
+    }));
+
+    refreshMyRegistrationHint();
+  }
+
+  function refreshMyRegistrationHint() {
+    const saved = getSavedRegistrationIdentity();
+    myRegistrationHint.textContent = saved
+      ? `Gespeichert: ${saved.code}`
+      : "Mit Anmeldecode wieder aufrufen";
+  }
+
+  function formatMoney(value) {
+    return `${Number(value || 0).toFixed(2).replace(".", ",")} €`;
+  }
+
+  function registrationDetailsHtml(registration) {
+    const people = (registration.people || [])
+      .map((person) => `
+        <div class="saved-person-line">
+          <span>${escapeHtml(person.firstName)} ${escapeHtml(person.lastName)} · ${person.age} Jahre</span>
+          <strong>${formatMoney(person.price)}</strong>
+        </div>`)
+      .join("");
+
+    const contributionText = registration.bringing && registration.contribution
+      ? `<strong>${escapeHtml(
+          registration.contribution.subtype
+            ? `${registration.contribution.category} · ${registration.contribution.subtype}`
+            : registration.contribution.category
+        )}</strong><br>${escapeHtml(registration.contribution.note || "")}`
+      : "Es wird nichts mitgebracht.";
+
+    return `
+      <div class="saved-detail-group">
+        <span class="saved-detail-label">Personen</span>
+        ${people || "Keine Personen vorhanden."}
+      </div>
+      <div class="saved-detail-group">
+        <span class="saved-detail-label">Mitbringsel</span>
+        <div>${contributionText}</div>
+      </div>
+      <div class="saved-detail-group">
+        <span class="saved-detail-label">Zahlung</span>
+        <div><strong>${formatMoney(registration.payment?.total)}</strong></div>
+        <div>${escapeHtml(paymentMethodLabelFor(registration.payment?.method))}</div>
+      </div>`;
+  }
+
+  function paymentMethodLabelFor(method) {
+    if (method === "briefkasten") {
+      return "Barzahlung in den Briefkasten – Nassauer Straße 1, Springer, im Umschlag mit Namen.";
+    }
+    if (method === "abholung") {
+      return "Persönliche Abholung am 30. August ab 18 Uhr.";
+    }
+    return "Keine Zahlung erforderlich.";
+  }
+
+  async function loadRegistration(code, lastName) {
+    const result = await apiRequest("get", {
+      code: String(code || "").trim(),
+      lastName: String(lastName || "").trim()
+    });
+
+    if (!result.registration) {
+      throw new Error("Die Anmeldung konnte nicht geladen werden.");
+    }
+
+    state.savedRegistration = result.registration;
+    return result.registration;
+  }
+
+  function renderRegistrationModal(registration) {
+    modalTitle.textContent = "Meine Anmeldung";
+    modalContent.innerHTML = `
+      <div class="modal-access-code">
+        <span>Anmeldecode</span>
+        <strong>${escapeHtml(registration.accessCode || "")}</strong>
+      </div>
+      <div class="modal-registration-details">
+        ${registrationDetailsHtml(registration)}
+      </div>
+      <div class="modal-action-stack">
+        <button type="button" class="primary-button" id="modalDownloadPdf">
+          Alle Daten als PDF herunterladen
+        </button>
+      </div>`;
+
+    document.getElementById("modalDownloadPdf")?.addEventListener("click", () => {
+      downloadRegistrationPdf(registration);
+    });
+  }
+
+  function openRegistrationLookup() {
+    const saved = getSavedRegistrationIdentity();
+
+    if (saved) {
+      modalTitle.textContent = "Meine Anmeldung";
+      modalContent.innerHTML = `<p class="modal-loading">Anmeldung wird geladen …</p>`;
+      modalBackdrop.hidden = false;
+
+      loadRegistration(saved.code, saved.lastName)
+        .then(renderRegistrationModal)
+        .catch((error) => {
+          renderRegistrationLookupForm(error.message, saved);
+        });
+
+      return;
+    }
+
+    renderRegistrationLookupForm();
+    modalBackdrop.hidden = false;
+  }
+
+  function renderRegistrationLookupForm(message = "", values = {}) {
+    modalTitle.textContent = "Meine Anmeldung";
+    modalContent.innerHTML = `
+      <p>Gib deinen persönlichen Anmeldecode und einen Nachnamen aus der Anmeldung ein.</p>
+      <form id="registrationLookupForm" class="lookup-form">
+        <label class="field">
+          <span>Anmeldecode</span>
+          <input id="lookupCode" type="text" autocomplete="off"
+                 placeholder="z. B. HIL26-ABCD-EFGH"
+                 value="${escapeAttr(values.code || "")}">
+        </label>
+        <label class="field">
+          <span>Nachname</span>
+          <input id="lookupLastName" type="text" autocomplete="family-name"
+                 placeholder="Nachname"
+                 value="${escapeAttr(values.lastName || "")}">
+        </label>
+        <p class="field-error" id="lookupError">${escapeHtml(message)}</p>
+        <button class="primary-button" type="submit">Anmeldung anzeigen</button>
+      </form>`;
+
+    const lookupForm = document.getElementById("registrationLookupForm");
+    const codeInput = document.getElementById("lookupCode");
+    const lastNameInput = document.getElementById("lookupLastName");
+    const error = document.getElementById("lookupError");
+
+    lookupForm?.addEventListener("submit", async (event) => {
+      event.preventDefault();
+
+      const code = codeInput.value.trim();
+      const lastName = lastNameInput.value.trim();
+
+      if (!code || !lastName) {
+        error.textContent = "Bitte Code und Nachname eingeben.";
+        return;
+      }
+
+      error.textContent = "Wird geladen …";
+
+      try {
+        const registration = await loadRegistration(code, lastName);
+        saveRegistrationIdentity(registration);
+        renderRegistrationModal(registration);
+      } catch (requestError) {
+        error.textContent = requestError.message;
+      }
+    });
+  }
 
   const subtypeOptions = {
     Essen: ["Deftig", "Süß", "Beilage"],
@@ -77,8 +362,11 @@
     { category: "Getränke", subtype: "Nicht alkoholisch", label: "Getränke · Nicht alkoholisch" },
     { category: "Getränke", subtype: "Zuckerhaltig", label: "Getränke · Zuckerhaltig" },
     { category: "Getränke", subtype: "Nicht zuckerhaltig", label: "Getränke · Nicht zuckerhaltig" },
-    { category: "Getränke", subtype: "Gemischt", label: "Getränke · Gemischt" }
+    { category: "Getränke", subtype: "Gemischt", label: "Getränke · Gemischt" },
+    { category: "Sonstiges", subtype: "", label: "Sonstiges" }
   ];
+
+  let contributionStatsCache = [];
 
   const BACKGROUND_GEOMETRY = {
     width: 941,
@@ -730,10 +1018,62 @@
     contribution.value = "";
     contribution.disabled = true;
     contribution.placeholder = "Bitte zuerst die Auswahl oben treffen";
+    existingContributions.classList.add("hidden");
+    existingContributionsList.innerHTML = "";
     contributionSelects.classList.remove("hidden");
     presetSelection.classList.add("hidden");
     contributionIntro.textContent = "Wähle die Kategorie und beschreibe kurz deinen Beitrag.";
     contributionError.textContent = "";
+  }
+
+  function matchingContributionStats(categoryValue, subtypeValue = "") {
+    return contributionStatsCache.find((item) =>
+      item.category === categoryValue &&
+      (item.subtype || "") === (subtypeValue || "")
+    ) || null;
+  }
+
+  function renderExistingContributions(categoryValue = state.category, subtypeValue = state.subtype) {
+    if (!existingContributions || !existingContributionsList) return;
+
+    const needsSubtype = Boolean(subtypeOptions[categoryValue]);
+
+    if (!categoryValue || (needsSubtype && !subtypeValue)) {
+      existingContributions.classList.add("hidden");
+      existingContributionsList.innerHTML = "";
+      return;
+    }
+
+    const match = matchingContributionStats(categoryValue, subtypeValue);
+    const notes = Array.isArray(match?.notes)
+      ? match.notes.filter(Boolean)
+      : [];
+
+    existingContributions.classList.remove("hidden");
+
+    if (!notes.length) {
+      existingContributionsList.innerHTML = `
+        <div class="existing-contribution-empty">
+          In diesem Bereich wurde bisher noch nichts Konkretes eingetragen.
+        </div>`;
+      return;
+    }
+
+    existingContributionsList.innerHTML = notes
+      .map((note) => `<div class="existing-contribution-item">${escapeHtml(note)}</div>`)
+      .join("");
+  }
+
+  async function refreshContributionStats({ quiet = true } = {}) {
+    try {
+      const result = await apiRequest("stats");
+      contributionStatsCache = Array.isArray(result.stats) ? result.stats : [];
+      renderExistingContributions();
+      return contributionStatsCache;
+    } catch (error) {
+      if (!quiet) throw error;
+      return contributionStatsCache;
+    }
   }
 
   function populateSubtype(categoryValue, selected = "") {
@@ -759,6 +1099,7 @@
     state.contributionOrigin = "choice";
     resetContribution();
     setStep(3);
+    void refreshContributionStats();
   }
 
   function openPresetContribution(categoryValue, subtypeValue) {
@@ -780,7 +1121,9 @@
     presetSelectionText.textContent = subtypeValue ? `${categoryValue} · ${subtypeValue}` : categoryValue;
     contributionIntro.textContent = "Der Bereich ist bereits ausgewählt. Trage nur noch ein, was du mitbringst.";
     contributionError.textContent = "";
+    renderExistingContributions(categoryValue, subtypeValue || "");
     setStep(3);
+    void refreshContributionStats();
   }
 
   bringYes.addEventListener("click", openNormalContribution);
@@ -815,10 +1158,15 @@
     } else if (state.category === "Spielzeug") {
       contribution.disabled = false;
       contribution.placeholder = "z. B. Wikingerschach, Federball, Straßenkreide …";
+    } else if (state.category === "Sonstiges") {
+      contribution.disabled = false;
+      contribution.placeholder = "z. B. Besteck, Servietten, Müllbeutel …";
     } else {
       contribution.disabled = true;
       contribution.placeholder = "Bitte zuerst beide Auswahlfelder treffen";
     }
+
+    renderExistingContributions(state.category, "");
   });
 
   subtype.addEventListener("change", () => {
@@ -828,6 +1176,7 @@
     contribution.disabled = !state.subtype;
     contribution.placeholder = state.subtype ? "Was genau möchtest du mitbringen?" : "Bitte zuerst beide Auswahlfelder treffen";
     clearValidationMarks();
+    renderExistingContributions(state.category, state.subtype);
   });
 
   contribution.addEventListener("input", () => {
@@ -897,27 +1246,75 @@
     };
   }
 
-  function renderNeeds() {
-    const registrations = getLocalRegistrations();
-    const contributions = registrations.map(normalizeStoredContribution).filter(Boolean);
-
+  function renderNeedsFromStats(stats, note) {
     needsTableBody.innerHTML = needsBuckets.map((bucket) => {
-      const matches = contributions.filter((item) => item.category === bucket.category && (item.subtype || "") === bucket.subtype);
-      const notes = matches.map((item) => item.note).filter(Boolean).slice(0, 2);
+      const match = stats.find((item) =>
+        item.category === bucket.category &&
+        (item.subtype || "") === bucket.subtype
+      );
+
+      const count = Number(match?.count || 0);
+      const notes = Array.isArray(match?.notes) ? match.notes.slice(0, 3) : [];
+
       return `
         <tr>
           <td>
             <span class="needs-label">${escapeHtml(bucket.label)}</span>
             <span class="needs-items">${notes.length ? escapeHtml(notes.join(" · ")) : "Noch nichts eingetragen"}</span>
           </td>
-          <td>${matches.length}</td>
-          <td><button type="button" class="need-add" data-need-category="${escapeAttr(bucket.category)}" data-need-subtype="${escapeAttr(bucket.subtype)}" aria-label="${escapeAttr(bucket.label)} auswählen">+</button></td>
+          <td>${count}</td>
+          <td>
+            <button type="button"
+                    class="need-add"
+                    data-need-category="${escapeAttr(bucket.category)}"
+                    data-need-subtype="${escapeAttr(bucket.subtype)}"
+                    aria-label="${escapeAttr(bucket.label)} auswählen">+</button>
+          </td>
         </tr>`;
     }).join("");
 
-    needsNote.textContent = registrations.length
-      ? "Die Anzeige basiert derzeit auf den auf diesem Gerät gespeicherten Anmeldungen. Mit der späteren Datenbank werden hier alle Anmeldungen zusammengeführt."
-      : "Noch keine gespeicherten Beiträge vorhanden. Du kannst trotzdem einen Bereich über + auswählen.";
+    needsNote.textContent = note;
+  }
+
+  async function renderNeeds() {
+    needsTableBody.innerHTML = `
+      <tr>
+        <td colspan="3" class="needs-loading">Zentrale Planung wird geladen …</td>
+      </tr>`;
+    needsNote.textContent = "Die Angaben werden aus der gemeinsamen Anmeldung geladen.";
+
+    try {
+      const result = await apiRequest("stats");
+      contributionStatsCache = Array.isArray(result.stats) ? result.stats : [];
+      renderNeedsFromStats(
+        contributionStatsCache,
+        "Die Anzeige berücksichtigt die bisher zentral gespeicherten Anmeldungen."
+      );
+    } catch (error) {
+      const registrations = getLocalRegistrations();
+      const contributions = registrations
+        .map(normalizeStoredContribution)
+        .filter(Boolean);
+
+      const localStats = needsBuckets.map((bucket) => {
+        const matches = contributions.filter((item) =>
+          item.category === bucket.category &&
+          (item.subtype || "") === bucket.subtype
+        );
+
+        return {
+          category: bucket.category,
+          subtype: bucket.subtype,
+          count: matches.length,
+          notes: matches.map((item) => item.note).filter(Boolean)
+        };
+      });
+
+      renderNeedsFromStats(
+        localStats,
+        "Die zentrale Planung ist gerade nicht erreichbar. Angezeigt werden ersatzweise nur Daten dieses Geräts."
+      );
+    }
   }
 
   needsTableBody.addEventListener("click", (event) => {
@@ -988,9 +1385,7 @@
   });
 
   function paymentMethodLabel() {
-    if (state.paymentMethod === "briefkasten") return "Barzahlung in den Briefkasten – Nassauer Straße 1, Springer, im Umschlag mit Namen.";
-    if (state.paymentMethod === "abholung") return "Persönliche Abholung am 30. August ab 18 Uhr.";
-    return "Keine Zahlung erforderlich.";
+    return paymentMethodLabelFor(state.paymentMethod);
   }
 
   function renderSummary() {
@@ -1039,31 +1434,321 @@
   }
 
   async function submitRegistration(payload) {
-    if (!SUBMIT_ENDPOINT) {
-      saveLocalRegistration(payload);
+    const result = await apiRequest("create", {
+      registration: payload
+    });
+
+    if (!result.registration) {
+      throw new Error("Die Anmeldung wurde nicht vollständig bestätigt.");
+    }
+
+    // Lokale Kopie nur als Offline-/Admin-Cache.
+    saveLocalRegistration(result.registration);
+    return result.registration;
+  }
+
+
+  function renderDoneRegistration(registration) {
+    accessCode.textContent = registration.accessCode || "–";
+    doneSummary.innerHTML = registrationDetailsHtml(registration);
+  }
+
+  async function copyText(text) {
+    try {
+      await navigator.clipboard.writeText(text);
+      return true;
+    } catch {
+      const area = document.createElement("textarea");
+      area.value = text;
+      area.style.position = "fixed";
+      area.style.opacity = "0";
+      document.body.appendChild(area);
+      area.select();
+      const success = document.execCommand("copy");
+      area.remove();
+      return success;
+    }
+  }
+
+  copyAccessCode.addEventListener("click", async () => {
+    const code = state.savedRegistration?.accessCode || accessCode.textContent.trim();
+    if (!code || code === "–") return;
+
+    const success = await copyText(code);
+    copyAccessCode.textContent = success ? "Code kopiert ✓" : "Code bitte manuell kopieren";
+    window.setTimeout(() => {
+      copyAccessCode.textContent = "Code kopieren";
+    }, 1800);
+  });
+
+  downloadPdfButton.addEventListener("click", () => {
+    if (state.savedRegistration) downloadRegistrationPdf(state.savedRegistration);
+  });
+
+  openSavedRegistrationButton.addEventListener("click", () => {
+    if (state.savedRegistration) {
+      renderRegistrationModal(state.savedRegistration);
+      modalBackdrop.hidden = false;
       return;
     }
-    const response = await fetch(SUBMIT_ENDPOINT, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify(payload)
+    openRegistrationLookup();
+  });
+
+  myRegistrationButton.addEventListener("click", openRegistrationLookup);
+
+  function registrationPdfLines(registration) {
+    const created = registration.createdAt
+      ? new Date(registration.createdAt).toLocaleString("de-DE")
+      : new Date().toLocaleString("de-DE");
+
+    const lines = [
+      "Straßenfest in Hilchenbach 2026",
+      "Anmeldebestätigung",
+      "",
+      `Anmeldecode: ${registration.accessCode || ""}`,
+      `Gespeichert am: ${created}`,
+      "",
+      "Angemeldete Personen:"
+    ];
+
+    (registration.people || []).forEach((person, index) => {
+      lines.push(
+        `${index + 1}. ${person.firstName} ${person.lastName}, ${person.age} Jahre - ${formatMoney(person.price)}`
+      );
     });
-    if (!response.ok) throw new Error(`HTTP ${response.status}`);
+
+    lines.push("", "Mitbringsel:");
+
+    if (registration.bringing && registration.contribution) {
+      const type = registration.contribution.subtype
+        ? `${registration.contribution.category} - ${registration.contribution.subtype}`
+        : registration.contribution.category;
+      lines.push(type);
+      lines.push(registration.contribution.note || "");
+    } else {
+      lines.push("Es wird nichts mitgebracht.");
+    }
+
+    lines.push(
+      "",
+      "Zahlung:",
+      `Gesamtbetrag: ${formatMoney(registration.payment?.total)}`,
+      paymentMethodLabelFor(registration.payment?.method),
+      "",
+      "Hinweis:",
+      "Mit dem Anmeldecode und einem Nachnamen aus der Anmeldung",
+      "kann die Anmeldung später auf der Webseite wieder aufgerufen werden."
+    );
+
+    return lines;
+  }
+
+  function wrapPdfLines(lines, maxChars = 74) {
+    const output = [];
+
+    lines.forEach((line) => {
+      const text = String(line || "");
+      if (!text) {
+        output.push("");
+        return;
+      }
+
+      const words = text.split(/\s+/);
+      let current = "";
+
+      words.forEach((word) => {
+        const candidate = current ? `${current} ${word}` : word;
+
+        if (candidate.length <= maxChars) {
+          current = candidate;
+        } else {
+          if (current) output.push(current);
+          current = word;
+        }
+      });
+
+      if (current) output.push(current);
+    });
+
+    return output;
+  }
+
+  function pdfWinAnsiBytes(text) {
+    const cp1252 = new Map([
+      [0x20AC, 0x80], [0x201A, 0x82], [0x0192, 0x83], [0x201E, 0x84],
+      [0x2026, 0x85], [0x2020, 0x86], [0x2021, 0x87], [0x02C6, 0x88],
+      [0x2030, 0x89], [0x0160, 0x8A], [0x2039, 0x8B], [0x0152, 0x8C],
+      [0x017D, 0x8E], [0x2018, 0x91], [0x2019, 0x92], [0x201C, 0x93],
+      [0x201D, 0x94], [0x2022, 0x95], [0x2013, 0x96], [0x2014, 0x97],
+      [0x02DC, 0x98], [0x2122, 0x99], [0x0161, 0x9A], [0x203A, 0x9B],
+      [0x0153, 0x9C], [0x017E, 0x9E], [0x0178, 0x9F]
+    ]);
+
+    const bytes = [];
+
+    for (const char of String(text)) {
+      const code = char.codePointAt(0);
+
+      if (code <= 0xFF) {
+        bytes.push(code);
+      } else if (cp1252.has(code)) {
+        bytes.push(cp1252.get(code));
+      } else {
+        bytes.push(0x3F);
+      }
+    }
+
+    return new Uint8Array(bytes);
+  }
+
+  function concatBytes(parts) {
+    const total = parts.reduce((sum, part) => sum + part.length, 0);
+    const output = new Uint8Array(total);
+    let offset = 0;
+
+    parts.forEach((part) => {
+      output.set(part, offset);
+      offset += part.length;
+    });
+
+    return output;
+  }
+
+  function pdfEscape(text) {
+    return String(text)
+      .replaceAll("\\", "\\\\")
+      .replaceAll("(", "\\(")
+      .replaceAll(")", "\\)");
+  }
+
+  function createSimplePdf(lines) {
+    const wrapped = wrapPdfLines(lines);
+    const perPage = 43;
+    const pages = [];
+
+    for (let i = 0; i < wrapped.length; i += perPage) {
+      pages.push(wrapped.slice(i, i + perPage));
+    }
+
+    if (!pages.length) pages.push(["Straßenfest in Hilchenbach 2026"]);
+
+    const objects = new Map();
+    const pageObjectIds = [];
+
+    objects.set(1, "<< /Type /Catalog /Pages 2 0 R >>");
+    objects.set(3, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");
+
+    pages.forEach((pageLines, index) => {
+      const pageId = 4 + index * 2;
+      const contentId = pageId + 1;
+      pageObjectIds.push(pageId);
+
+      objects.set(
+        pageId,
+        `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents ${contentId} 0 R >>`
+      );
+
+      const commands = [
+        "BT",
+        "/F1 11 Tf",
+        "15 TL",
+        "46 792 Td"
+      ];
+
+      pageLines.forEach((line, lineIndex) => {
+        if (lineIndex > 0) commands.push("T*");
+
+        if (lineIndex === 0 && index === 0) {
+          commands.push("/F1 16 Tf");
+          commands.push(`(${pdfEscape(line)}) Tj`);
+          commands.push("/F1 11 Tf");
+        } else {
+          commands.push(`(${pdfEscape(line)}) Tj`);
+        }
+      });
+
+      commands.push("ET");
+      const stream = commands.join("\n");
+      const streamLength = pdfWinAnsiBytes(stream).length;
+
+      objects.set(
+        contentId,
+        `<< /Length ${streamLength} >>\nstream\n${stream}\nendstream`
+      );
+    });
+
+    objects.set(
+      2,
+      `<< /Type /Pages /Kids [${pageObjectIds.map((id) => `${id} 0 R`).join(" ")}] /Count ${pageObjectIds.length} >>`
+    );
+
+    const maxObjectId = Math.max(...objects.keys());
+    const chunks = [pdfWinAnsiBytes("%PDF-1.4\n%\xE2\xE3\xCF\xD3\n")];
+    const offsets = new Array(maxObjectId + 1).fill(0);
+    let cursor = chunks[0].length;
+
+    for (let id = 1; id <= maxObjectId; id += 1) {
+      const body = objects.get(id) || "<<>>";
+      const chunk = pdfWinAnsiBytes(`${id} 0 obj\n${body}\nendobj\n`);
+      offsets[id] = cursor;
+      chunks.push(chunk);
+      cursor += chunk.length;
+    }
+
+    const xrefOffset = cursor;
+    let xref = `xref\n0 ${maxObjectId + 1}\n`;
+    xref += "0000000000 65535 f \n";
+
+    for (let id = 1; id <= maxObjectId; id += 1) {
+      xref += `${String(offsets[id]).padStart(10, "0")} 00000 n \n`;
+    }
+
+    xref += `trailer\n<< /Size ${maxObjectId + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`;
+    chunks.push(pdfWinAnsiBytes(xref));
+
+    return concatBytes(chunks);
+  }
+
+  function downloadRegistrationPdf(registration) {
+    const bytes = createSimplePdf(registrationPdfLines(registration));
+    const blob = new Blob([bytes], { type: "application/pdf" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+
+    const safeCode = String(registration.accessCode || "anmeldung")
+      .replace(/[^A-Z0-9-]+/gi, "-");
+
+    link.href = url;
+    link.download = `Strassenfest-Hilchenbach-${safeCode}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    window.setTimeout(() => URL.revokeObjectURL(url), 1200);
   }
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (state.step !== "5") return;
-    submitStatus.textContent = "Wird gesendet …";
+
+    submitStatus.textContent = "Wird sicher gespeichert …";
     const submitButton = form.querySelector('button[type="submit"]');
     submitButton.disabled = true;
+
     try {
-      await submitRegistration(buildPayload());
+      const registration = await submitRegistration(buildPayload());
+
+      state.savedRegistration = registration;
+      saveRegistrationIdentity(registration);
+      renderDoneRegistration(registration);
+
       submitStatus.textContent = "";
       setStep("done");
     } catch (error) {
       console.error(error);
-      submitStatus.textContent = "Die Anmeldung konnte gerade nicht gesendet werden. Bitte später erneut versuchen.";
+      submitStatus.textContent =
+        error.message ||
+        "Die Anmeldung konnte gerade nicht gesendet werden. Bitte später erneut versuchen.";
     } finally {
       submitButton.disabled = false;
     }
@@ -1080,6 +1765,7 @@
     state.presetContribution = false;
     state.paymentMethod = null;
     state.totalCost = 0;
+    state.savedRegistration = null;
     form.reset();
     peopleRows.innerHTML = "";
     addPersonRow();
@@ -1130,9 +1816,9 @@
 
   function renderAdminModal() {
     const registrations = getLocalRegistrations();
-    modalTitle.textContent = "Admin · Demo";
+    modalTitle.textContent = "Admin · lokaler Cache";
     if (!registrations.length) {
-      modalContent.innerHTML = `<p>In diesem Browser wurden noch keine Demo-Anmeldungen gespeichert.</p><p>Für eine gemeinsame Teilnehmerliste auf mehreren Geräten braucht die GitHub-Pages-Version später einen externen Backend-/Datenbank-Endpunkt.</p>`;
+      modalContent.innerHTML = `<p>In diesem Browser wurden noch keine lokalen Anmeldedaten zwischengespeichert.</p><p>Für eine gemeinsame Teilnehmerliste auf mehreren Geräten braucht die GitHub-Pages-Version später einen externen Backend-/Datenbank-Endpunkt.</p>`;
       return;
     }
 
@@ -1180,6 +1866,7 @@
     animateButtonPress(button);
   });
 
+  refreshMyRegistrationHint();
   addPersonRow();
 
   // Ruhiges Feuerwerk: etwas größer und häufiger, aber mit langen, weichen Abständen.
