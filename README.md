@@ -230,3 +230,30 @@ Neuer Ablauf:
 
 Das vermeidet die Google-HtmlService-Sandbox-/iframe-Probleme, die bei v14/v15
 zum Timeout geführt haben konnten.
+
+
+## Update v17 – Doppelanmeldungen verhindert + sichere Bestätigung
+
+- Der finale „Absenden“-Button wird beim ersten Klick sofort deaktiviert und
+  zeigt „Wird gespeichert …“.
+- Während der Speicherung ist kein zweiter Klick möglich.
+- Jede Anmeldung erhält vor dem ersten Sendeversuch eine stabile submissionId.
+- Dieselbe ID wird bei einem Retry wiederverwendet.
+- Der Server verwendet diese ID als registration_id und legt dieselbe Anmeldung
+  bei einem erneuten POST nicht ein zweites Mal an.
+- Die erfolgreiche Anmeldung wird nach dem POST unabhängig über
+  `registrationstatus` abgefragt. Die Website ist damit nicht mehr auf die
+  unmittelbare POST-Antwort angewiesen.
+- Nach erfolgreicher Bestätigung wechselt die Seite automatisch auf die
+  Abschlusskachel; der Submit-Button bleibt bis dahin gesperrt.
+
+## Update v18
+- Admin-Übersicht gruppiert Teilnehmer nach Anmeldung.
+- Erste Person wird als „Hauptzahler / Hauptanmeldung“ dargestellt.
+- Weitere Personen hängen optisch direkt darunter als „Mitangemeldet“.
+- Bezahlstatus kann weiterhin pro Person gesetzt werden.
+- Zusätzlich kann eine komplette Anmeldung mit einem Klick als bezahlt/offen markiert werden.
+- Nach dem erfolgreichen Absenden erscheint eine eigene Anmeldecode-Kachel.
+- Kein Code-kopieren-Button mehr.
+- PDF-Download enthält oben groß und fett den Anmeldecode und darunter alle Anmeldedaten.
+- Der Weiter-Button auf der Code-Kachel zählt von 10 herunter und wird erst danach aktiv.

@@ -1412,3 +1412,126 @@ textarea {
 .footer-admin-link {
   -webkit-tap-highlight-color: transparent;
 }
+
+
+/* v17 – Abschicken-Sperre gegen Doppelanmeldungen */
+.primary-button:disabled,
+.secondary-button:disabled {
+  opacity: .52;
+  cursor: wait;
+  filter: saturate(.7);
+  box-shadow: none;
+  transform: none !important;
+}
+
+.primary-button.is-processing {
+  position: relative;
+  pointer-events: none;
+}
+
+.primary-button.is-processing::after {
+  content: "";
+  width: 13px;
+  height: 13px;
+  margin-left: 8px;
+  border: 2px solid rgba(255,255,255,.38);
+  border-top-color: rgba(255,255,255,.95);
+  border-radius: 50%;
+  animation: submitSpinner .8s linear infinite;
+}
+
+@keyframes submitSpinner {
+  to { transform: rotate(360deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .primary-button.is-processing::after {
+    animation: none;
+  }
+}
+
+
+/* ================================================================
+   v18 – Anmeldecode-Zwischenschritt + 10-Sekunden-Weiter-Countdown
+   ================================================================ */
+
+.step[data-step="5"] .step-actions {
+  margin-bottom: 14px;
+}
+
+.confirmation-step {
+  padding: 7px 2px 5px;
+  text-align: center;
+}
+
+.confirmation-step h2 {
+  margin: 3px 0 7px;
+}
+
+.confirmation-copy {
+  max-width: 390px;
+  margin: 0 auto 12px;
+  color: var(--muted);
+  font-size: .73rem;
+  line-height: 1.45;
+}
+
+.access-code-focus {
+  margin: 12px 0;
+  padding: 15px 12px;
+  background:
+    linear-gradient(145deg, rgba(255, 198, 67, .07), rgba(47, 37, 106, .32));
+}
+
+.access-code-focus .access-code {
+  margin: 7px 0 1px;
+  font-size: clamp(1.4rem, 7vw, 1.9rem);
+  letter-spacing: .085em;
+}
+
+.pdf-download-button {
+  width: 100%;
+  margin-top: 2px;
+}
+
+.confirmation-pdf-note {
+  margin: 8px 5px 0;
+  color: var(--muted);
+  font-size: .64rem;
+  line-height: 1.4;
+}
+
+.confirmation-continue-area {
+  display: grid;
+  gap: 6px;
+  margin-top: 20px;
+  padding-top: 15px;
+  border-top: 1px solid rgba(255,255,255,.10);
+}
+
+.confirmation-continue-area small {
+  color: var(--muted);
+  font-size: .61rem;
+  line-height: 1.35;
+}
+
+.countdown-button {
+  width: 100%;
+}
+
+.countdown-button:disabled {
+  opacity: .48;
+  cursor: wait;
+}
+
+@media (max-height: 720px) {
+  .confirmation-continue-area {
+    margin-top: 14px;
+    padding-top: 11px;
+  }
+
+  .access-code-focus {
+    margin-block: 9px;
+    padding: 11px;
+  }
+}

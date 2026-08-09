@@ -18,7 +18,9 @@
     presetContribution: false,
     paymentMethod: null,
     totalCost: 0,
-    savedRegistration: null
+    savedRegistration: null,
+    submissionId: null,
+    submitting: false
   };
 
   const registrationStage = document.getElementById("registrationStage");
@@ -67,9 +69,9 @@
   const myRegistrationButton = document.getElementById("myRegistrationButton");
   const myRegistrationHint = document.getElementById("myRegistrationHint");
   const accessCode = document.getElementById("accessCode");
-  const copyAccessCode = document.getElementById("copyAccessCode");
-  const doneSummary = document.getElementById("doneSummary");
   const downloadPdfButton = document.getElementById("downloadPdfButton");
+  const codeContinueButton = document.getElementById("codeContinueButton");
+  const codeCountdownHint = document.getElementById("codeCountdownHint");
   const openSavedRegistrationButton = document.getElementById("openSavedRegistrationButton");
   const apiTransportHost = document.getElementById("apiTransportHost");
   const existingContributions = document.getElementById("existingContributions");
@@ -862,7 +864,7 @@
     document.querySelectorAll(".progress-dot").forEach((dot) => {
       dot.classList.toggle("active", Number(dot.dataset.progress) === progressStep);
     });
-    stepProgress.classList.toggle("hidden", state.step === "done");
+    stepProgress.classList.toggle("hidden", ["code", "done"].includes(state.step));
 
     wizardCard.scrollTop = 0;
     updateNormalGeometry();
@@ -1457,8 +1459,13 @@
   });
 
   function buildPayload() {
+    if (!state.submissionId) {
+      state.submissionId = crypto.randomUUID?.() ||
+        `registration-${Date.now()}-${Math.random().toString(36).slice(2, 12)}`;
+    }
+
     return {
-      id: crypto.randomUUID?.() || `registration-${Date.now()}`,
+      id: state.submissionId,
       createdAt: new Date().toISOString(),
       people: state.people.map((person) => ({ ...person })),
       bringing: Boolean(state.bringing),
@@ -1482,53 +1489,161 @@
     localStorage.setItem(STORAGE_KEY, JSON.stringify(registrations));
   }
 
-  async function submitRegistration(payload) {
-    const result = await apiRequest("create", {
-      registration: payload
+  function pollCreatedRegistration(registrationId, deadline) {
+    return new Promise((resolve, reject) => {
+      if (Date.now() >= deadline) {
+        reject(new Error(
+          "Die Anmeldung wurde möglicherweise gespeichert, aber die Bestätigung konnte nicht geladen werden. Bitte nicht erneut absenden und die Seite kurz neu laden."
+        ));
+        return;
+      }
+
+      const callbackName = `__sfCreate_${String(registrationId).replace(/[^a-z0-9_]/gi, "_")}_${Date.now()}`;
+      const script = document.createElement("script");
+      let callbackCalled = false;
+
+      const cleanup = () => {
+        script.remove();
+        try {
+          delete window[callbackName];
+        } catch {
+          window[callbackName] = undefined;
+        }
+      };
+
+      window[callbackName] = (message) => {
+        callbackCalled = true;
+        cleanup();
+
+        if (!message || message.pending) {
+          window.setTimeout(() => {
+            pollCreatedRegistration(registrationId, deadline).then(resolve, reject);
+          }, 450);
+          return;
+        }
+
+        const result = message.result;
+
+        if (result?.ok && result.registration) {
+          resolve(result.registration);
+          return;
+        }
+
+        reject(new Error(
+          result?.message || "Die gespeicherte Anmeldung konnte nicht bestätigt werden."
+        ));
+      };
+
+      const url = new URL(SUBMIT_ENDPOINT);
+      url.searchParams.set("action", "registrationstatus");
+      url.searchParams.set("registrationId", registrationId);
+      url.searchParams.set("prefix", callbackName);
+      url.searchParams.set("_", String(Date.now()));
+
+      script.src = url.toString();
+      script.async = true;
+
+      script.onerror = () => {
+        cleanup();
+        window.setTimeout(() => {
+          pollCreatedRegistration(registrationId, deadline).then(resolve, reject);
+        }, 650);
+      };
+
+      script.onload = () => {
+        if (callbackCalled) return;
+        cleanup();
+        window.setTimeout(() => {
+          pollCreatedRegistration(registrationId, deadline).then(resolve, reject);
+        }, 500);
+      };
+
+      document.head.appendChild(script);
     });
-
-    if (!result.registration) {
-      throw new Error("Die Anmeldung wurde nicht vollständig bestätigt.");
-    }
-
-    // Lokale Kopie nur als Offline-/Admin-Cache.
-    saveLocalRegistration(result.registration);
-    return result.registration;
   }
 
+  async function submitRegistration(payload) {
+    // CREATE wird absichtlich nicht von der unmittelbaren POST-Antwort abhängig
+    // gemacht. Der Server speichert payload.id als registration_id. Danach fragt
+    // die Seite genau diese ID ab. Dadurch ist ein erneuter Klick idempotent:
+    // dieselbe Anmeldung wird nicht doppelt angelegt.
+    try {
+      await fetch(SUBMIT_ENDPOINT, {
+        method: "POST",
+        mode: "no-cors",
+        credentials: "omit",
+        redirect: "follow",
+        headers: {
+          "Content-Type": "text/plain;charset=UTF-8"
+        },
+        body: JSON.stringify({
+          requestId: secureRequestId("create"),
+          action: "create",
+          registration: payload
+        })
+      });
+    } catch (error) {
+      console.error("CREATE-POST fehlgeschlagen:", error);
+      throw new Error(
+        "Die Anmeldung konnte nicht an die Datenbank gesendet werden. Bitte prüfe deine Internetverbindung."
+      );
+    }
+
+    const registration = await pollCreatedRegistration(
+      payload.id,
+      Date.now() + 30000
+    );
+
+    saveLocalRegistration(registration);
+    return registration;
+  }
+
+  let confirmationCountdownTimer = null;
 
   function renderDoneRegistration(registration) {
     accessCode.textContent = registration.accessCode || "–";
-    doneSummary.innerHTML = registrationDetailsHtml(registration);
   }
 
-  async function copyText(text) {
-    try {
-      await navigator.clipboard.writeText(text);
-      return true;
-    } catch {
-      const area = document.createElement("textarea");
-      area.value = text;
-      area.style.position = "fixed";
-      area.style.opacity = "0";
-      document.body.appendChild(area);
-      area.select();
-      const success = document.execCommand("copy");
-      area.remove();
-      return success;
+  function stopConfirmationCountdown() {
+    if (confirmationCountdownTimer) {
+      window.clearInterval(confirmationCountdownTimer);
+      confirmationCountdownTimer = null;
     }
   }
 
-  copyAccessCode.addEventListener("click", async () => {
-    const code = state.savedRegistration?.accessCode || accessCode.textContent.trim();
-    if (!code || code === "–") return;
+  function startConfirmationCountdown() {
+    stopConfirmationCountdown();
 
-    const success = await copyText(code);
-    copyAccessCode.textContent = success ? "Code kopiert ✓" : "Code bitte manuell kopieren";
-    window.setTimeout(() => {
-      copyAccessCode.textContent = "Code kopieren";
-    }, 1800);
+    let remaining = 10;
+    codeContinueButton.disabled = true;
+    codeContinueButton.textContent = `Weiter (${remaining})`;
+    codeCountdownHint.textContent =
+      `Bitte speichere deinen Anmeldecode. Weiter ist in ${remaining} Sekunden möglich.`;
+
+    confirmationCountdownTimer = window.setInterval(() => {
+      remaining -= 1;
+
+      if (remaining <= 0) {
+        stopConfirmationCountdown();
+        codeContinueButton.disabled = false;
+        codeContinueButton.textContent = "Weiter";
+        codeCountdownHint.textContent =
+          "Du kannst jetzt fortfahren.";
+        return;
+      }
+
+      codeContinueButton.textContent = `Weiter (${remaining})`;
+      codeCountdownHint.textContent =
+        `Bitte speichere deinen Anmeldecode. Weiter ist in ${remaining} Sekunden möglich.`;
+    }, 1000);
+  }
+
+  codeContinueButton.addEventListener("click", () => {
+    if (codeContinueButton.disabled) return;
+    stopConfirmationCountdown();
+    setStep("done");
   });
+
 
   downloadPdfButton.addEventListener("click", () => {
     if (state.savedRegistration) downloadRegistrationPdf(state.savedRegistration);
@@ -1551,10 +1666,10 @@
       : new Date().toLocaleString("de-DE");
 
     const lines = [
+      `ANMELDECODE: ${registration.accessCode || ""}`,
+      "",
       "Straßenfest in Hilchenbach 2026",
       "Anmeldebestätigung",
-      "",
-      `Anmeldecode: ${registration.accessCode || ""}`,
       `Gespeichert am: ${created}`,
       "",
       "Angemeldete Personen:"
@@ -1672,29 +1787,30 @@
 
   function createSimplePdf(lines) {
     const wrapped = wrapPdfLines(lines);
-    const perPage = 43;
+    const perPage = 41;
     const pages = [];
 
     for (let i = 0; i < wrapped.length; i += perPage) {
       pages.push(wrapped.slice(i, i + perPage));
     }
 
-    if (!pages.length) pages.push(["Straßenfest in Hilchenbach 2026"]);
+    if (!pages.length) pages.push(["ANMELDECODE"]);
 
     const objects = new Map();
     const pageObjectIds = [];
 
     objects.set(1, "<< /Type /Catalog /Pages 2 0 R >>");
     objects.set(3, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");
+    objects.set(4, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>");
 
     pages.forEach((pageLines, index) => {
-      const pageId = 4 + index * 2;
+      const pageId = 5 + index * 2;
       const contentId = pageId + 1;
       pageObjectIds.push(pageId);
 
       objects.set(
         pageId,
-        `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R >> >> /Contents ${contentId} 0 R >>`
+        `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${contentId} 0 R >>`
       );
 
       const commands = [
@@ -1708,7 +1824,11 @@
         if (lineIndex > 0) commands.push("T*");
 
         if (lineIndex === 0 && index === 0) {
-          commands.push("/F1 16 Tf");
+          commands.push("/F2 20 Tf");
+          commands.push(`(${pdfEscape(line)}) Tj`);
+          commands.push("/F1 11 Tf");
+        } else if (index === 0 && line === "Straßenfest in Hilchenbach 2026") {
+          commands.push("/F2 14 Tf");
           commands.push(`(${pdfEscape(line)}) Tj`);
           commands.push("/F1 11 Tf");
         } else {
@@ -1778,32 +1898,50 @@
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
-    if (state.step !== "5") return;
+    if (state.step !== "5" || state.submitting) return;
 
-    submitStatus.textContent = "Wird sicher gespeichert …";
     const submitButton = form.querySelector('button[type="submit"]');
+    const originalButtonHtml = submitButton.innerHTML;
+
+    state.submitting = true;
     submitButton.disabled = true;
+    submitButton.classList.add("is-processing");
+    submitButton.setAttribute("aria-busy", "true");
+    submitButton.innerHTML = `<span>Wird gespeichert …</span>`;
+    submitStatus.textContent = "Anmeldung wird gespeichert. Bitte kurz warten …";
 
     try {
-      const registration = await submitRegistration(buildPayload());
+      const payload = buildPayload();
+      const registration = await submitRegistration(payload);
 
       state.savedRegistration = registration;
       saveRegistrationIdentity(registration);
       renderDoneRegistration(registration);
 
-      submitStatus.textContent = "";
-      setStep("done");
+      submitStatus.textContent = "Gespeichert.";
+      setStep("code");
+      startConfirmationCountdown();
+
+      // Erfolgreich: Button bleibt gesperrt. Die nächste Kachel zeigt
+      // zunächst den Anmeldecode und lässt erst nach dem Countdown weiter.
     } catch (error) {
       console.error(error);
       submitStatus.textContent =
         error.message ||
-        "Die Anmeldung konnte gerade nicht gesendet werden. Bitte später erneut versuchen.";
-    } finally {
+        "Die Anmeldung konnte gerade nicht bestätigt werden.";
+
+      // Nur wenn wirklich keine Folgeseite erreicht wurde, darf erneut versucht
+      // werden. Durch dieselbe submissionId erzeugt auch ein Retry keinen Duplikat.
+      state.submitting = false;
       submitButton.disabled = false;
+      submitButton.classList.remove("is-processing");
+      submitButton.removeAttribute("aria-busy");
+      submitButton.innerHTML = originalButtonHtml;
     }
   });
 
   restartButton.addEventListener("click", () => {
+    stopConfirmationCountdown();
     state.step = "1";
     state.people = [];
     state.bringing = null;
@@ -1815,6 +1953,8 @@
     state.paymentMethod = null;
     state.totalCost = 0;
     state.savedRegistration = null;
+    state.submissionId = null;
+    state.submitting = false;
     form.reset();
     peopleRows.innerHTML = "";
     addPersonRow();

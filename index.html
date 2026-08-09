@@ -277,35 +277,50 @@
             <div class="step-actions">
               <div class="button-row">
                 <button class="secondary-button" type="button" data-go="4">Zurück</button>
-                <button class="primary-button" type="submit">
+                <button class="primary-button" id="finalSubmitButton" type="submit">
                   <span>Absenden</span><span class="button-chevron" aria-hidden="true">›</span>
                 </button>
               </div>
             </div>
           </section>
 
+          <section class="step confirmation-step" data-step="code">
+            <div class="checkmark" aria-hidden="true">✓</div>
+            <p class="eyebrow">Anmeldung gespeichert</p>
+            <h2>Dein Anmeldecode</h2>
+            <p class="confirmation-copy">
+              Wenn du später noch einmal auf deine eingegebenen Daten zugreifen möchtest,
+              brauchst du diesen Code. Bitte bewahre ihn deshalb gut auf.
+            </p>
+
+            <div class="access-code-card access-code-focus">
+              <span class="summary-label">Persönlicher Anmeldecode</span>
+              <strong class="access-code" id="accessCode">–</strong>
+            </div>
+
+            <button class="primary-button pdf-download-button" id="downloadPdfButton" type="button">
+              Daten als PDF herunterladen
+            </button>
+
+            <p class="confirmation-pdf-note">
+              In der PDF stehen dein Anmeldecode und alle Angaben aus deiner Anmeldung noch einmal vollständig.
+            </p>
+
+            <div class="confirmation-continue-area">
+              <button class="secondary-button countdown-button" id="codeContinueButton" type="button" disabled>
+                Weiter (10)
+              </button>
+              <small id="codeCountdownHint">Bitte speichere deinen Anmeldecode. Weiter ist in 10 Sekunden möglich.</small>
+            </div>
+          </section>
+
           <section class="step thank-you" data-step="done">
             <div class="checkmark" aria-hidden="true">✓</div>
-            <p class="eyebrow">Geschafft</p>
+            <p class="eyebrow">Fertig</p>
             <h2>Vielen Dank für deine Anmeldung!</h2>
-            <p>Deine Anmeldung wurde gespeichert. Bewahre deinen persönlichen Code bitte auf.</p>
-
-            <div class="access-code-card">
-              <span class="summary-label">Dein persönlicher Anmeldecode</span>
-              <strong class="access-code" id="accessCode">–</strong>
-              <p>Mit diesem Code und einem Nachnamen aus der Anmeldung kannst du deine Daten später wieder aufrufen.</p>
-              <button class="code-copy-button" id="copyAccessCode" type="button">Code kopieren</button>
-            </div>
-
-            <div class="saved-summary">
-              <span class="summary-label">Gespeicherte Daten</span>
-              <div id="doneSummary" class="saved-summary-content"></div>
-            </div>
+            <p>Deine Daten wurden gespeichert und können später mit deinem Anmeldecode wieder aufgerufen werden.</p>
 
             <div class="done-actions">
-              <button class="primary-button" id="downloadPdfButton" type="button">
-                Alle Daten als PDF herunterladen
-              </button>
               <button class="secondary-button" id="openSavedRegistrationButton" type="button">
                 Meine Anmeldung ansehen
               </button>

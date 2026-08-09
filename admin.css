@@ -708,3 +708,212 @@ textarea:focus {
     grid-template-columns: 1fr;
   }
 }
+
+
+/* ================================================================
+   v18 – Gruppierte Anmeldungen / Hauptzahler + Mitangemeldete
+   ================================================================ */
+
+.people-list {
+  display: grid;
+  gap: 12px;
+}
+
+.registration-admin-group {
+  overflow: hidden;
+  border: 1px solid rgba(255, 204, 79, .24);
+  border-radius: 17px;
+  background:
+    linear-gradient(145deg, rgba(49, 38, 111, .46), rgba(21, 22, 76, .62));
+  box-shadow: 0 8px 26px rgba(3, 8, 36, .15);
+}
+
+.registration-group-head {
+  display: grid;
+  grid-template-columns: minmax(180px, 1.1fr) minmax(150px, .8fr) minmax(180px, 1fr) minmax(190px, .9fr);
+  gap: 12px;
+  align-items: start;
+  padding: 13px;
+  border-bottom: 1px solid rgba(255,255,255,.10);
+  background: rgba(255, 193, 61, .035);
+}
+
+.registration-owner,
+.registration-code-admin,
+.registration-contribution,
+.registration-payment-summary {
+  display: grid;
+  gap: 3px;
+}
+
+.registration-owner-label,
+.registration-code-admin > span,
+.registration-contribution > span,
+.registration-payment-summary > span {
+  color: var(--muted);
+  font-size: .58rem;
+  font-weight: 800;
+  letter-spacing: .055em;
+  text-transform: uppercase;
+}
+
+.registration-owner > strong {
+  font-size: .9rem;
+}
+
+.registration-owner > small,
+.registration-code-admin > small,
+.registration-contribution > small {
+  color: var(--muted);
+  font-size: .63rem;
+  line-height: 1.35;
+}
+
+.registration-code-admin code {
+  width: fit-content;
+  color: var(--gold-light);
+  font-size: .72rem;
+  font-weight: 800;
+}
+
+.registration-contribution > strong,
+.registration-payment-summary > strong {
+  font-size: .73rem;
+}
+
+.group-paid-button {
+  width: fit-content;
+  min-height: 32px;
+  margin-top: 5px;
+  padding: 5px 9px;
+  border: 1px solid rgba(146, 239, 189, .34);
+  border-radius: 9px;
+  background: rgba(86, 204, 137, .09);
+  color: var(--success);
+  font-size: .62rem;
+  font-weight: 800;
+}
+
+.group-paid-button.is-all-paid {
+  border-color: rgba(255, 196, 71, .30);
+  background: rgba(255, 193, 61, .07);
+  color: var(--gold-light);
+}
+
+.group-paid-button:disabled {
+  opacity: .5;
+  cursor: wait;
+}
+
+.registration-participants {
+  display: grid;
+}
+
+.participant-admin-row {
+  display: grid;
+  grid-template-columns: minmax(190px, 1fr) 90px 104px;
+  gap: 12px;
+  align-items: center;
+  min-height: 64px;
+  padding: 10px 13px;
+  border-top: 1px solid rgba(255,255,255,.065);
+}
+
+.participant-admin-row:first-child {
+  border-top: 0;
+}
+
+.primary-participant {
+  background: rgba(255, 199, 69, .045);
+}
+
+.attached-participant {
+  position: relative;
+  padding-left: 31px;
+}
+
+.attached-participant::before {
+  content: "";
+  position: absolute;
+  left: 14px;
+  top: 0;
+  width: 9px;
+  height: 50%;
+  border-left: 1px solid rgba(255, 210, 95, .32);
+  border-bottom: 1px solid rgba(255, 210, 95, .32);
+  border-bottom-left-radius: 7px;
+}
+
+.participant-identity,
+.participant-price {
+  display: grid;
+  gap: 2px;
+}
+
+.participant-role {
+  color: var(--gold-light);
+  font-size: .54rem;
+  font-weight: 850;
+  letter-spacing: .045em;
+  text-transform: uppercase;
+}
+
+.participant-identity strong {
+  font-size: .78rem;
+}
+
+.participant-identity small,
+.participant-price span {
+  color: var(--muted);
+  font-size: .61rem;
+}
+
+.participant-price strong {
+  font-size: .78rem;
+}
+
+.participant-payment {
+  justify-self: end;
+}
+
+@media (max-width: 900px) {
+  .registration-group-head {
+    grid-template-columns: 1fr 1fr;
+  }
+}
+
+@media (max-width: 620px) {
+  .registration-group-head {
+    grid-template-columns: 1fr;
+    gap: 9px;
+    padding: 11px;
+  }
+
+  .registration-payment-summary {
+    padding-top: 7px;
+    border-top: 1px solid rgba(255,255,255,.075);
+  }
+
+  .participant-admin-row {
+    grid-template-columns: minmax(0, 1fr) auto;
+    gap: 8px;
+    padding: 10px 11px;
+  }
+
+  .attached-participant {
+    padding-left: 29px;
+  }
+
+  .participant-price {
+    grid-column: 1;
+    display: flex;
+    gap: 6px;
+    align-items: baseline;
+  }
+
+  .participant-payment {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+    align-self: center;
+  }
+}

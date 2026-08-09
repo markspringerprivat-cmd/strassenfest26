@@ -357,131 +357,257 @@
       : "";
   }
 
-  function filteredPeople() {
+  function groupRegistrations() {
+    const groups = new Map();
+
+    state.people.forEach((person) => {
+      const registrationId = String(person.registrationId || "");
+      if (!groups.has(registrationId)) {
+        groups.set(registrationId, {
+          registrationId,
+          people: [],
+          accessCode: person.accessCode || "",
+          createdAt: person.createdAt || "",
+          paymentMethod: person.paymentMethod || "none",
+          contribution: person.contribution || null
+        });
+      }
+
+      groups.get(registrationId).people.push(person);
+    });
+
+    return [...groups.values()].map((group) => {
+      group.people.sort((a, b) => Number(a.position) - Number(b.position));
+      group.primary = group.people.find((person) => Number(person.position) === 1) ||
+        group.people[0];
+
+      group.due = group.people.reduce(
+        (sum, person) => sum + Math.max(0, Number(person.price || 0)),
+        0
+      );
+
+      group.paidAmount = group.people.reduce(
+        (sum, person) =>
+          sum + (person.paid ? Math.max(0, Number(person.price || 0)) : 0),
+        0
+      );
+
+      group.payablePeople = group.people.filter(
+        (person) => Number(person.price || 0) > 0
+      );
+
+      group.allPaid = group.payablePeople.length > 0 &&
+        group.payablePeople.every((person) => person.paid);
+
+      group.hasOpen = group.payablePeople.some((person) => !person.paid);
+
+      return group;
+    });
+  }
+
+  function filteredRegistrations() {
     const query = normalize(peopleSearch.value);
     const payment = paymentFilter.value;
     const category = categoryFilter.value;
     const sort = peopleSort.value;
 
-    const rows = state.people.filter((person) => {
+    const groups = groupRegistrations().filter((group) => {
       if (query) {
+        const peopleText = group.people
+          .map((person) => `${person.firstName} ${person.lastName}`)
+          .join(" ");
+
         const haystack = normalize([
-          person.firstName,
-          person.lastName,
-          person.accessCode,
-          person.contribution?.category,
-          person.contribution?.subtype,
-          person.contribution?.note
+          peopleText,
+          group.accessCode,
+          group.contribution?.category,
+          group.contribution?.subtype,
+          group.contribution?.note
         ].filter(Boolean).join(" "));
 
         if (!haystack.includes(query)) return false;
       }
 
-      if (payment === "open" && (person.price <= 0 || person.paid)) return false;
-      if (payment === "paid" && (person.price <= 0 || !person.paid)) return false;
-      if (payment === "free" && person.price > 0) return false;
+      if (payment === "open" && !group.hasOpen) return false;
+      if (payment === "paid" && !group.allPaid) return false;
+      if (payment === "free" && group.due > 0) return false;
 
-      const personCategory = person.contribution?.category || "none";
-      if (category !== "all" && personCategory !== category) return false;
+      const groupCategory = group.contribution?.category || "none";
+      if (category !== "all" && groupCategory !== category) return false;
 
       return true;
     });
 
     const collator = new Intl.Collator("de", { sensitivity: "base" });
 
-    rows.sort((a, b) => {
+    groups.sort((a, b) => {
+      const ap = a.primary || {};
+      const bp = b.primary || {};
+
       if (sort === "lastName-asc") {
-        return collator.compare(a.lastName, b.lastName) ||
-          collator.compare(a.firstName, b.firstName);
+        return collator.compare(ap.lastName || "", bp.lastName || "") ||
+          collator.compare(ap.firstName || "", bp.firstName || "");
       }
+
       if (sort === "lastName-desc") {
-        return collator.compare(b.lastName, a.lastName) ||
-          collator.compare(b.firstName, a.firstName);
+        return collator.compare(bp.lastName || "", ap.lastName || "") ||
+          collator.compare(bp.firstName || "", ap.firstName || "");
       }
+
       if (sort === "firstName-asc") {
-        return collator.compare(a.firstName, b.firstName) ||
-          collator.compare(a.lastName, b.lastName);
+        return collator.compare(ap.firstName || "", bp.firstName || "") ||
+          collator.compare(ap.lastName || "", bp.lastName || "");
       }
-      if (sort === "age-asc") return a.age - b.age;
-      if (sort === "age-desc") return b.age - a.age;
+
+      if (sort === "age-asc") {
+        return Number(ap.age || 0) - Number(bp.age || 0);
+      }
+
+      if (sort === "age-desc") {
+        return Number(bp.age || 0) - Number(ap.age || 0);
+      }
+
       if (sort === "paid-open") {
-        const aOpen = a.price > 0 && !a.paid ? 0 : 1;
-        const bOpen = b.price > 0 && !b.paid ? 0 : 1;
-        return aOpen - bOpen || collator.compare(a.lastName, b.lastName);
+        const aOpen = a.hasOpen ? 0 : 1;
+        const bOpen = b.hasOpen ? 0 : 1;
+        return aOpen - bOpen ||
+          collator.compare(ap.lastName || "", bp.lastName || "");
       }
+
       if (sort === "created-desc") {
-        return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+        return new Date(b.createdAt).getTime() -
+          new Date(a.createdAt).getTime();
       }
+
       return 0;
     });
 
-    return rows;
+    return groups;
   }
 
-  function contributionHtml(person) {
-    if (!person.contribution) {
+  function contributionHtmlForGroup(group) {
+    if (!group.contribution) {
       return `
-        <div class="person-contribution">
+        <div class="registration-contribution">
+          <span>Mitbringsel</span>
           <strong>Kein Mitbringsel</strong>
-          <small>–</small>
         </div>`;
     }
 
-    const type = person.contribution.subtype
-      ? `${person.contribution.category} · ${person.contribution.subtype}`
-      : person.contribution.category;
+    const type = group.contribution.subtype
+      ? `${group.contribution.category} · ${group.contribution.subtype}`
+      : group.contribution.category;
 
     return `
-      <div class="person-contribution">
+      <div class="registration-contribution">
+        <span>Mitbringsel</span>
         <strong>${escapeHtml(type)}</strong>
-        <small>${escapeHtml(person.contribution.note || "–")}</small>
+        <small>${escapeHtml(group.contribution.note || "–")}</small>
+      </div>`;
+  }
+
+  function participantHtml(person, isPrimary) {
+    const free = Number(person.price || 0) <= 0;
+    const paidLabel = free
+      ? "kostenlos"
+      : (person.paid ? "bezahlt" : "offen");
+
+    return `
+      <div class="participant-admin-row ${isPrimary ? "primary-participant" : "attached-participant"}"
+           data-person-key="${escapeAttr(person.key)}">
+        <div class="participant-identity">
+          <span class="participant-role">
+            ${isPrimary ? "Hauptzahler / Hauptanmeldung" : "Mitangemeldet"}
+          </span>
+          <strong>${escapeHtml(person.firstName)} ${escapeHtml(person.lastName)}</strong>
+          <small>${person.age} Jahre</small>
+        </div>
+
+        <div class="participant-price">
+          <span>Betrag</span>
+          <strong>${formatMoney(person.price)}</strong>
+        </div>
+
+        <label class="payment-toggle participant-payment"
+               title="${free ? "Keine Zahlung erforderlich" : "Bezahlstatus ändern"}">
+          <input type="checkbox"
+                 class="paid-checkbox"
+                 ${person.paid ? "checked" : ""}
+                 ${free ? "disabled" : ""}
+                 aria-label="Bezahlstatus für ${escapeAttr(person.firstName + " " + person.lastName)}">
+          <span>${paidLabel}</span>
+        </label>
       </div>`;
   }
 
   function renderPeople() {
-    const rows = filteredPeople();
-    peopleResultCount.textContent = `${rows.length} ${rows.length === 1 ? "Person" : "Personen"}`;
+    const groups = filteredRegistrations();
+    const personCount = groups.reduce((sum, group) => sum + group.people.length, 0);
 
-    if (!rows.length) {
+    peopleResultCount.textContent =
+      `${groups.length} ${groups.length === 1 ? "Anmeldung" : "Anmeldungen"} · ` +
+      `${personCount} ${personCount === 1 ? "Person" : "Personen"}`;
+
+    if (!groups.length) {
       adminPeopleList.innerHTML = `
-        <div class="empty-state">Für die aktuelle Suche bzw. den Filter wurden keine Personen gefunden.</div>`;
+        <div class="empty-state">
+          Für die aktuelle Suche bzw. den Filter wurden keine Anmeldungen gefunden.
+        </div>`;
       return;
     }
 
-    adminPeopleList.innerHTML = rows.map((person) => {
-      const free = Number(person.price || 0) <= 0;
-      const paidLabel = free ? "kostenlos" : (person.paid ? "bezahlt" : "offen");
-      const date = person.createdAt
-        ? new Date(person.createdAt).toLocaleDateString("de-DE")
+    adminPeopleList.innerHTML = groups.map((group) => {
+      const date = group.createdAt
+        ? new Date(group.createdAt).toLocaleDateString("de-DE")
         : "–";
 
+      const paymentText = group.due <= 0
+        ? "Keine Zahlung erforderlich"
+        : `${formatMoney(group.paidAmount)} von ${formatMoney(group.due)} bezahlt`;
+
+      const groupButtonText = group.allPaid
+        ? "Alle wieder auf offen"
+        : "Alle als bezahlt markieren";
+
       return `
-        <article class="person-row-admin" data-person-key="${escapeAttr(person.key)}">
-          <div class="person-main">
-            <strong>${escapeHtml(person.firstName)} ${escapeHtml(person.lastName)}</strong>
-            <small>${escapeHtml(paymentMethodLabel(person.paymentMethod))}</small>
+        <article class="registration-admin-group"
+                 data-registration-id="${escapeAttr(group.registrationId)}">
+
+          <header class="registration-group-head">
+            <div class="registration-owner">
+              <span class="registration-owner-label">Anmeldung von</span>
+              <strong>${escapeHtml(group.primary?.firstName || "")} ${escapeHtml(group.primary?.lastName || "")}</strong>
+              <small>
+                ${group.people.length} ${group.people.length === 1 ? "Person" : "Personen"}
+                · ${escapeHtml(paymentMethodLabel(group.paymentMethod))}
+              </small>
+            </div>
+
+            <div class="registration-code-admin">
+              <span>Anmeldecode</span>
+              <code>${escapeHtml(group.accessCode || "")}</code>
+              <small>${escapeHtml(date)}</small>
+            </div>
+
+            ${contributionHtmlForGroup(group)}
+
+            <div class="registration-payment-summary">
+              <span>Zahlungsstand</span>
+              <strong>${escapeHtml(paymentText)}</strong>
+              ${group.due > 0 ? `
+                <button type="button"
+                        class="group-paid-button ${group.allPaid ? "is-all-paid" : ""}"
+                        data-target-paid="${group.allPaid ? "false" : "true"}">
+                  ${escapeHtml(groupButtonText)}
+                </button>` : ""}
+            </div>
+          </header>
+
+          <div class="registration-participants">
+            ${group.people.map((person, index) =>
+              participantHtml(person, index === 0)
+            ).join("")}
           </div>
-
-          <div class="person-meta-mobile">
-            <span class="person-age">${person.age} J.</span>
-            <span class="person-price">${formatMoney(person.price)}</span>
-          </div>
-
-          ${contributionHtml(person)}
-
-          <div class="person-registration">
-            <code>${escapeHtml(person.accessCode || "")}</code>
-            <small>Anmeldung ${escapeHtml(date)}</small>
-          </div>
-
-          <label class="payment-toggle" title="${free ? "Keine Zahlung erforderlich" : "Bezahlstatus ändern"}">
-            <input type="checkbox"
-                   class="paid-checkbox"
-                   ${person.paid ? "checked" : ""}
-                   ${free ? "disabled" : ""}
-                   aria-label="Bezahlstatus für ${escapeAttr(person.firstName + " " + person.lastName)}">
-            <span>${paidLabel}</span>
-          </label>
         </article>`;
     }).join("");
   }
@@ -503,16 +629,68 @@
       updateSummary();
       renderPeople();
       setSaveStatus(overviewSaveStatus, "Gespeichert");
-      window.setTimeout(() => setSaveStatus(overviewSaveStatus, "Aktuell"), 1100);
+      window.setTimeout(() => {
+        setSaveStatus(overviewSaveStatus, "Aktuell");
+      }, 1100);
     } catch (error) {
       person.paid = !paid;
+
       if (!handleApiError(error)) {
         setSaveStatus(overviewSaveStatus, "Fehler", "error");
         showToast(error.message);
         renderPeople();
       }
-    } finally {
-      checkbox.disabled = false;
+    }
+  }
+
+  async function setRegistrationPaid(group, paid, button) {
+    if (!group || group.due <= 0) return;
+
+    setSaveStatus(overviewSaveStatus, "Speichert …", "saving");
+    button.disabled = true;
+
+    try {
+      const result = await apiRequest("adminSetRegistrationPaid", {
+        token: state.token,
+        registrationId: group.registrationId,
+        paid
+      });
+
+      const updates = Array.isArray(result.people)
+        ? result.people
+        : [];
+
+      updates.forEach((update) => {
+        const person = state.people.find((item) =>
+          item.registrationId === group.registrationId &&
+          Number(item.position) === Number(update.position)
+        );
+
+        if (!person) return;
+
+        person.paid = Boolean(update.paid);
+        person.paidAt = update.paidAt || null;
+      });
+
+      updateSummary();
+      renderPeople();
+      setSaveStatus(overviewSaveStatus, "Gespeichert");
+      showToast(
+        paid
+          ? "Alle kostenpflichtigen Personen dieser Anmeldung wurden als bezahlt markiert."
+          : "Alle kostenpflichtigen Personen dieser Anmeldung wurden wieder auf offen gesetzt."
+      );
+
+      window.setTimeout(() => {
+        setSaveStatus(overviewSaveStatus, "Aktuell");
+      }, 1100);
+
+    } catch (error) {
+      if (!handleApiError(error)) {
+        setSaveStatus(overviewSaveStatus, "Fehler", "error");
+        showToast(error.message);
+        renderPeople();
+      }
     }
   }
 
@@ -520,12 +698,35 @@
     const checkbox = event.target.closest(".paid-checkbox");
     if (!checkbox) return;
 
-    const row = checkbox.closest(".person-row-admin");
-    const person = state.people.find((item) => item.key === row?.dataset.personKey);
+    const row = checkbox.closest(".participant-admin-row");
+    const person = state.people.find(
+      (item) => item.key === row?.dataset.personKey
+    );
+
     if (!person) return;
 
     void setPaid(person, checkbox.checked, checkbox);
   });
+
+  adminPeopleList.addEventListener("click", (event) => {
+    const button = event.target.closest(".group-paid-button");
+    if (!button) return;
+
+    const article = button.closest(".registration-admin-group");
+    const registrationId = article?.dataset.registrationId;
+    const group = groupRegistrations().find(
+      (item) => item.registrationId === registrationId
+    );
+
+    if (!group) return;
+
+    void setRegistrationPaid(
+      group,
+      button.dataset.targetPaid === "true",
+      button
+    );
+  });
+
 
   [peopleSearch, paymentFilter, categoryFilter, peopleSort].forEach((control) => {
     control.addEventListener(control === peopleSearch ? "input" : "change", renderPeople);
