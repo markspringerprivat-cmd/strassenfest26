@@ -75,46 +75,87 @@
             <div class="save-indicator" id="overviewSaveStatus" aria-live="polite">Aktuell</div>
           </div>
 
-          <div class="toolbar">
-            <label class="search-box">
-              <span class="sr-only">Suchen</span>
-              <input id="peopleSearch" type="search" placeholder="Name, Code oder Mitbringsel suchen …" />
-            </label>
+          <div class="people-tools">
+            <button id="peopleToolsToggle"
+                    class="compact-tools-button"
+                    type="button"
+                    aria-expanded="false">
+              Nutzer suchen &amp; sortieren
+              <span aria-hidden="true">⌄</span>
+            </button>
 
-            <label>
-              <span>Bezahlstatus</span>
-              <select id="paymentFilter">
-                <option value="all">Alle</option>
-                <option value="open">Offen</option>
-                <option value="paid">Bezahlt</option>
-                <option value="free">Kostenlos</option>
-              </select>
-            </label>
+            <div class="people-tools-panel hidden" id="peopleToolsPanel">
+              <label class="compact-control">
+                <span>Was möchtest du machen?</span>
+                <select id="peopleToolMode">
+                  <option value="">Bitte auswählen</option>
+                  <option value="search">Nutzer suchen</option>
+                  <option value="sort">Nutzer sortieren</option>
+                </select>
+              </label>
 
-            <label>
-              <span>Mitbringsel</span>
-              <select id="categoryFilter">
-                <option value="all">Alle</option>
-                <option value="Essen">Essen</option>
-                <option value="Getränke">Getränke</option>
-                <option value="Spielzeug">Spielzeug</option>
-                <option value="Sonstiges">Sonstiges</option>
-                <option value="none">Nichts</option>
-              </select>
-            </label>
+              <div class="people-tool-subpanel hidden" id="peopleSearchOptions">
+                <label class="compact-control">
+                  <span>Wonach suchen?</span>
+                  <select id="peopleSearchType">
+                    <option value="name">Name</option>
+                    <option value="code">Anmeldecode</option>
+                    <option value="payment">Bezahlstatus</option>
+                    <option value="category">Mitbringsel</option>
+                  </select>
+                </label>
 
-            <label>
-              <span>Sortieren</span>
-              <select id="peopleSort">
-                <option value="lastName-asc">Nachname A–Z</option>
-                <option value="lastName-desc">Nachname Z–A</option>
-                <option value="firstName-asc">Vorname A–Z</option>
-                <option value="age-asc">Alter aufsteigend</option>
-                <option value="age-desc">Alter absteigend</option>
-                <option value="paid-open">Offene Zahlungen zuerst</option>
-                <option value="created-desc">Neueste Anmeldung zuerst</option>
-              </select>
-            </label>
+                <label class="compact-control" id="peopleTextSearchWrap">
+                  <span id="peopleTextSearchLabel">Name</span>
+                  <input id="peopleSearch"
+                         type="search"
+                         placeholder="Name eingeben …" />
+                </label>
+
+                <label class="compact-control hidden" id="paymentFilterWrap">
+                  <span>Bezahlstatus</span>
+                  <select id="paymentFilter">
+                    <option value="all">Alle</option>
+                    <option value="open">Offen</option>
+                    <option value="paid">Bezahlt</option>
+                    <option value="free">Kostenlos</option>
+                  </select>
+                </label>
+
+                <label class="compact-control hidden" id="categoryFilterWrap">
+                  <span>Mitbringsel</span>
+                  <select id="categoryFilter">
+                    <option value="all">Alle</option>
+                    <option value="Essen">Essen</option>
+                    <option value="Getränke">Getränke</option>
+                    <option value="Spielzeug">Spielzeug</option>
+                    <option value="Sonstiges">Sonstiges</option>
+                    <option value="none">Nichts</option>
+                  </select>
+                </label>
+              </div>
+
+              <div class="people-tool-subpanel hidden" id="peopleSortOptions">
+                <label class="compact-control">
+                  <span>Sortierung</span>
+                  <select id="peopleSort">
+                    <option value="lastName-asc">Nachname A–Z</option>
+                    <option value="lastName-desc">Nachname Z–A</option>
+                    <option value="firstName-asc">Vorname A–Z</option>
+                    <option value="age-asc">Alter aufsteigend</option>
+                    <option value="age-desc">Alter absteigend</option>
+                    <option value="paid-open">Offene Zahlungen zuerst</option>
+                    <option value="created-desc">Neueste Anmeldung zuerst</option>
+                  </select>
+                </label>
+              </div>
+
+              <button id="peopleToolsReset"
+                      class="people-tools-reset"
+                      type="button">
+                Suche / Sortierung zurücksetzen
+              </button>
+            </div>
           </div>
 
           <div class="result-line">
@@ -215,7 +256,7 @@
               <select id="ticketFilter">
                 <option value="all">Alle</option>
                 <option value="OPEN">Offen</option>
-                <option value="DONE">Erledigt</option>
+                <option value="DONE">Bereits erledigt (Altbestand)</option>
               </select>
             </label>
 
@@ -239,6 +280,31 @@
       </section>
     </section>
   </main>
+
+  <div class="admin-modal hidden"
+       id="primaryDeleteModal"
+       role="dialog"
+       aria-modal="true"
+       aria-labelledby="primaryDeleteTitle">
+    <div class="admin-modal-backdrop" data-close-primary-modal></div>
+    <section class="admin-modal-card">
+      <p class="eyebrow">Person löschen</p>
+      <h2 id="primaryDeleteTitle">Neue Hauptperson auswählen</h2>
+      <p id="primaryDeleteText">
+        Wenn die Hauptperson gelöscht wird, muss eine andere mitangemeldete Person die Hauptanmeldung übernehmen.
+      </p>
+
+      <label class="admin-field" id="replacementPrimaryField">
+        <span>Neue Hauptperson</span>
+        <select id="replacementPrimarySelect"></select>
+      </label>
+
+      <div class="admin-modal-actions">
+        <button class="ghost-button" id="cancelPrimaryDelete" type="button">Abbrechen</button>
+        <button class="danger-button" id="confirmPrimaryDelete" type="button">Löschen</button>
+      </div>
+    </section>
+  </div>
 
   <div id="apiTransportHost" class="api-transport-host" aria-hidden="true"></div>
   <div class="toast hidden" id="adminToast" role="status" aria-live="polite"></div>

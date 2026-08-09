@@ -1076,3 +1076,469 @@ textarea:focus {
     width: 100%;
   }
 }
+
+
+/* ================================================================
+   v21 – kompakte Adminlisten
+   ================================================================ */
+
+.people-tools { margin: 8px 0 10px; }
+
+.compact-tools-button {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+  width: min(100%, 330px);
+  min-height: 39px;
+  padding: 7px 11px;
+  border: 1px solid rgba(255, 205, 82, .28);
+  border-radius: 10px;
+  background: rgba(255, 193, 61, .06);
+  color: var(--gold-light);
+  font-size: .7rem;
+  font-weight: 800;
+}
+
+.people-tools-panel {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(180px, 1fr));
+  gap: 8px;
+  width: min(100%, 700px);
+  margin-top: 7px;
+  padding: 9px;
+  border: 1px solid rgba(216, 196, 255, .16);
+  border-radius: 11px;
+  background: rgba(15, 19, 69, .35);
+}
+
+.compact-control,
+.people-tool-subpanel {
+  display: grid;
+  gap: 5px;
+}
+
+.people-tool-subpanel {
+  grid-template-columns: repeat(2, minmax(160px, 1fr));
+}
+
+.compact-control > span {
+  color: var(--muted);
+  font-size: .61rem;
+  font-weight: 700;
+}
+
+.people-tools-panel select,
+.people-tools-panel input {
+  min-height: 37px;
+  padding-block: 7px;
+  font-size: .72rem;
+}
+
+.people-tools-reset {
+  align-self: end;
+  min-height: 37px;
+  padding: 7px 10px;
+  border: 1px solid rgba(255,255,255,.13);
+  border-radius: 9px;
+  background: rgba(255,255,255,.045);
+  color: rgba(255,255,255,.72);
+  font-size: .63rem;
+  font-weight: 750;
+}
+
+.people-list { gap: 6px; }
+
+.registration-admin-group {
+  border-radius: 11px;
+  box-shadow: none;
+}
+
+.registration-summary-toggle {
+  display: grid;
+  grid-template-columns: minmax(180px, .9fr) minmax(240px, 1.6fr) 24px;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  min-height: 52px;
+  padding: 7px 10px;
+  border: 0;
+  background: rgba(255,255,255,.018);
+  color: #fff;
+  text-align: left;
+}
+
+.registration-summary-toggle:hover { background: rgba(255, 195, 61, .045); }
+
+.compact-registration-primary,
+.compact-registration-attached {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.compact-registration-primary small,
+.compact-registration-attached small {
+  color: var(--muted);
+  font-size: .52rem;
+  font-weight: 800;
+  letter-spacing: .045em;
+  text-transform: uppercase;
+}
+
+.compact-registration-primary strong {
+  overflow: hidden;
+  font-size: .76rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compact-registration-attached > span {
+  overflow: hidden;
+  color: rgba(255,255,255,.82);
+  font-size: .68rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compact-registration-chevron {
+  justify-self: end;
+  color: var(--gold-light);
+  font-size: .8rem;
+}
+
+.registration-expanded-details {
+  border-top: 1px solid rgba(255,255,255,.075);
+}
+
+.compact-registration-meta {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(120px, 1fr));
+  gap: 6px;
+  padding: 7px 9px;
+  background: rgba(255,255,255,.022);
+}
+
+.compact-meta-item {
+  display: grid;
+  gap: 1px;
+  min-width: 0;
+}
+
+.compact-meta-item > span {
+  color: var(--muted);
+  font-size: .51rem;
+  font-weight: 750;
+  text-transform: uppercase;
+}
+
+.compact-meta-item strong,
+.compact-meta-item code {
+  overflow: hidden;
+  color: rgba(255,255,255,.9);
+  font-size: .65rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compact-meta-item code { color: var(--gold-light); }
+
+.compact-meta-item small {
+  overflow: hidden;
+  color: var(--muted);
+  font-size: .56rem;
+  line-height: 1.2;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.compact-payment-summary .group-paid-button {
+  min-height: 25px;
+  margin-top: 3px;
+  padding: 3px 7px;
+  font-size: .55rem;
+}
+
+.participant-admin-row {
+  grid-template-columns: minmax(170px, 1.3fr) 52px 78px 88px 28px;
+  gap: 7px;
+  min-height: 42px;
+  padding: 5px 9px;
+}
+
+.attached-participant { padding-left: 23px; }
+
+.attached-participant::before {
+  left: 10px;
+  width: 7px;
+}
+
+.participant-identity { gap: 0; }
+.participant-role { font-size: .46rem; }
+
+.participant-identity strong {
+  overflow: hidden;
+  font-size: .68rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.participant-age,
+.participant-price {
+  color: rgba(255,255,255,.78);
+  font-size: .63rem;
+  font-weight: 700;
+}
+
+.participant-payment { justify-self: end; }
+
+.participant-payment input {
+  width: 34px;
+  height: 20px;
+  min-height: 20px;
+}
+
+.participant-payment input::after {
+  width: 14px;
+  height: 14px;
+}
+
+.participant-payment input:checked::after { transform: translateX(14px); }
+
+.delete-person-button {
+  width: 28px;
+  min-height: 28px;
+  padding: 0;
+  border: 1px solid rgba(255, 183, 197, .20);
+  border-radius: 7px;
+  background: rgba(255, 86, 122, .055);
+  color: var(--danger);
+  font-size: .92rem;
+  line-height: 1;
+}
+
+/* Einkauf: eine kompakte Listenzeile */
+.expense-list {
+  display: grid;
+  gap: 5px;
+}
+
+.expense-row {
+  display: block;
+  padding: 0;
+  border-radius: 10px;
+  overflow: hidden;
+}
+
+.expense-compact-line {
+  display: grid;
+  grid-template-columns: minmax(150px, 1fr) 105px 34px 30px;
+  gap: 6px;
+  align-items: center;
+  min-height: 43px;
+  padding: 4px 6px;
+}
+
+.expense-compact-line .expense-item,
+.expense-price-wrap .expense-amount {
+  min-height: 33px;
+  border-color: transparent;
+  background: transparent;
+  padding: 5px 6px;
+}
+
+.expense-compact-line .expense-item {
+  font-size: .72rem;
+  font-weight: 760;
+}
+
+.expense-price-wrap {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+}
+
+.expense-price-wrap .expense-amount {
+  text-align: right;
+  font-size: .7rem;
+  font-weight: 800;
+}
+
+.expense-price-wrap > span {
+  padding-right: 3px;
+  color: var(--gold-light);
+  font-size: .68rem;
+  font-weight: 800;
+}
+
+.expense-note-toggle {
+  display: grid;
+  place-items: center;
+  width: 32px;
+  min-height: 32px;
+  padding: 6px;
+  border: 1px solid rgba(255,255,255,.12);
+  border-radius: 8px;
+  background: rgba(255,255,255,.035);
+  color: rgba(255,255,255,.70);
+}
+
+.expense-note-toggle.has-note {
+  border-color: rgba(255, 200, 72, .28);
+  color: var(--gold-light);
+}
+
+.expense-note-toggle svg {
+  width: 17px;
+  height: 17px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 1.7;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.expense-compact-line .delete-expense {
+  width: 28px;
+  min-height: 30px;
+  border-radius: 7px;
+  font-size: .9rem;
+}
+
+.expense-extra {
+  display: grid;
+  grid-template-columns: 150px minmax(220px, 1fr);
+  gap: 7px;
+  padding: 7px;
+  border-top: 1px solid rgba(255,255,255,.07);
+  background: rgba(9, 15, 61, .26);
+}
+
+.expense-extra label {
+  display: grid;
+  gap: 4px;
+}
+
+.expense-extra label > span {
+  color: var(--muted);
+  font-size: .56rem;
+  font-weight: 750;
+}
+
+.expense-extra select,
+.expense-extra textarea {
+  min-height: 35px;
+  padding: 6px 8px;
+  font-size: .68rem;
+}
+
+.expense-extra textarea { resize: vertical; }
+
+/* Hauptperson-Wechsel */
+.admin-modal {
+  position: fixed;
+  z-index: 100;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding: 18px;
+}
+
+.admin-modal-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(4, 8, 34, .74);
+  backdrop-filter: blur(5px);
+}
+
+.admin-modal-card {
+  position: relative;
+  width: min(440px, 100%);
+  padding: 19px;
+  border: 1px solid rgba(255, 208, 103, .42);
+  border-radius: 18px;
+  background: rgba(22, 19, 78, .98);
+  box-shadow: var(--shadow);
+}
+
+.admin-modal-card h2 {
+  margin: 0 0 7px;
+  font-size: 1.05rem;
+}
+
+.admin-modal-card p:not(.eyebrow) {
+  margin: 0 0 13px;
+  color: var(--muted);
+  font-size: .72rem;
+  line-height: 1.45;
+}
+
+.admin-modal-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 7px;
+  margin-top: 14px;
+}
+
+.danger-button {
+  min-height: 38px;
+  padding: 7px 11px;
+  border: 1px solid rgba(255, 183, 197, .36);
+  border-radius: 10px;
+  background: rgba(255, 86, 122, .10);
+  color: var(--danger);
+  font-weight: 800;
+}
+
+@media (max-width: 720px) {
+  .people-tools-panel,
+  .people-tool-subpanel {
+    grid-template-columns: 1fr;
+  }
+
+  .registration-summary-toggle {
+    grid-template-columns: 1fr 24px;
+    gap: 4px 8px;
+  }
+
+  .compact-registration-primary { grid-column: 1; }
+
+  .compact-registration-attached {
+    grid-column: 1;
+    grid-row: 2;
+  }
+
+  .compact-registration-chevron {
+    grid-column: 2;
+    grid-row: 1 / span 2;
+  }
+
+  .compact-registration-meta { grid-template-columns: 1fr 1fr; }
+
+  .participant-admin-row {
+    grid-template-columns: minmax(0, 1fr) 45px 66px 73px 27px;
+    gap: 4px;
+    padding-inline: 7px;
+  }
+
+  .participant-payment span { font-size: .49rem; }
+
+  .expense-compact-line {
+    grid-template-columns: minmax(110px, 1fr) 92px 32px 28px;
+    gap: 3px;
+  }
+
+  .expense-extra { grid-template-columns: 1fr; }
+}
+
+@media (max-width: 470px) {
+  .compact-registration-meta { grid-template-columns: 1fr; }
+
+  .participant-admin-row {
+    grid-template-columns: minmax(0, 1fr) 63px 70px 27px;
+  }
+
+  .participant-age { display: none; }
+  .participant-price { text-align: right; }
+  .participant-payment { justify-self: end; }
+}

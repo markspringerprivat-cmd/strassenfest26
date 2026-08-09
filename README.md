@@ -283,3 +283,10 @@ zum Timeout geführt haben konnten.
 - Eine neue Anmeldung ist nicht an eine Geräte-ID gebunden. Jede neue Anmeldung
   bekommt eine neue zufällige submissionId; nur ein Retry derselben Anmeldung
   verwendet dieselbe ID zur Duplikatvermeidung.
+
+## Update v21
+- Teilnehmerübersicht kompakt/einklappbar.
+- „Nutzer suchen & sortieren“ als gestufte Kompaktsteuerung.
+- Einzelne Personen löschbar; Hauptperson nur mit Nachfolger.
+- Einkaufsliste einzeilig; Kategorie/Notiz hinter Notizsymbol.
+- Tickets werden beim Abschließen gelöscht.

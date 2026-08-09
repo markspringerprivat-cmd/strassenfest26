@@ -15,7 +15,10 @@
       paid: 0,
       open: 0
     },
-    expenseTimers: new Map()
+    expenseTimers: new Map(),
+    expandedRegistrations: new Set(),
+    expandedExpenseId: "",
+    pendingPrimaryDeletion: null
   };
 
   const loginCard = document.getElementById("loginCard");
@@ -28,6 +31,17 @@
   const apiTransportHost = document.getElementById("apiTransportHost");
   const adminToast = document.getElementById("adminToast");
 
+  const peopleToolsToggle = document.getElementById("peopleToolsToggle");
+  const peopleToolsPanel = document.getElementById("peopleToolsPanel");
+  const peopleToolMode = document.getElementById("peopleToolMode");
+  const peopleSearchType = document.getElementById("peopleSearchType");
+  const peopleSearchOptions = document.getElementById("peopleSearchOptions");
+  const peopleSortOptions = document.getElementById("peopleSortOptions");
+  const peopleTextSearchWrap = document.getElementById("peopleTextSearchWrap");
+  const peopleTextSearchLabel = document.getElementById("peopleTextSearchLabel");
+  const paymentFilterWrap = document.getElementById("paymentFilterWrap");
+  const categoryFilterWrap = document.getElementById("categoryFilterWrap");
+  const peopleToolsReset = document.getElementById("peopleToolsReset");
   const peopleSearch = document.getElementById("peopleSearch");
   const paymentFilter = document.getElementById("paymentFilter");
   const categoryFilter = document.getElementById("categoryFilter");
@@ -64,6 +78,14 @@
   const ticketList = document.getElementById("ticketList");
   const refreshTickets = document.getElementById("refreshTickets");
   const ticketSaveStatus = document.getElementById("ticketSaveStatus");
+
+  const primaryDeleteModal = document.getElementById("primaryDeleteModal");
+  const primaryDeleteTitle = document.getElementById("primaryDeleteTitle");
+  const primaryDeleteText = document.getElementById("primaryDeleteText");
+  const replacementPrimaryField = document.getElementById("replacementPrimaryField");
+  const replacementPrimarySelect = document.getElementById("replacementPrimarySelect");
+  const cancelPrimaryDelete = document.getElementById("cancelPrimaryDelete");
+  const confirmPrimaryDelete = document.getElementById("confirmPrimaryDelete");
 
   function secureRequestId(prefix = "sf") {
     const bytes = new Uint8Array(18);
@@ -369,6 +391,81 @@
       : "";
   }
 
+  function resetInactivePeopleFilters(activeType = "") {
+    if (activeType !== "name" && activeType !== "code") {
+      peopleSearch.value = "";
+    }
+    if (activeType !== "payment") {
+      paymentFilter.value = "all";
+    }
+    if (activeType !== "category") {
+      categoryFilter.value = "all";
+    }
+  }
+
+  function updatePeopleSearchTypeUI() {
+    const type = peopleSearchType.value;
+
+    peopleTextSearchWrap.classList.toggle(
+      "hidden",
+      !["name", "code"].includes(type)
+    );
+    paymentFilterWrap.classList.toggle("hidden", type !== "payment");
+    categoryFilterWrap.classList.toggle("hidden", type !== "category");
+
+    if (type === "code") {
+      peopleTextSearchLabel.textContent = "Anmeldecode";
+      peopleSearch.placeholder = "Anmeldecode eingeben …";
+    } else {
+      peopleTextSearchLabel.textContent = "Name";
+      peopleSearch.placeholder = "Name eingeben …";
+    }
+
+    resetInactivePeopleFilters(type);
+    renderPeople();
+  }
+
+  function updatePeopleToolsUI() {
+    const mode = peopleToolMode.value;
+    peopleSearchOptions.classList.toggle("hidden", mode !== "search");
+    peopleSortOptions.classList.toggle("hidden", mode !== "sort");
+
+    if (mode === "search") {
+      updatePeopleSearchTypeUI();
+    }
+  }
+
+  peopleToolsToggle.addEventListener("click", () => {
+    const opening = peopleToolsPanel.classList.contains("hidden");
+    peopleToolsPanel.classList.toggle("hidden", !opening);
+    peopleToolsToggle.setAttribute("aria-expanded", String(opening));
+  });
+
+  peopleToolMode.addEventListener("change", () => {
+    if (peopleToolMode.value === "sort") {
+      resetInactivePeopleFilters("");
+    }
+    updatePeopleToolsUI();
+    renderPeople();
+  });
+
+  peopleSearchType.addEventListener("change", updatePeopleSearchTypeUI);
+  peopleSearch.addEventListener("input", renderPeople);
+  paymentFilter.addEventListener("change", renderPeople);
+  categoryFilter.addEventListener("change", renderPeople);
+  peopleSort.addEventListener("change", renderPeople);
+
+  peopleToolsReset.addEventListener("click", () => {
+    peopleToolMode.value = "";
+    peopleSearchType.value = "name";
+    peopleSearch.value = "";
+    paymentFilter.value = "all";
+    categoryFilter.value = "all";
+    peopleSort.value = "lastName-asc";
+    updatePeopleToolsUI();
+    renderPeople();
+  });
+
   function groupRegistrations() {
     const groups = new Map();
 
@@ -419,23 +516,22 @@
 
   function filteredRegistrations() {
     const query = normalize(peopleSearch.value);
+    const searchType = peopleToolMode.value === "search"
+      ? peopleSearchType.value
+      : "";
     const payment = paymentFilter.value;
     const category = categoryFilter.value;
     const sort = peopleSort.value;
 
     const groups = groupRegistrations().filter((group) => {
-      if (query) {
-        const peopleText = group.people
-          .map((person) => `${person.firstName} ${person.lastName}`)
-          .join(" ");
-
-        const haystack = normalize([
-          peopleText,
-          group.accessCode,
-          group.contribution?.category,
-          group.contribution?.subtype,
-          group.contribution?.note
-        ].filter(Boolean).join(" "));
+      if (query && ["name", "code"].includes(searchType)) {
+        const haystack = searchType === "code"
+          ? normalize(group.accessCode)
+          : normalize(
+              group.people
+                .map((person) => `${person.firstName} ${person.lastName}`)
+                .join(" ")
+            );
 
         if (!haystack.includes(query)) return false;
       }
@@ -500,9 +596,9 @@
   function contributionHtmlForGroup(group) {
     if (!group.contribution) {
       return `
-        <div class="registration-contribution">
+        <div class="compact-meta-item">
           <span>Mitbringsel</span>
-          <strong>Kein Mitbringsel</strong>
+          <strong>Keins</strong>
         </div>`;
     }
 
@@ -511,7 +607,7 @@
       : group.contribution.category;
 
     return `
-      <div class="registration-contribution">
+      <div class="compact-meta-item">
         <span>Mitbringsel</span>
         <strong>${escapeHtml(type)}</strong>
         <small>${escapeHtml(group.contribution.note || "–")}</small>
@@ -529,16 +625,13 @@
            data-person-key="${escapeAttr(person.key)}">
         <div class="participant-identity">
           <span class="participant-role">
-            ${isPrimary ? "Hauptzahler / Hauptanmeldung" : "Mitangemeldet"}
+            ${isPrimary ? "Hauptperson" : "Mitangemeldet"}
           </span>
           <strong>${escapeHtml(person.firstName)} ${escapeHtml(person.lastName)}</strong>
-          <small>${person.age} Jahre</small>
         </div>
 
-        <div class="participant-price">
-          <span>Betrag</span>
-          <strong>${formatMoney(person.price)}</strong>
-        </div>
+        <span class="participant-age">${person.age} J.</span>
+        <strong class="participant-price">${formatMoney(person.price)}</strong>
 
         <label class="payment-toggle participant-payment"
                title="${free ? "Keine Zahlung erforderlich" : "Bezahlstatus ändern"}">
@@ -549,6 +642,11 @@
                  aria-label="Bezahlstatus für ${escapeAttr(person.firstName + " " + person.lastName)}">
           <span>${paidLabel}</span>
         </label>
+
+        <button class="delete-person-button"
+                type="button"
+                aria-label="${escapeAttr(person.firstName + " " + person.lastName)} löschen"
+                title="Person löschen">×</button>
       </div>`;
   }
 
@@ -563,15 +661,26 @@
     if (!groups.length) {
       adminPeopleList.innerHTML = `
         <div class="empty-state">
-          Für die aktuelle Suche bzw. den Filter wurden keine Anmeldungen gefunden.
+          Für die aktuelle Suche bzw. Sortierung wurden keine Anmeldungen gefunden.
         </div>`;
       return;
     }
 
     adminPeopleList.innerHTML = groups.map((group) => {
+      const expanded = state.expandedRegistrations.has(group.registrationId);
       const date = group.createdAt
         ? new Date(group.createdAt).toLocaleDateString("de-DE")
         : "–";
+
+      const attached = group.people.filter(
+        (person) => Number(person.position) !== Number(group.primary?.position)
+      );
+
+      const attachedNames = attached.length
+        ? attached.map((person) =>
+            `${person.firstName} ${person.lastName}`
+          ).join(", ")
+        : "Keine weiteren Personen";
 
       const paymentText = group.due <= 0
         ? "Keine Zahlung erforderlich"
@@ -582,43 +691,61 @@
         : "Alle als bezahlt markieren";
 
       return `
-        <article class="registration-admin-group"
+        <article class="registration-admin-group ${expanded ? "is-expanded" : ""}"
                  data-registration-id="${escapeAttr(group.registrationId)}">
-
-          <header class="registration-group-head">
-            <div class="registration-owner">
-              <span class="registration-owner-label">Anmeldung von</span>
+          <button type="button"
+                  class="registration-summary-toggle"
+                  aria-expanded="${expanded ? "true" : "false"}">
+            <span class="compact-registration-primary">
+              <small>Hauptzahler / Hauptanmeldung</small>
               <strong>${escapeHtml(group.primary?.firstName || "")} ${escapeHtml(group.primary?.lastName || "")}</strong>
-              <small>
-                ${group.people.length} ${group.people.length === 1 ? "Person" : "Personen"}
-                · ${escapeHtml(paymentMethodLabel(group.paymentMethod))}
-              </small>
+            </span>
+
+            <span class="compact-registration-attached">
+              <small>Mitangemeldet</small>
+              <span>${escapeHtml(attachedNames)}</span>
+            </span>
+
+            <span class="compact-registration-chevron" aria-hidden="true">
+              ${expanded ? "⌃" : "⌄"}
+            </span>
+          </button>
+
+          <div class="registration-expanded-details ${expanded ? "" : "hidden"}">
+            <div class="compact-registration-meta">
+              <div class="compact-meta-item">
+                <span>Anmeldecode</span>
+                <code>${escapeHtml(group.accessCode || "")}</code>
+                <small>${escapeHtml(date)}</small>
+              </div>
+
+              ${contributionHtmlForGroup(group)}
+
+              <div class="compact-meta-item">
+                <span>Zahlungsart</span>
+                <strong>${escapeHtml(paymentMethodLabel(group.paymentMethod))}</strong>
+              </div>
+
+              <div class="compact-meta-item compact-payment-summary">
+                <span>Zahlungsstand</span>
+                <strong>${escapeHtml(paymentText)}</strong>
+                ${group.due > 0 ? `
+                  <button type="button"
+                          class="group-paid-button ${group.allPaid ? "is-all-paid" : ""}"
+                          data-target-paid="${group.allPaid ? "false" : "true"}">
+                    ${escapeHtml(groupButtonText)}
+                  </button>` : ""}
+              </div>
             </div>
 
-            <div class="registration-code-admin">
-              <span>Anmeldecode</span>
-              <code>${escapeHtml(group.accessCode || "")}</code>
-              <small>${escapeHtml(date)}</small>
+            <div class="registration-participants">
+              ${group.people.map((person) =>
+                participantHtml(
+                  person,
+                  Number(person.position) === Number(group.primary?.position)
+                )
+              ).join("")}
             </div>
-
-            ${contributionHtmlForGroup(group)}
-
-            <div class="registration-payment-summary">
-              <span>Zahlungsstand</span>
-              <strong>${escapeHtml(paymentText)}</strong>
-              ${group.due > 0 ? `
-                <button type="button"
-                        class="group-paid-button ${group.allPaid ? "is-all-paid" : ""}"
-                        data-target-paid="${group.allPaid ? "false" : "true"}">
-                  ${escapeHtml(groupButtonText)}
-                </button>` : ""}
-            </div>
-          </header>
-
-          <div class="registration-participants">
-            ${group.people.map((person, index) =>
-              participantHtml(person, index === 0)
-            ).join("")}
           </div>
         </article>`;
     }).join("");
@@ -646,7 +773,6 @@
       }, 1100);
     } catch (error) {
       person.paid = !paid;
-
       if (!handleApiError(error)) {
         setSaveStatus(overviewSaveStatus, "Fehler", "error");
         showToast(error.message);
@@ -668,18 +794,14 @@
         paid
       });
 
-      const updates = Array.isArray(result.people)
-        ? result.people
-        : [];
+      const updates = Array.isArray(result.people) ? result.people : [];
 
       updates.forEach((update) => {
         const person = state.people.find((item) =>
           item.registrationId === group.registrationId &&
           Number(item.position) === Number(update.position)
         );
-
         if (!person) return;
-
         person.paid = Boolean(update.paid);
         person.paidAt = update.paidAt || null;
       });
@@ -696,7 +818,6 @@
       window.setTimeout(() => {
         setSaveStatus(overviewSaveStatus, "Aktuell");
       }, 1100);
-
     } catch (error) {
       if (!handleApiError(error)) {
         setSaveStatus(overviewSaveStatus, "Fehler", "error");
@@ -706,6 +827,98 @@
     }
   }
 
+  function closePrimaryDeleteModal() {
+    state.pendingPrimaryDeletion = null;
+    primaryDeleteModal.classList.add("hidden");
+    replacementPrimarySelect.innerHTML = "";
+  }
+
+  function openPrimaryDeleteModal(person, group) {
+    state.pendingPrimaryDeletion = { person, group };
+    const replacements = group.people.filter(
+      (candidate) => candidate.key !== person.key
+    );
+
+    if (!replacements.length) {
+      primaryDeleteTitle.textContent = "Letzte Person löschen?";
+      primaryDeleteText.textContent =
+        "Diese Anmeldung enthält keine weitere Person. Wenn du fortfährst, wird die gesamte Anmeldung gelöscht.";
+      replacementPrimaryField.classList.add("hidden");
+      confirmPrimaryDelete.textContent = "Anmeldung löschen";
+    } else {
+      primaryDeleteTitle.textContent = "Neue Hauptperson auswählen";
+      primaryDeleteText.textContent =
+        `${person.firstName} ${person.lastName} ist aktuell die Hauptperson. Wähle aus, wer die Hauptanmeldung übernehmen soll.`;
+      replacementPrimaryField.classList.remove("hidden");
+      replacementPrimarySelect.innerHTML = replacements.map((candidate) => `
+        <option value="${Number(candidate.position)}">
+          ${escapeHtml(candidate.firstName)} ${escapeHtml(candidate.lastName)}
+        </option>
+      `).join("");
+      confirmPrimaryDelete.textContent = "Löschen & Hauptperson wechseln";
+    }
+
+    primaryDeleteModal.classList.remove("hidden");
+  }
+
+  async function deletePerson(person, replacementPosition = null) {
+    setSaveStatus(overviewSaveStatus, "Löscht …", "saving");
+
+    try {
+      const result = await apiRequest("adminDeletePerson", {
+        token: state.token,
+        registrationId: person.registrationId,
+        position: person.position,
+        replacementPosition
+      });
+
+      if (result.registrationDeleted) {
+        state.expandedRegistrations.delete(person.registrationId);
+      }
+
+      await loadOverview();
+      showToast(
+        result.registrationDeleted
+          ? "Die Anmeldung wurde gelöscht."
+          : "Die Person wurde gelöscht."
+      );
+    } catch (error) {
+      if (!handleApiError(error)) {
+        setSaveStatus(overviewSaveStatus, "Fehler", "error");
+        showToast(error.message);
+      }
+    }
+  }
+
+  cancelPrimaryDelete.addEventListener("click", closePrimaryDeleteModal);
+
+  primaryDeleteModal.addEventListener("click", (event) => {
+    if (event.target.matches("[data-close-primary-modal]")) {
+      closePrimaryDeleteModal();
+    }
+  });
+
+  confirmPrimaryDelete.addEventListener("click", async () => {
+    const pending = state.pendingPrimaryDeletion;
+    if (!pending) return;
+
+    const replacements = pending.group.people.filter(
+      (candidate) => candidate.key !== pending.person.key
+    );
+
+    const replacementPosition = replacements.length
+      ? Number(replacementPrimarySelect.value)
+      : null;
+
+    confirmPrimaryDelete.disabled = true;
+    try {
+      closePrimaryDeleteModal();
+      await deletePerson(pending.person, replacementPosition);
+    } finally {
+      confirmPrimaryDelete.disabled = false;
+    }
+  });
+
   adminPeopleList.addEventListener("change", (event) => {
     const checkbox = event.target.closest(".paid-checkbox");
     if (!checkbox) return;
@@ -714,13 +927,58 @@
     const person = state.people.find(
       (item) => item.key === row?.dataset.personKey
     );
-
     if (!person) return;
 
     void setPaid(person, checkbox.checked, checkbox);
   });
 
   adminPeopleList.addEventListener("click", (event) => {
+    const summaryButton = event.target.closest(".registration-summary-toggle");
+
+    if (summaryButton) {
+      const article = summaryButton.closest(".registration-admin-group");
+      const registrationId = article?.dataset.registrationId;
+      if (!registrationId) return;
+
+      if (state.expandedRegistrations.has(registrationId)) {
+        state.expandedRegistrations.delete(registrationId);
+      } else {
+        state.expandedRegistrations.add(registrationId);
+      }
+
+      renderPeople();
+      return;
+    }
+
+    const deleteButton = event.target.closest(".delete-person-button");
+
+    if (deleteButton) {
+      const row = deleteButton.closest(".participant-admin-row");
+      const person = state.people.find(
+        (item) => item.key === row?.dataset.personKey
+      );
+      if (!person) return;
+
+      const group = groupRegistrations().find(
+        (item) => item.registrationId === person.registrationId
+      );
+      if (!group) return;
+
+      const isPrimary =
+        Number(person.position) === Number(group.primary?.position);
+
+      if (isPrimary) {
+        openPrimaryDeleteModal(person, group);
+      } else if (
+        window.confirm(
+          `${person.firstName} ${person.lastName} wirklich aus dieser Anmeldung löschen?`
+        )
+      ) {
+        void deletePerson(person);
+      }
+      return;
+    }
+
     const button = event.target.closest(".group-paid-button");
     if (!button) return;
 
@@ -729,7 +987,6 @@
     const group = groupRegistrations().find(
       (item) => item.registrationId === registrationId
     );
-
     if (!group) return;
 
     void setRegistrationPaid(
@@ -737,11 +994,6 @@
       button.dataset.targetPaid === "true",
       button
     );
-  });
-
-
-  [peopleSearch, paymentFilter, categoryFilter, peopleSort].forEach((control) => {
-    control.addEventListener(control === peopleSearch ? "input" : "change", renderPeople);
   });
 
   refreshOverview.addEventListener("click", () => void loadOverview());
@@ -754,30 +1006,71 @@
       return;
     }
 
-    expenseList.innerHTML = state.expenses.map((expense) => `
-      <article class="expense-row" data-expense-id="${escapeAttr(expense.id)}">
-        <select class="expense-category" aria-label="Kategorie">
-          ${["Essen", "Getränke", "Spielzeug", "Sonstiges"].map((category) => `
-            <option value="${escapeAttr(category)}" ${expense.category === category ? "selected" : ""}>
-              ${escapeHtml(category)}
-            </option>`).join("")}
-        </select>
+    expenseList.innerHTML = state.expenses.map((expense) => {
+      const expanded = state.expandedExpenseId === expense.id;
+      const hasNote = Boolean(String(expense.note || "").trim());
 
-        <input class="expense-item" type="text" maxlength="100"
-               value="${escapeAttr(expense.item || "")}"
-               placeholder="Posten, z. B. Pappteller" aria-label="Posten">
+      return `
+        <article class="expense-row ${expanded ? "is-expanded" : ""}"
+                 data-expense-id="${escapeAttr(expense.id)}">
+          <div class="expense-compact-line">
+            <input class="expense-item"
+                   type="text"
+                   maxlength="100"
+                   value="${escapeAttr(expense.item || "")}"
+                   placeholder="Was wurde gekauft?"
+                   aria-label="Einkauf">
 
-        <input class="expense-amount" type="number" inputmode="decimal"
-               min="0" step="0.01"
-               value="${Number(expense.amount || 0).toFixed(2)}"
-               aria-label="Betrag in Euro">
+            <div class="expense-price-wrap">
+              <input class="expense-amount"
+                     type="number"
+                     inputmode="decimal"
+                     min="0"
+                     step="0.01"
+                     value="${Number(expense.amount || 0).toFixed(2)}"
+                     aria-label="Betrag in Euro">
+              <span>€</span>
+            </div>
 
-        <input class="expense-note" type="text" maxlength="220"
-               value="${escapeAttr(expense.note || "")}"
-               placeholder="Notiz (optional)" aria-label="Notiz">
+            <button class="expense-note-toggle ${hasNote ? "has-note" : ""}"
+                    type="button"
+                    aria-expanded="${expanded ? "true" : "false"}"
+                    aria-label="Kategorie und Notiz bearbeiten"
+                    title="Kategorie und Notiz">
+              <svg viewBox="0 0 24 24" aria-hidden="true">
+                <path d="M6 3h9l4 4v14H6z"/>
+                <path d="M15 3v5h5M9 12h7M9 16h7"/>
+              </svg>
+            </button>
 
-        <button class="delete-expense" type="button" aria-label="Posten löschen">×</button>
-      </article>`).join("");
+            <button class="delete-expense"
+                    type="button"
+                    aria-label="Posten löschen"
+                    title="Posten löschen">×</button>
+          </div>
+
+          <div class="expense-extra ${expanded ? "" : "hidden"}">
+            <label>
+              <span>Kategorie</span>
+              <select class="expense-category" aria-label="Kategorie">
+                ${["Essen", "Getränke", "Spielzeug", "Sonstiges"].map((category) => `
+                  <option value="${escapeAttr(category)}" ${expense.category === category ? "selected" : ""}>
+                    ${escapeHtml(category)}
+                  </option>`).join("")}
+              </select>
+            </label>
+
+            <label>
+              <span>Notiz</span>
+              <textarea class="expense-note"
+                        maxlength="220"
+                        rows="2"
+                        placeholder="Notiz (optional)"
+                        aria-label="Notiz">${escapeHtml(expense.note || "")}</textarea>
+            </label>
+          </div>
+        </article>`;
+    }).join("");
 
     updateShoppingTotals();
   }
@@ -804,6 +1097,10 @@
 
     const draft = readExpenseRow(row);
     syncExpenseLocal(draft);
+    row.querySelector(".expense-note-toggle")?.classList.toggle(
+      "has-note",
+      Boolean(draft.note)
+    );
 
     if (!draft.item) {
       setSaveStatus(shoppingSaveStatus, "Bezeichnung fehlt", "error");
@@ -871,6 +1168,22 @@
   });
 
   expenseList.addEventListener("click", async (event) => {
+    const noteButton = event.target.closest(".expense-note-toggle");
+
+    if (noteButton) {
+      const row = noteButton.closest(".expense-row");
+      const id = row?.dataset.expenseId;
+      if (!id) return;
+
+      const opening = state.expandedExpenseId !== id;
+      state.expandedExpenseId = opening ? id : "";
+
+      row.classList.toggle("is-expanded", opening);
+      row.querySelector(".expense-extra")?.classList.toggle("hidden", !opening);
+      noteButton.setAttribute("aria-expanded", String(opening));
+      return;
+    }
+
     const button = event.target.closest(".delete-expense");
     if (!button) return;
 
@@ -890,6 +1203,7 @@
       });
 
       state.expenses = state.expenses.filter((item) => item.id !== id);
+      if (state.expandedExpenseId === id) state.expandedExpenseId = "";
       renderExpenses();
       setSaveStatus(shoppingSaveStatus, "Gespeichert");
       window.setTimeout(() => setSaveStatus(shoppingSaveStatus, "Aktuell"), 1100);
@@ -918,6 +1232,7 @@
       });
 
       state.expenses.push(result.expense);
+      state.expandedExpenseId = result.expense.id;
       renderExpenses();
 
       const row = expenseList.querySelector(`[data-expense-id="${CSS.escape(result.expense.id)}"]`);
@@ -1048,8 +1363,8 @@
 
             <button type="button"
                     class="ticket-status-button"
-                    data-next-status="${done ? "OPEN" : "DONE"}">
-              ${done ? "Wieder öffnen" : "Als erledigt markieren"}
+                    data-next-status="DONE">
+              ${done ? "Ticket löschen" : "Erledigt & löschen"}
             </button>
           </div>
 
@@ -1072,22 +1387,30 @@
   }
 
   async function setTicketStatus(ticket, nextStatus, button) {
+    if (
+      !window.confirm(
+        ticket.status === "DONE"
+          ? "Dieses erledigte Ticket dauerhaft löschen?"
+          : "Ticket als erledigt markieren und dauerhaft aus der Ticketliste löschen?"
+      )
+    ) {
+      return;
+    }
+
     button.disabled = true;
-    setSaveStatus(ticketSaveStatus, "Speichert …", "saving");
+    setSaveStatus(ticketSaveStatus, "Löscht …", "saving");
 
     try {
-      const result = await apiRequest("adminSetTicketStatus", {
+      await apiRequest("adminDeleteTicket", {
         token: state.token,
-        ticketId: ticket.id,
-        status: nextStatus
+        ticketId: ticket.id
       });
 
-      ticket.status = result.ticket.status;
-      ticket.updatedAt = result.ticket.updatedAt;
-      ticket.statusUpdatedAt = result.ticket.statusUpdatedAt || null;
-
+      state.tickets = state.tickets.filter((item) => item.id !== ticket.id);
       renderTickets();
       setSaveStatus(ticketSaveStatus, "Gespeichert");
+      showToast("Ticket erledigt und gelöscht.");
+
       window.setTimeout(() => {
         setSaveStatus(ticketSaveStatus, "Aktuell");
       }, 1100);
