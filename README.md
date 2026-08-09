@@ -168,3 +168,12 @@ Positionierungsalgorithmus entfernt.
   neu hinzugefügten Person.
 - Die gestapelten v10-CSS-Overrides wurden entfernt und die mobile Interaktions-
   und Animationslogik in einem gemeinsamen Block zusammengeführt.
+
+
+## Update v12
+
+- „Person hinzufügen“ erstellt die neue Zeile und fokussiert sofort synchron das Feld „Vorname“.
+- Dadurch öffnet sich die Smartphone-Tastatur direkt aus dem Tastendruck heraus.
+- Die Personenliste springt automatisch zum neu angelegten Eintrag.
+- Die Kachel selbst bleibt im Tastaturmodus oben angeheftet; nur der interne Listen-/Karteninhalt wird zum neuen Feld bewegt.
+- Auf `scrollIntoView()` wird bewusst verzichtet, damit mobile Browser nicht die gesamte Seite verschieben.

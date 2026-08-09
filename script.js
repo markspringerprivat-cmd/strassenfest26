@@ -403,7 +403,13 @@
   if (window.visualViewport) {
     window.visualViewport.addEventListener("resize", () => {
       window.clearTimeout(viewport.closeTimer);
-      viewport.closeTimer = window.setTimeout(syncKeyboardMode, 90);
+      viewport.closeTimer = window.setTimeout(() => {
+        syncKeyboardMode();
+
+        if (viewport.keyboardOpen) {
+          scrollControlIntoCard(activeEditable(), 20);
+        }
+      }, 90);
     }, { passive: true });
 
     window.visualViewport.addEventListener("scroll", () => {
@@ -598,39 +604,50 @@
     refreshRemoveButtons();
     animateCreated(row);
 
+    const inputs = [...row.querySelectorAll("input")];
+
     if (!hasInitialData) {
-      const inputs = [...row.querySelectorAll("input")];
+      // Neue Zeilen immer garantiert leer anlegen.
       inputs.forEach((input) => {
         input.value = "";
         input.setAttribute("value", "");
       });
-
-      requestAnimationFrame(() => {
-        inputs.forEach((input) => { input.value = ""; });
-      });
     }
 
-    if (focus) {
+    if (!focus) return row;
+
+    const first = row.querySelector(".person-first");
+
+    // WICHTIG für iPhone / mobile Browser:
+    // Der Fokus wird direkt im ursprünglichen Klick-Ereignis gesetzt.
+    // Dadurch darf der Browser die Bildschirmtastatur sofort öffnen.
+    first.focus({ preventScroll: true });
+
+    // Die neue Zeile direkt in den sichtbaren Bereich der Personenliste holen.
+    // Kein scrollIntoView(), weil das die komplette Webseite verschieben könnte.
+    peopleRows.scrollTop = peopleRows.scrollHeight;
+
+    // Nach dem Layout-Update die Position noch einmal sauber ausrichten.
+    requestAnimationFrame(() => {
       centerPersonRow(row);
 
-      window.setTimeout(() => {
-        const first = row.querySelector(".person-first");
-
-        if (!hasInitialData) {
-          row.querySelectorAll("input").forEach((input) => { input.value = ""; });
-        }
-
-        first.focus({ preventScroll: true });
+      requestAnimationFrame(() => {
+        // Falls die Tastatur inzwischen sichtbar ist, wird nur der Inhalt
+        // innerhalb der oben angehefteten Kachel zum neuen Eintrag gescrollt.
         syncKeyboardMode();
 
         if (viewport.keyboardOpen) {
           scrollControlIntoCard(first, 20);
         }
-      }, 120);
-    }
+      });
+    });
+
+    return row;
   }
 
-  addPersonButton.addEventListener("click", () => addPersonRow({}, true));
+  addPersonButton.addEventListener("click", () => {
+    addPersonRow({}, true);
+  });
 
   peopleRows.addEventListener("click", async (event) => {
     const removeButton = event.target.closest(".remove-person");
