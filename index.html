@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="de">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=overlays-content" />
+  <meta name="theme-color" content="#10246e" />
+  <meta name="color-scheme" content="dark" />
+  <title>Straßenfest in Hilchenbach – Anmeldung</title>
+  <meta name="description" content="Anmeldung zum Straßenfest in Hilchenbach" />
+  <link rel="preload" as="image" href="assets/strassenfest-hilchenbach.png" />
+  <link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app-shell" id="appShell">
+    <div class="background" aria-hidden="true"></div>
+    <div class="background-shade" aria-hidden="true"></div>
+    <canvas id="fireworks" class="fireworks" aria-hidden="true"></canvas>
+
+    <main class="registration-stage" aria-label="Anmeldung zum Straßenfest">
+      <section class="wizard-card" id="wizardCard">
+        <div class="card-glow" aria-hidden="true"></div>
+
+        <div class="step-progress" aria-label="Fortschritt">
+          <span class="progress-dot active" data-progress="1"></span>
+          <span class="progress-dot" data-progress="2"></span>
+          <span class="progress-dot" data-progress="3"></span>
+          <span class="progress-dot" data-progress="4"></span>
+        </div>
+
+        <form id="registrationForm" novalidate>
+          <div class="step active" data-step="1">
+            <div class="step-heading hero-heading">
+              <div class="heading-icon" aria-hidden="true">🎉</div>
+              <div>
+                <p class="eyebrow">Schritt 1 von 4</p>
+                <h1>Anmeldung</h1>
+                <p>Wer nimmt am Straßenfest teil?</p>
+              </div>
+            </div>
+
+            <div class="people-table" id="peopleTable">
+              <div class="people-table-head" aria-hidden="true">
+                <span>Vorname</span>
+                <span>Nachname</span>
+                <span>Alter</span>
+                <span></span>
+              </div>
+              <div class="people-rows" id="peopleRows"></div>
+            </div>
+
+            <p class="field-error" id="personError" role="alert"></p>
+
+            <button class="add-person-button" id="addPersonButton" type="button">
+              <span class="plus" aria-hidden="true">+</span>
+              <span>Person hinzufügen</span>
+            </button>
+
+            <button class="primary-button" type="button" data-next="2">
+              <span>Weiter</span><span class="button-chevron" aria-hidden="true">›</span>
+            </button>
+          </div>
+
+          <div class="step" data-step="2">
+            <div class="step-heading hero-heading">
+              <div class="heading-icon" aria-hidden="true">🧺</div>
+              <div>
+                <p class="eyebrow">Schritt 2 von 4</p>
+                <h2>Möchtest du was mitbringen?</h2>
+                <p>Wähle eine der drei Möglichkeiten.</p>
+              </div>
+            </div>
+
+            <div class="bring-choice-grid">
+              <button type="button" class="choice-button choice-yes" id="bringYes">
+                <span class="choice-icon" aria-hidden="true">✓</span>
+                <span><strong>Ja</strong><small>Etwas eintragen</small></span>
+              </button>
+
+              <button type="button" class="choice-button" id="bringNo">
+                <span class="choice-icon" aria-hidden="true">–</span>
+                <span><strong>Nein</strong><small>Direkt zur Übersicht</small></span>
+              </button>
+
+              <button type="button" class="choice-button choice-needed" id="showNeeds">
+                <span class="choice-icon" aria-hidden="true">?</span>
+                <span><strong>Was wird noch gebraucht?</strong><small>Bisherige Einträge ansehen</small></span>
+              </button>
+            </div>
+
+            <section class="needs-panel hidden" id="needsPanel" aria-live="polite">
+              <div class="needs-panel-heading">
+                <div>
+                  <strong>Was ist bisher geplant?</strong>
+                  <span>Tippe rechts auf +, um eine Auswahl zu übernehmen.</span>
+                </div>
+              </div>
+              <div class="needs-table-wrap">
+                <table class="needs-table">
+                  <thead>
+                    <tr>
+                      <th>Bereich</th>
+                      <th>Einträge</th>
+                      <th></th>
+                    </tr>
+                  </thead>
+                  <tbody id="needsTableBody"></tbody>
+                </table>
+              </div>
+              <p class="needs-note" id="needsNote"></p>
+            </section>
+
+            <button class="secondary-button step-back-single" type="button" data-back="1">Zurück</button>
+          </div>
+
+          <div class="step" data-step="3">
+            <div class="step-heading hero-heading">
+              <div class="heading-icon" aria-hidden="true">📝</div>
+              <div>
+                <p class="eyebrow">Schritt 3 von 4</p>
+                <h2>Was bringst du mit?</h2>
+                <p>Wähle die Kategorie und beschreibe kurz deinen Beitrag.</p>
+              </div>
+            </div>
+
+            <label class="field">
+              <span>Kategorie</span>
+              <select id="category" name="category">
+                <option value="">Bitte auswählen</option>
+                <option value="Spielzeug">Spielzeug</option>
+                <option value="Essen">Essen</option>
+                <option value="Getränke">Getränke</option>
+              </select>
+            </label>
+
+            <label class="field hidden" id="subtypeField">
+              <span id="subtypeLabel">Unterkategorie</span>
+              <select id="subtype" name="subtype">
+                <option value="">Bitte auswählen</option>
+              </select>
+            </label>
+
+            <label class="field contribution-field">
+              <span>Notiz</span>
+              <textarea id="contribution" name="contribution" rows="5" maxlength="260" disabled
+                        placeholder="Bitte zuerst die Auswahl oben treffen"></textarea>
+            </label>
+
+            <p class="field-error" id="contributionError" role="alert"></p>
+
+            <div class="button-row">
+              <button class="secondary-button" type="button" data-back="2">Zurück</button>
+              <button class="primary-button" type="button" data-next="4">
+                <span>Weiter</span><span class="button-chevron" aria-hidden="true">›</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="step" data-step="4">
+            <div class="step-heading hero-heading">
+              <div class="heading-icon" aria-hidden="true">✓</div>
+              <div>
+                <p class="eyebrow">Schritt 4 von 4</p>
+                <h2>Deine Anmeldung</h2>
+                <p>Bitte prüfe deine Angaben vor dem Absenden.</p>
+              </div>
+            </div>
+
+            <div class="summary-panel">
+              <div class="summary-block">
+                <span class="summary-label">Personen</span>
+                <div id="summaryPeople" class="summary-content"></div>
+              </div>
+              <div class="summary-block">
+                <span class="summary-label">Mitbringsel</span>
+                <div id="summaryContribution" class="summary-content"></div>
+              </div>
+            </div>
+
+            <p class="submit-status" id="submitStatus" role="status" aria-live="polite"></p>
+
+            <div class="button-row">
+              <button class="secondary-button" type="button" id="summaryBack">Zurück</button>
+              <button class="primary-button" type="submit">
+                <span>Absenden</span><span class="button-chevron" aria-hidden="true">›</span>
+              </button>
+            </div>
+          </div>
+
+          <div class="step thank-you" data-step="5">
+            <div class="checkmark" aria-hidden="true">✓</div>
+            <p class="eyebrow">Geschafft</p>
+            <h2>Vielen Dank für deine Anmeldung!</h2>
+            <p>Wir freuen uns auf ein schönes Straßenfest in Hilchenbach.</p>
+            <button class="secondary-button restart-button" id="restartButton" type="button">
+              Neue Anmeldung
+            </button>
+          </div>
+        </form>
+      </section>
+    </main>
+
+    <footer class="footer-bar" aria-label="Weitere Informationen">
+      <button type="button" data-modal="impressum">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="9"/><path d="M12 11v6m0-10h.01"/></svg>
+        <span>Impressum</span>
+      </button>
+      <button type="button" data-modal="kontakt">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 6h16v12H4zM4 7l8 6 8-6"/></svg>
+        <span>Kontakt</span>
+      </button>
+      <button type="button" data-modal="admin">
+        <svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3l7 3v5c0 4.8-3 8-7 10-4-2-7-5.2-7-10V6z"/></svg>
+        <span>Admin</span>
+      </button>
+    </footer>
+  </div>
+
+  <div class="modal-backdrop" id="modalBackdrop" hidden>
+    <section class="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+      <button class="modal-close" id="modalClose" type="button" aria-label="Fenster schließen">×</button>
+      <h2 id="modalTitle"></h2>
+      <div id="modalContent"></div>
+    </section>
+  </div>
+
+  <script src="script.js" defer></script>
+</body>
+</html>
