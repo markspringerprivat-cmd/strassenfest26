@@ -53,14 +53,16 @@
 
             <p class="field-error" id="personError" role="alert"></p>
 
-            <button class="add-person-button" id="addPersonButton" type="button">
-              <span class="plus" aria-hidden="true">+</span>
-              <span>Person hinzufügen</span>
-            </button>
+            <div class="step-actions step-actions-stack">
+              <button class="add-person-button" id="addPersonButton" type="button">
+                <span class="plus" aria-hidden="true">+</span>
+                <span>Person hinzufügen</span>
+              </button>
 
-            <button class="primary-button" id="peopleContinue" type="button">
-              <span>Weiter</span><span class="button-chevron" aria-hidden="true">›</span>
-            </button>
+              <button class="primary-button" id="peopleContinue" type="button">
+                <span>Weiter</span><span class="button-chevron" aria-hidden="true">›</span>
+              </button>
+            </div>
           </section>
 
           <section class="step" data-step="2">
@@ -90,7 +92,9 @@
               </button>
             </div>
 
-            <button class="secondary-button step-back-single" type="button" data-go="1">Zurück</button>
+            <div class="step-actions">
+              <button class="secondary-button step-back-single" type="button" data-go="1">Zurück</button>
+            </div>
           </section>
 
           <section class="step" data-step="needs">
@@ -123,7 +127,9 @@
               <p class="needs-note" id="needsNote"></p>
             </section>
 
-            <button class="secondary-button step-back-single" type="button" data-go="2">Zurück</button>
+            <div class="step-actions">
+              <button class="secondary-button step-back-single" type="button" data-go="2">Zurück</button>
+            </div>
           </section>
 
           <section class="step" data-step="3">
@@ -168,11 +174,13 @@
 
             <p class="field-error" id="contributionError" role="alert"></p>
 
-            <div class="button-row">
-              <button class="secondary-button" type="button" id="contributionBack">Zurück</button>
-              <button class="primary-button" type="button" id="contributionContinue">
-                <span>Weiter</span><span class="button-chevron" aria-hidden="true">›</span>
-              </button>
+            <div class="step-actions">
+              <div class="button-row">
+                <button class="secondary-button" type="button" id="contributionBack">Zurück</button>
+                <button class="primary-button" type="button" id="contributionContinue">
+                  <span>Weiter</span><span class="button-chevron" aria-hidden="true">›</span>
+                </button>
+              </div>
             </div>
           </section>
 
@@ -208,11 +216,13 @@
               Für diese Anmeldung fällt keine Zahlung an.
             </div>
 
-            <div class="button-row">
-              <button class="secondary-button" type="button" id="paymentBack">Zurück</button>
-              <button class="primary-button" type="button" id="paymentContinue">
-                <span>Weiter</span><span class="button-chevron" aria-hidden="true">›</span>
-              </button>
+            <div class="step-actions">
+              <div class="button-row">
+                <button class="secondary-button" type="button" id="paymentBack">Zurück</button>
+                <button class="primary-button" type="button" id="paymentContinue">
+                  <span>Weiter</span><span class="button-chevron" aria-hidden="true">›</span>
+                </button>
+              </div>
             </div>
           </section>
 
@@ -243,11 +253,13 @@
 
             <p class="submit-status" id="submitStatus" role="status" aria-live="polite"></p>
 
-            <div class="button-row">
-              <button class="secondary-button" type="button" data-go="4">Zurück</button>
-              <button class="primary-button" type="submit">
-                <span>Absenden</span><span class="button-chevron" aria-hidden="true">›</span>
-              </button>
+            <div class="step-actions">
+              <div class="button-row">
+                <button class="secondary-button" type="button" data-go="4">Zurück</button>
+                <button class="primary-button" type="submit">
+                  <span>Absenden</span><span class="button-chevron" aria-hidden="true">›</span>
+                </button>
+              </div>
             </div>
           </section>
 

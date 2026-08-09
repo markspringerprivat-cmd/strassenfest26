@@ -97,3 +97,14 @@ Die Inhalte in den Dialogen sind aktuell Platzhalter und müssen vor Veröffentl
 - Seiten-/Horizontal-Scrolling gesperrt; nur interne Listen können scrollen
 - Browser-Viewport-Höhe wird nach Tastaturschluss neu gesetzt, damit die Footerleiste sichtbar bleibt
 - Hintergrundmotiv ca. 32 CSS-Pixel nach oben versetzt
+
+
+## Update v7
+
+- Die Anmeldekachel wird aus der Geometrie des Hintergrundbildes berechnet und sitzt auf Smartphones ca. 10–16 CSS-Pixel unter „in Hilchenbach“.
+- Hintergrund und Kartenbreite bleiben bei eingeblendeter Tastatur unverändert.
+- Beim Fokus einer Personenzeile wird nur die komplette Karte vertikal verschoben; Vorname, Nachname und Alter derselben Zeile behalten dieselbe Kartenposition.
+- iOS-/Browser-Fokus-Panning wird ausgeglichen, damit Hintergrund und Karte optisch nicht seitlich oder unkontrolliert verrutschen.
+- Beim Schließen der Tastatur kehrt die Karte exakt in die normale Ausgangsposition zurück.
+- Impressum/Kontakt/Admin werden bei geöffneter Tastatur nicht nach oben geschoben, sondern bleiben am normalen unteren Platz und sind währenddessen unsichtbar.
+- Lange Schritte (Bedarf, Zahlung, Übersicht) bleiben zwischen Titel und Footer; die Aktionsbuttons sind innerhalb der Kachel sticky und damit erreichbar.

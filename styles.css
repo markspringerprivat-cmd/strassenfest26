@@ -723,3 +723,91 @@ input, select, textarea {
   *, *::before, *::after { animation-duration: 0.001ms !important; animation-iteration-count: 1 !important; transition-duration: 0.001ms !important; }
   .fireworks { display: none; }
 }
+
+/* v7: feste Bühne, dynamischer Abstand zum im Hintergrundbild enthaltenen Titel */
+:root {
+  --stage-top: 188px;
+  --stage-shift: 0px;
+  --viewport-pan-x: 0px;
+  --viewport-pan-y: 0px;
+  --card-max-height: calc(var(--base-height) - var(--stage-top) - var(--footer-h) - 8px);
+}
+
+/* Der Hintergrund bleibt optisch an derselben Bildschirmposition, auch wenn iOS
+   den VisualViewport beim Öffnen/Wechseln der Tastatur automatisch verschiebt. */
+.static-background {
+  transform: translate3d(var(--viewport-pan-x), var(--viewport-pan-y), 0);
+  transition: none !important;
+  will-change: transform;
+}
+
+/* Die Karte behält IMMER dieselbe Breite. Horizontal wird nur ein eventuelles
+   Browser-Panning neutralisiert; die eigentliche Fokusbewegung erfolgt nur vertikal. */
+.registration-stage {
+  width: min(calc(100vw - 28px), 470px);
+  max-width: calc(100vw - 28px);
+  transform:
+    translateX(-50%)
+    translateX(var(--viewport-pan-x))
+    translateY(var(--stage-shift));
+  transition: transform 220ms ease;
+}
+
+/* Lange Schritte bleiben innerhalb des Bereichs zwischen Titel und Footer.
+   Es scrollt nur die Kachel selbst, niemals die komplette Webseite. */
+.wizard-card {
+  max-height: max(240px, var(--card-max-height));
+  overflow-y: auto;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  scrollbar-width: none;
+}
+
+.wizard-card::-webkit-scrollbar { display: none; }
+
+/* Zurück/Weiter bleiben auch bei langen Zahlungs-/Bedarfsansichten erreichbar. */
+.step-actions {
+  position: sticky;
+  z-index: 8;
+  bottom: -1px;
+  margin: 10px -2px -2px;
+  padding: 10px 2px 2px;
+  background: linear-gradient(to bottom, rgba(25, 21, 78, 0), rgba(25, 21, 78, .93) 28%, rgba(25, 21, 78, .98));
+}
+
+.step-actions-stack {
+  display: grid;
+  gap: 10px;
+}
+
+.step-actions-stack .add-person-button,
+.step-actions-stack .primary-button,
+.step-actions .step-back-single,
+.step-actions .button-row {
+  margin-top: 0;
+  margin-bottom: 0;
+}
+
+/* Während die Tastatur offen ist bleibt der Footer an seiner normalen Position
+   hinter der Tastatur und wird nicht nach oben versetzt. */
+body.keyboard-open .footer-bar {
+  visibility: hidden;
+  opacity: 0;
+  pointer-events: none;
+}
+
+/* Keine Größen-/Breitenänderung im Eingabemodus. */
+body.keyboard-open .registration-stage,
+body.keyboard-open .wizard-card {
+  width: min(calc(100vw - 28px), 470px);
+  max-width: calc(100vw - 28px);
+}
+
+/* Die Seite selbst darf weder vertikal noch horizontal wandern. */
+html,
+body,
+.app-shell {
+  overflow: hidden !important;
+  overscroll-behavior: none !important;
+}
