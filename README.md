@@ -108,3 +108,14 @@ Die Inhalte in den Dialogen sind aktuell Platzhalter und müssen vor Veröffentl
 - Beim Schließen der Tastatur kehrt die Karte exakt in die normale Ausgangsposition zurück.
 - Impressum/Kontakt/Admin werden bei geöffneter Tastatur nicht nach oben geschoben, sondern bleiben am normalen unteren Platz und sind währenddessen unsichtbar.
 - Lange Schritte (Bedarf, Zahlung, Übersicht) bleiben zwischen Titel und Footer; die Aktionsbuttons sind innerhalb der Kachel sticky und damit erreichbar.
+
+
+## Update v8
+
+- Das im Video sichtbare Wackeln beim Wechsel zwischen Vorname, Nachname und Alter wurde gezielt behoben.
+- Pro Personenzeile wird die vertikale Fokusposition nur einmal berechnet und anschließend festgehalten.
+- Wechsel zwischen den drei Spalten derselben Zeile löst keine Neupositionierung mehr aus.
+- iOS-VisualViewport-Panning wird nur noch direkt vertikal kompensiert; die frühere mehrstufige Nachkorrektur entfällt.
+- Während die Tastatur geöffnet ist sind Transform-Animationen der Karte deaktiviert.
+- Die Karte kann nie horizontal verschoben werden.
+- Beim Schließen der Tastatur wird die Ausgangslage wiederhergestellt.

@@ -92,9 +92,9 @@
     stageTop: 0,
     keyboardOpen: false,
     shift: 0,
-    anchorGroup: null,
-    anchorVisualStageTop: null,
-    cardScrollBeforeKeyboard: 0
+    focusGroup: null,
+    cardScrollBeforeKeyboard: 0,
+    focusTimer: null
   };
 
   function currentVisibleHeight() {
@@ -120,9 +120,9 @@
     const centeredImageOffset = (backgroundBoxHeight - renderedHeight) / 2;
     const subtitleBottom = -lift + centeredImageOffset + subtitleBottomY * scale;
 
-    // Rund 10–16 CSS-Pixel Abstand: optisch deutlich unter einem halben Zentimeter.
-    const gap = Math.max(10, Math.min(16, pageWidth * 0.03));
-    return Math.max(118, Math.round(subtitleBottom + gap));
+    // Maximal ungefähr 0,5 cm Abstand unter "in Hilchenbach".
+    const gap = Math.max(8, Math.min(14, pageWidth * 0.027));
+    return Math.max(112, Math.round(subtitleBottom + gap));
   }
 
   function updateCardAvailableHeight() {
@@ -138,8 +138,7 @@
       editable && viewport.baseHeight && viewport.baseHeight - visibleHeight > 120
     );
 
-    // Die Grundgeometrie wird nur bei geschlossener Tastatur berechnet.
-    // So bleiben Hintergrund, Footer, Kartenbreite und Titelposition während der Eingabe unverändert.
+    // Während die Tastatur offen ist wird die Grundgeometrie nicht neu berechnet.
     if (!force && keyboardLikelyOpen) return;
 
     viewport.baseHeight = visibleHeight;
@@ -178,63 +177,79 @@
 
   function syncViewportPan(useVisualOffset = viewport.keyboardOpen) {
     const vv = window.visualViewport;
-    const x = useVisualOffset && vv ? Math.round(vv.offsetLeft || 0) : 0;
     const y = useVisualOffset && vv ? Math.round(vv.offsetTop || 0) : 0;
-    document.documentElement.style.setProperty("--viewport-pan-x", `${x}px`);
+
+    // Nie horizontal verschieben.
+    document.documentElement.style.setProperty("--viewport-pan-x", "0px");
     document.documentElement.style.setProperty("--viewport-pan-y", `${y}px`);
   }
 
-  function clearKeyboardAnchor() {
-    viewport.anchorGroup = null;
-    viewport.anchorVisualStageTop = null;
+  function clearFocusTimer() {
+    if (viewport.focusTimer) {
+      window.clearTimeout(viewport.focusTimer);
+      viewport.focusTimer = null;
+    }
   }
 
   function restoreClosedLayout() {
+    clearFocusTimer();
     viewport.keyboardOpen = false;
+    viewport.focusGroup = null;
+
     document.body.classList.remove("keyboard-open");
-    clearKeyboardAnchor();
     setStageShift(0);
     syncViewportPan(false);
+
     wizardCard.scrollTop = viewport.cardScrollBeforeKeyboard || 0;
-    window.scrollTo(0, 0);
-    setupStaticViewport(true);
+
+    window.setTimeout(() => setupStaticViewport(true), 80);
   }
 
-  function lockStageToFocusedGroup(active, group) {
+  function positionFocusedGroup(active, group) {
     const vv = window.visualViewport;
-    if (!vv || !group) return;
+    if (!vv || !group || !viewport.keyboardOpen) return;
+    if (focusGroupFor(document.activeElement) !== group) return;
 
+    syncViewportPan(true);
     keepFocusedRowVisible(active);
 
     requestAnimationFrame(() => {
       if (!viewport.keyboardOpen || focusGroupFor(document.activeElement) !== group) return;
 
-      const groupRect = group.getBoundingClientRect();
-      const groupCenterOnScreen = groupRect.top - vv.offsetTop + groupRect.height / 2;
-      const targetCenterOnScreen = Math.max(92, Math.min(vv.height - 72, vv.height * 0.43));
-      const delta = targetCenterOnScreen - groupCenterOnScreen;
+      const currentGroup = focusGroupFor(document.activeElement);
+      if (!currentGroup) return;
 
-      setStageShift(viewport.shift + delta);
+      const rect = currentGroup.getBoundingClientRect();
+      const visualTop = rect.top - (vv.offsetTop || 0);
+      const visualCenter = visualTop + rect.height / 2;
 
-      requestAnimationFrame(() => {
-        if (!viewport.keyboardOpen || focusGroupFor(document.activeElement) !== group) return;
-        const stageRect = registrationStage.getBoundingClientRect();
-        viewport.anchorVisualStageTop = stageRect.top - vv.offsetTop;
-      });
+      // Einmalige Zielposition der aktiven Zeile oberhalb der Tastatur.
+      const targetCenter = Math.max(118, Math.min(vv.height - 96, vv.height * 0.42));
+      const delta = targetCenter - visualCenter;
+
+      let nextShift = viewport.shift + delta;
+
+      const stageRect = registrationStage.getBoundingClientRect();
+      const stageVisualTop = stageRect.top - (vv.offsetTop || 0);
+      const nextStageVisualTop = stageVisualTop + delta;
+
+      if (nextStageVisualTop < 8) {
+        nextShift += 8 - nextStageVisualTop;
+      }
+
+      setStageShift(nextShift);
     });
   }
 
-  function maintainLockedStagePosition() {
-    const vv = window.visualViewport;
-    if (!vv || viewport.anchorVisualStageTop == null) return;
-
-    const stageRect = registrationStage.getBoundingClientRect();
-    const desiredLayoutTop = viewport.anchorVisualStageTop + vv.offsetTop;
-    const correction = desiredLayoutTop - stageRect.top;
-    if (Math.abs(correction) > 0.5) setStageShift(viewport.shift + correction);
+  function scheduleFocusedGroupPosition(active, group, delay = 90) {
+    clearFocusTimer();
+    viewport.focusTimer = window.setTimeout(() => {
+      viewport.focusTimer = null;
+      positionFocusedGroup(active, group);
+    }, delay);
   }
 
-  function updateKeyboardPosition() {
+  function updateKeyboardPosition({ fromFocus = false } = {}) {
     const vv = window.visualViewport;
     if (!vv) {
       setupStaticViewport(true);
@@ -260,21 +275,21 @@
     if (!viewport.keyboardOpen) {
       viewport.keyboardOpen = true;
       viewport.cardScrollBeforeKeyboard = wizardCard.scrollTop;
+      viewport.focusGroup = null;
       document.body.classList.add("keyboard-open");
     }
 
+    // Nur Browser-Panning kompensieren. Kein Nachregeln der Kartenposition.
     syncViewportPan(true);
     keepFocusedRowVisible(active);
 
     const group = focusGroupFor(active);
-    if (group !== viewport.anchorGroup || viewport.anchorVisualStageTop == null) {
-      viewport.anchorGroup = group;
-      viewport.anchorVisualStageTop = null;
-      lockStageToFocusedGroup(active, group);
-    } else {
-      // Beim Wechsel Vorname → Nachname → Alter derselben Zeile bleibt die Karte
-      // exakt an derselben Bildschirmposition. Browser-eigenes Fokus-Panning wird neutralisiert.
-      maintainLockedStagePosition();
+
+    // Die Position wird nur bei einem echten Wechsel der Zeile / des Eingabebereichs
+    // neu gesetzt. Vorname -> Nachname -> Alter in derselben Zeile bleibt absolut ruhig.
+    if (group && group !== viewport.focusGroup) {
+      viewport.focusGroup = group;
+      scheduleFocusedGroupPosition(active, group, fromFocus ? 45 : 100);
     }
   }
 
@@ -282,43 +297,39 @@
   updateKeyboardPosition();
 
   window.addEventListener("resize", () => {
-    window.setTimeout(updateKeyboardPosition, 30);
-    window.setTimeout(updateKeyboardPosition, 220);
+    window.setTimeout(() => updateKeyboardPosition(), 80);
   }, { passive: true });
 
   window.visualViewport?.addEventListener("resize", () => {
-    window.setTimeout(updateKeyboardPosition, 20);
-    window.setTimeout(updateKeyboardPosition, 160);
-    window.setTimeout(updateKeyboardPosition, 340);
+    // Während iOS die Tastatur animiert, nur den sichtbaren Viewport-Versatz kompensieren.
+    if (viewport.keyboardOpen) syncViewportPan(true);
+
+    const wasOpen = viewport.keyboardOpen;
+    updateKeyboardPosition();
+
+    // Beim erstmaligen Öffnen wartet die Fokusposition kurz, bis die Tastaturhöhe stabil ist.
+    if (!wasOpen && viewport.keyboardOpen && viewport.focusGroup) {
+      scheduleFocusedGroupPosition(activeEditable(), viewport.focusGroup, 130);
+    }
   }, { passive: true });
 
   window.visualViewport?.addEventListener("scroll", () => {
-    // iOS verschiebt beim Feldwechsel den VisualViewport. Hintergrund und Karte
-    // werden gegengesteuert, damit nur der von uns gewählte vertikale Kartenversatz sichtbar ist.
-    window.setTimeout(updateKeyboardPosition, 0);
+    // iOS verschiebt beim Feldwechsel gelegentlich den VisualViewport.
+    // Das wird direkt neutralisiert, ohne die Fokusposition neu zu berechnen.
+    if (viewport.keyboardOpen) syncViewportPan(true);
   }, { passive: true });
 
   document.addEventListener("focusin", (event) => {
     if (!wizardCard.contains(event.target)) return;
-    window.setTimeout(updateKeyboardPosition, 60);
-    window.setTimeout(updateKeyboardPosition, 220);
+    window.setTimeout(() => updateKeyboardPosition({ fromFocus: true }), 25);
   });
 
   document.addEventListener("focusout", () => {
-    // Nicht beim Wechsel zwischen Feldern zurückspringen. Erst wenn die Tastatur
-    // wirklich geschlossen ist, wird die Ausgangsposition wiederhergestellt.
-    window.setTimeout(updateKeyboardPosition, 180);
-    window.setTimeout(updateKeyboardPosition, 460);
+    // Nicht zwischen Vorname/Nachname/Alter zurücksetzen.
+    window.setTimeout(() => updateKeyboardPosition(), 180);
   });
 
-  window.addEventListener("scroll", () => {
-    if (window.scrollX !== 0 || window.scrollY !== 0) {
-      requestAnimationFrame(() => window.scrollTo(0, 0));
-    }
-  }, { passive: true });
-
-  // Die Dokumentseite selbst scrollt nie. Nur die ausdrücklich vorgesehenen
-  // Listen/Kartenbereiche dürfen intern vertikal bewegt werden.
+  // Nur explizit dafür vorgesehene interne Bereiche dürfen scrollen.
   document.addEventListener("touchmove", (event) => {
     if (event.target.closest(".wizard-card, .people-rows, .needs-table-wrap, .summary-content, .modal")) return;
     event.preventDefault();

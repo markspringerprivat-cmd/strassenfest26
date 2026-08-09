@@ -736,21 +736,20 @@ input, select, textarea {
 /* Der Hintergrund bleibt optisch an derselben Bildschirmposition, auch wenn iOS
    den VisualViewport beim Öffnen/Wechseln der Tastatur automatisch verschiebt. */
 .static-background {
-  transform: translate3d(var(--viewport-pan-x), var(--viewport-pan-y), 0);
+  transform: translate3d(0, var(--viewport-pan-y), 0);
   transition: none !important;
   will-change: transform;
 }
 
-/* Die Karte behält IMMER dieselbe Breite. Horizontal wird nur ein eventuelles
-   Browser-Panning neutralisiert; die eigentliche Fokusbewegung erfolgt nur vertikal. */
+/* Die Karte behält IMMER dieselbe Breite und dieselbe horizontale Position.
+   Nur die vertikale Position darf für den Tastaturfokus angepasst werden. */
 .registration-stage {
   width: min(calc(100vw - 28px), 470px);
   max-width: calc(100vw - 28px);
   transform:
     translateX(-50%)
-    translateX(var(--viewport-pan-x))
-    translateY(var(--stage-shift));
-  transition: transform 220ms ease;
+    translateY(calc(var(--viewport-pan-y) + var(--stage-shift)));
+  transition: transform 180ms ease;
 }
 
 /* Lange Schritte bleiben innerhalb des Bereichs zwischen Titel und Footer.
@@ -802,6 +801,11 @@ body.keyboard-open .registration-stage,
 body.keyboard-open .wizard-card {
   width: min(calc(100vw - 28px), 470px);
   max-width: calc(100vw - 28px);
+}
+
+/* Während die Tastatur offen ist darf Browser-Panning nicht als Animation sichtbar werden. */
+body.keyboard-open .registration-stage {
+  transition: none !important;
 }
 
 /* Die Seite selbst darf weder vertikal noch horizontal wandern. */
