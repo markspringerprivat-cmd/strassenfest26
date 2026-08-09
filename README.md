@@ -208,3 +208,10 @@ Positionierungsalgorithmus entfernt.
 - Mitbringsel-Kategorie `Sonstiges`.
 - Beim Auswählen eines Mitbringsel-Bereichs werden bereits vorhandene konkrete Einträge angezeigt.
 - Das konkrete Mitbringsel/Notizfeld bleibt Pflichtfeld.
+
+## Update v15 – Apps-Script-Verbindung korrigiert
+- Die Rückmeldung der Apps-Script-Web-App wird jetzt auch dann akzeptiert,
+  wenn Google die HtmlService-Antwort in einem zusätzlichen Sandbox-Frame ausführt.
+- Die Zuordnung einer Antwort erfolgt über die zufällig erzeugte requestId.
+- Dadurch laufen Anmeldung, Bedarfsliste, „Meine Anmeldung“ und Admin-API
+  nicht mehr in den 18-Sekunden-Timeout, nur weil event.source vom äußeren iframe abweicht.

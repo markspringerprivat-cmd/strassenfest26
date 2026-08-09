@@ -103,8 +103,10 @@
       };
 
       const onMessage = (event) => {
-        if (event.source !== iframe.contentWindow) return;
-
+        // Apps Script kann die eigentliche HTML-Antwort in einem zusätzlichen
+        // Google-Sandbox-Frame ausführen. Dann ist event.source nicht zwingend
+        // identisch mit dem von uns angelegten Ziel-iframe.
+        // Deshalb korrelieren wir ausschließlich über den zufälligen requestId.
         const message = event.data;
         if (!message || message.channel !== "strassenfest-api") return;
         if (message.requestId !== requestId) return;
@@ -121,7 +123,7 @@
       };
 
       const timeoutId = window.setTimeout(() => {
-        finish(() => reject(new Error("Die Datenbank antwortet gerade nicht.")));
+        finish(() => reject(new Error("Die Verbindung zur Datenbank hat zu lange gebraucht. Bitte versuche es erneut.")));
       }, 18000);
 
       window.addEventListener("message", onMessage);
