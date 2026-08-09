@@ -8,6 +8,7 @@
     token: sessionStorage.getItem(SESSION_KEY) || "",
     people: [],
     expenses: [],
+    tickets: [],
     summary: {
       peopleCount: 0,
       due: 0,
@@ -52,6 +53,17 @@
   const expenseList = document.getElementById("expenseList");
   const addExpenseButton = document.getElementById("addExpenseButton");
   const shoppingSaveStatus = document.getElementById("shoppingSaveStatus");
+
+  const ticketTabCount = document.getElementById("ticketTabCount");
+  const metricTickets = document.getElementById("metricTickets");
+  const metricTicketsOpen = document.getElementById("metricTicketsOpen");
+  const ticketSearch = document.getElementById("ticketSearch");
+  const ticketFilter = document.getElementById("ticketFilter");
+  const ticketSort = document.getElementById("ticketSort");
+  const ticketResultCount = document.getElementById("ticketResultCount");
+  const ticketList = document.getElementById("ticketList");
+  const refreshTickets = document.getElementById("refreshTickets");
+  const ticketSaveStatus = document.getElementById("ticketSaveStatus");
 
   function secureRequestId(prefix = "sf") {
     const bytes = new Uint8Array(18);
@@ -928,6 +940,210 @@
     }
   });
 
+  function updateTicketMetrics() {
+    const total = state.tickets.length;
+    const open = state.tickets.filter((ticket) => ticket.status === "OPEN").length;
+
+    metricTickets.textContent = String(total);
+    metricTicketsOpen.textContent = String(open);
+    ticketTabCount.textContent = String(open);
+    ticketTabCount.classList.toggle("hidden", open === 0);
+  }
+
+  function filteredTickets() {
+    const query = normalize(ticketSearch.value);
+    const filter = ticketFilter.value;
+    const sort = ticketSort.value;
+
+    const result = state.tickets.filter((ticket) => {
+      if (filter !== "all" && ticket.status !== filter) return false;
+
+      if (query) {
+        const haystack = normalize([
+          ticket.name,
+          ticket.contactMethod,
+          ticket.contactValue,
+          ticket.message,
+          ticket.id
+        ].join(" "));
+
+        if (!haystack.includes(query)) return false;
+      }
+
+      return true;
+    });
+
+    result.sort((a, b) => {
+      if (sort === "oldest") {
+        return new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime();
+      }
+
+      if (sort === "name") {
+        return new Intl.Collator("de", { sensitivity: "base" })
+          .compare(a.name || "", b.name || "");
+      }
+
+      return new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime();
+    });
+
+    return result;
+  }
+
+  function ticketContactLabel(method) {
+    if (method === "email") return "E-Mail";
+    if (method === "telefon") return "Telefon";
+    if (method === "whatsapp") return "WhatsApp";
+    return "Kontakt";
+  }
+
+  function contactHref(ticket) {
+    const value = String(ticket.contactValue || "");
+
+    if (ticket.contactMethod === "email") {
+      return `mailto:${encodeURIComponent(value)}`;
+    }
+
+    if (["telefon", "whatsapp"].includes(ticket.contactMethod)) {
+      const normalized = value.replace(/[^0-9+]/g, "");
+      return `tel:${normalized}`;
+    }
+
+    return "";
+  }
+
+  function renderTickets() {
+    updateTicketMetrics();
+    const tickets = filteredTickets();
+
+    ticketResultCount.textContent =
+      `${tickets.length} ${tickets.length === 1 ? "Ticket" : "Tickets"}`;
+
+    if (!tickets.length) {
+      ticketList.innerHTML = `
+        <div class="empty-state">
+          Für die aktuelle Suche bzw. den Filter wurden keine Tickets gefunden.
+        </div>`;
+      return;
+    }
+
+    ticketList.innerHTML = tickets.map((ticket) => {
+      const date = ticket.createdAt
+        ? new Date(ticket.createdAt).toLocaleString("de-DE")
+        : "–";
+
+      const done = ticket.status === "DONE";
+      const href = contactHref(ticket);
+
+      return `
+        <article class="ticket-card ${done ? "ticket-done" : ""}"
+                 data-ticket-id="${escapeAttr(ticket.id)}">
+          <div class="ticket-card-head">
+            <div>
+              <span class="ticket-status ${done ? "done" : "open"}">
+                ${done ? "Erledigt" : "Offen"}
+              </span>
+              <h3>${escapeHtml(ticket.name)}</h3>
+              <small>${escapeHtml(date)}</small>
+            </div>
+
+            <button type="button"
+                    class="ticket-status-button"
+                    data-next-status="${done ? "OPEN" : "DONE"}">
+              ${done ? "Wieder öffnen" : "Als erledigt markieren"}
+            </button>
+          </div>
+
+          <div class="ticket-contact">
+            <span>${escapeHtml(ticketContactLabel(ticket.contactMethod))}</span>
+            ${href
+              ? `<a href="${escapeAttr(href)}">${escapeHtml(ticket.contactValue)}</a>`
+              : `<strong>${escapeHtml(ticket.contactValue)}</strong>`}
+          </div>
+
+          <div class="ticket-message">
+            ${escapeHtml(ticket.message).replace(/\n/g, "<br>")}
+          </div>
+
+          <div class="ticket-id-line">
+            Ticket-ID: ${escapeHtml(ticket.id)}
+          </div>
+        </article>`;
+    }).join("");
+  }
+
+  async function setTicketStatus(ticket, nextStatus, button) {
+    button.disabled = true;
+    setSaveStatus(ticketSaveStatus, "Speichert …", "saving");
+
+    try {
+      const result = await apiRequest("adminSetTicketStatus", {
+        token: state.token,
+        ticketId: ticket.id,
+        status: nextStatus
+      });
+
+      ticket.status = result.ticket.status;
+      ticket.updatedAt = result.ticket.updatedAt;
+      ticket.statusUpdatedAt = result.ticket.statusUpdatedAt || null;
+
+      renderTickets();
+      setSaveStatus(ticketSaveStatus, "Gespeichert");
+      window.setTimeout(() => {
+        setSaveStatus(ticketSaveStatus, "Aktuell");
+      }, 1100);
+    } catch (error) {
+      if (!handleApiError(error)) {
+        setSaveStatus(ticketSaveStatus, "Fehler", "error");
+        showToast(error.message);
+        renderTickets();
+      }
+    }
+  }
+
+  ticketList.addEventListener("click", (event) => {
+    const button = event.target.closest(".ticket-status-button");
+    if (!button) return;
+
+    const card = button.closest(".ticket-card");
+    const ticket = state.tickets.find(
+      (item) => item.id === card?.dataset.ticketId
+    );
+
+    if (!ticket) return;
+
+    void setTicketStatus(
+      ticket,
+      button.dataset.nextStatus,
+      button
+    );
+  });
+
+  [ticketSearch, ticketFilter, ticketSort].forEach((control) => {
+    control.addEventListener(
+      control.tagName === "INPUT" ? "input" : "change",
+      renderTickets
+    );
+  });
+
+  refreshTickets.addEventListener("click", () => void loadTickets());
+
+  async function loadTickets() {
+    setSaveStatus(ticketSaveStatus, "Lädt …", "saving");
+
+    try {
+      const result = await apiRequest("adminTickets", { token: state.token });
+      state.tickets = Array.isArray(result.tickets) ? result.tickets : [];
+      renderTickets();
+      setSaveStatus(ticketSaveStatus, "Aktuell");
+    } catch (error) {
+      if (!handleApiError(error)) {
+        setSaveStatus(ticketSaveStatus, "Fehler", "error");
+        showToast(error.message);
+      }
+      throw error;
+    }
+  }
+
   async function loadOverview() {
     setSaveStatus(overviewSaveStatus, "Lädt …", "saving");
 
@@ -965,7 +1181,7 @@
 
   async function loadAll() {
     try {
-      await Promise.all([loadOverview(), loadExpenses()]);
+      await Promise.all([loadOverview(), loadExpenses(), loadTickets()]);
     } catch {}
   }
 

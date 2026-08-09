@@ -96,10 +96,17 @@
 
       const callbackName = `__sfApi_${requestId.replace(/[^a-z0-9_]/gi, "_")}_${Date.now()}`;
       const script = document.createElement("script");
-      let callbackCalled = false;
+      let settled = false;
+      let attemptTimer = null;
 
       const cleanup = () => {
+        if (attemptTimer) {
+          window.clearTimeout(attemptTimer);
+          attemptTimer = null;
+        }
+
         script.remove();
+
         try {
           delete window[callbackName];
         } catch {
@@ -107,8 +114,26 @@
         }
       };
 
+      const retry = (delay = 380) => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+
+        if (Date.now() >= deadline) {
+          reject(new Error(
+            "Die Verbindung zur Datenbank hat zu lange gebraucht. Bitte versuche es erneut."
+          ));
+          return;
+        }
+
+        window.setTimeout(() => {
+          pollApiResult(requestId, deadline).then(resolve, reject);
+        }, delay);
+      };
+
       window[callbackName] = (message) => {
-        callbackCalled = true;
+        if (settled) return;
+        settled = true;
         cleanup();
 
         if (!message || message.pending) {
@@ -141,37 +166,17 @@
       script.src = url.toString();
       script.async = true;
 
-      script.onerror = () => {
-        cleanup();
-
-        if (Date.now() >= deadline) {
-          reject(new Error(
-            "Die Datenbank konnte nicht erreicht werden. Bitte versuche es erneut."
-          ));
-          return;
-        }
-
-        window.setTimeout(() => {
-          pollApiResult(requestId, deadline).then(resolve, reject);
-        }, 500);
-      };
+      script.onerror = () => retry(520);
 
       script.onload = () => {
-        if (callbackCalled) return;
-
-        cleanup();
-
-        if (Date.now() >= deadline) {
-          reject(new Error(
-            "Die Datenbank hat keine verwertbare Antwort geliefert."
-          ));
-          return;
-        }
-
-        window.setTimeout(() => {
-          pollApiResult(requestId, deadline).then(resolve, reject);
-        }, 350);
+        // Ein gültiger JSONP-Aufruf ruft den Callback während des Ladens auf.
+        // Falls er aus irgendeinem Grund nicht aufgerufen wurde, wird neu versucht.
+        if (!settled) retry(360);
       };
+
+      // Wichtig: Auch wenn ein Browser den Script-Request weder mit onload noch
+      // onerror beendet, geht es nach spätestens 4 Sekunden weiter.
+      attemptTimer = window.setTimeout(() => retry(300), 4000);
 
       document.head.appendChild(script);
     });
@@ -1493,17 +1498,24 @@
     return new Promise((resolve, reject) => {
       if (Date.now() >= deadline) {
         reject(new Error(
-          "Die Anmeldung wurde möglicherweise gespeichert, aber die Bestätigung konnte nicht geladen werden. Bitte nicht erneut absenden und die Seite kurz neu laden."
+          "Die Anmeldung wurde möglicherweise gespeichert, aber die Bestätigung konnte nicht geladen werden. Bitte nicht erneut absenden. Lade die Seite kurz neu und prüfe „Meine Anmeldung“."
         ));
         return;
       }
 
       const callbackName = `__sfCreate_${String(registrationId).replace(/[^a-z0-9_]/gi, "_")}_${Date.now()}`;
       const script = document.createElement("script");
-      let callbackCalled = false;
+      let settled = false;
+      let attemptTimer = null;
 
       const cleanup = () => {
+        if (attemptTimer) {
+          window.clearTimeout(attemptTimer);
+          attemptTimer = null;
+        }
+
         script.remove();
+
         try {
           delete window[callbackName];
         } catch {
@@ -1511,8 +1523,26 @@
         }
       };
 
+      const retry = (delay = 450) => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+
+        if (Date.now() >= deadline) {
+          reject(new Error(
+            "Die Anmeldung wurde möglicherweise gespeichert, aber die Bestätigung konnte nicht geladen werden. Bitte nicht erneut absenden. Lade die Seite kurz neu und prüfe „Meine Anmeldung“."
+          ));
+          return;
+        }
+
+        window.setTimeout(() => {
+          pollCreatedRegistration(registrationId, deadline).then(resolve, reject);
+        }, delay);
+      };
+
       window[callbackName] = (message) => {
-        callbackCalled = true;
+        if (settled) return;
+        settled = true;
         cleanup();
 
         if (!message || message.pending) {
@@ -1543,36 +1573,41 @@
       script.src = url.toString();
       script.async = true;
 
-      script.onerror = () => {
-        cleanup();
-        window.setTimeout(() => {
-          pollCreatedRegistration(registrationId, deadline).then(resolve, reject);
-        }, 650);
-      };
+      script.onerror = () => retry(650);
 
       script.onload = () => {
-        if (callbackCalled) return;
-        cleanup();
-        window.setTimeout(() => {
-          pollCreatedRegistration(registrationId, deadline).then(resolve, reject);
-        }, 500);
+        if (!settled) retry(420);
       };
+
+      // Verhindert ein endloses „Wird gespeichert …“, wenn genau ein
+      // Browser-/Netzwerkrequest hängen bleibt.
+      attemptTimer = window.setTimeout(() => retry(300), 4000);
 
       document.head.appendChild(script);
     });
   }
 
   async function submitRegistration(payload) {
-    // CREATE wird absichtlich nicht von der unmittelbaren POST-Antwort abhängig
-    // gemacht. Der Server speichert payload.id als registration_id. Danach fragt
-    // die Seite genau diese ID ab. Dadurch ist ein erneuter Klick idempotent:
-    // dieselbe Anmeldung wird nicht doppelt angelegt.
+    // Jede neue Anmeldung hat eine eigene submissionId. Sie ist NICHT an das
+    // Gerät gekoppelt. Dieselbe ID wird nur bei einem Retry derselben Anmeldung
+    // wiederverwendet, damit keine Duplikate entstehen.
+    const controller = typeof AbortController !== "undefined"
+      ? new AbortController()
+      : null;
+
+    const postTimeout = controller
+      ? window.setTimeout(() => controller.abort(), 10000)
+      : null;
+
+    let postWarning = null;
+
     try {
       await fetch(SUBMIT_ENDPOINT, {
         method: "POST",
         mode: "no-cors",
         credentials: "omit",
         redirect: "follow",
+        signal: controller?.signal,
         headers: {
           "Content-Type": "text/plain;charset=UTF-8"
         },
@@ -1583,19 +1618,28 @@
         })
       });
     } catch (error) {
-      console.error("CREATE-POST fehlgeschlagen:", error);
-      throw new Error(
-        "Die Anmeldung konnte nicht an die Datenbank gesendet werden. Bitte prüfe deine Internetverbindung."
-      );
+      // Ein Timeout/Abort bedeutet nicht zwingend, dass Apps Script den POST
+      // nicht erhalten hat. Deshalb prüfen wir danach trotzdem die Anmeldung.
+      postWarning = error;
+      console.warn("CREATE-POST wurde lokal nicht bestätigt:", error);
+    } finally {
+      if (postTimeout) window.clearTimeout(postTimeout);
     }
 
-    const registration = await pollCreatedRegistration(
-      payload.id,
-      Date.now() + 30000
-    );
+    try {
+      const registration = await pollCreatedRegistration(
+        payload.id,
+        Date.now() + 40000
+      );
 
-    saveLocalRegistration(registration);
-    return registration;
+      saveLocalRegistration(registration);
+      return registration;
+    } catch (statusError) {
+      if (postWarning) {
+        console.warn("Zusätzlicher POST-Hinweis:", postWarning);
+      }
+      throw statusError;
+    }
   }
 
   let confirmationCountdownTimer = null;
@@ -1645,8 +1689,19 @@
   });
 
 
-  downloadPdfButton.addEventListener("click", () => {
-    if (state.savedRegistration) downloadRegistrationPdf(state.savedRegistration);
+  downloadPdfButton.addEventListener("click", async () => {
+    if (!state.savedRegistration || downloadPdfButton.disabled) return;
+
+    const originalText = downloadPdfButton.textContent;
+    downloadPdfButton.disabled = true;
+    downloadPdfButton.textContent = "PDF wird vorbereitet …";
+
+    try {
+      await downloadRegistrationPdf(state.savedRegistration);
+    } finally {
+      downloadPdfButton.disabled = false;
+      downloadPdfButton.textContent = originalText;
+    }
   });
 
   openSavedRegistrationButton.addEventListener("click", () => {
@@ -1878,23 +1933,87 @@
     return concatBytes(chunks);
   }
 
-  function downloadRegistrationPdf(registration) {
-    const bytes = createSimplePdf(registrationPdfLines(registration));
-    const blob = new Blob([bytes], { type: "application/pdf" });
+  function isMobileBrowser() {
+    if (navigator.userAgentData?.mobile) return true;
+
+    return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  }
+
+  function openPdfFallback(blob, fileName) {
     const url = URL.createObjectURL(blob);
+
+    if (isMobileBrowser()) {
+      // Auf Smartphones ist ein geöffneter PDF-Tab zuverlässiger als ein
+      // erzwungener Blob-Download. Von dort kann die PDF über den Browser-
+      // bzw. Teilen-Dialog in „Dateien“ gespeichert werden.
+      const link = document.createElement("a");
+      link.href = url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      // Der neue Tab braucht die Blob-URL noch eine Weile.
+      window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+      return;
+    }
+
     const link = document.createElement("a");
-
-    const safeCode = String(registration.accessCode || "anmeldung")
-      .replace(/[^A-Z0-9-]+/gi, "-");
-
     link.href = url;
-    link.download = `Strassenfest-Hilchenbach-${safeCode}.pdf`;
+    link.download = fileName;
+    link.style.display = "none";
     document.body.appendChild(link);
     link.click();
     link.remove();
 
-    window.setTimeout(() => URL.revokeObjectURL(url), 1200);
+    window.setTimeout(() => URL.revokeObjectURL(url), 10000);
   }
+
+  async function downloadRegistrationPdf(registration) {
+    const bytes = createSimplePdf(registrationPdfLines(registration));
+    const blob = new Blob([bytes], { type: "application/pdf" });
+
+    const safeCode = String(registration.accessCode || "anmeldung")
+      .replace(/[^A-Z0-9-]+/gi, "-");
+
+    const fileName = `Strassenfest-Hilchenbach-${safeCode}.pdf`;
+
+    // Auf iPhone/iPad/Android bevorzugen wir den nativen Teilen-/Speichern-
+    // Dialog. Damit kann z. B. direkt „In Dateien sichern“ gewählt werden.
+    if (
+      isMobileBrowser() &&
+      typeof File !== "undefined" &&
+      typeof navigator.share === "function" &&
+      typeof navigator.canShare === "function"
+    ) {
+      const file = new File([blob], fileName, {
+        type: "application/pdf",
+        lastModified: Date.now()
+      });
+
+      try {
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            title: "Anmeldung Straßenfest in Hilchenbach",
+            files: [file]
+          });
+          return;
+        }
+      } catch (error) {
+        // Abbrechen durch den Nutzer ist kein Fehler und soll keinen zweiten
+        // Downloadversuch auslösen.
+        if (error?.name === "AbortError") return;
+
+        console.warn("Nativer PDF-Dialog nicht verfügbar:", error);
+      }
+    }
+
+    openPdfFallback(blob, fileName);
+  }
+
 
   form.addEventListener("submit", async (event) => {
     event.preventDefault();

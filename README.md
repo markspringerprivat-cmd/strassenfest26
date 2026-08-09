@@ -257,3 +257,29 @@ zum Timeout geführt haben konnten.
 - Kein Code-kopieren-Button mehr.
 - PDF-Download enthält oben groß und fett den Anmeldecode und darunter alle Anmeldedaten.
 - Der Weiter-Button auf der Code-Kachel zählt von 10 herunter und wird erst danach aktiv.
+
+## Update v19
+- Footer: Impressum · Kontakt · Datenschutz · Admin.
+- Kontakt öffnet `contact.html`.
+- Kontaktformular verlangt Name, Anfrage und einen Kontaktweg:
+  E-Mail, Telefon oder WhatsApp.
+- Kontaktanfragen werden zentral in Google Sheets als Tickets gespeichert.
+- Admin-Bereich: dritter Reiter `Tickets`.
+- Tickets besitzen Suche, Statusfilter, Sortierung und Open/Done-Status.
+- Ticketstatus wird beim Klick sofort automatisch gespeichert.
+- `impressum.html` und `datenschutz.html` sind als ausfüllbare Entwürfe enthalten.
+
+
+## Update v20
+- PDF-Download auf Smartphones verbessert:
+  - wenn möglich nativer Teilen-/Speichern-Dialog,
+  - ansonsten PDF in neuem Tab,
+  - Desktop weiterhin normaler Dateidownload.
+- Datenbank-Polling besitzt jetzt pro Einzelabfrage einen 4-Sekunden-Watchdog.
+  Ein festhängender Script-Request kann die Oberfläche damit nicht mehr
+  unbegrenzt auf „Wird gespeichert …“ stehen lassen.
+- Auch der initiale POST wartet höchstens 10 Sekunden lokal; anschließend wird
+  trotzdem geprüft, ob die Anmeldung bereits in Google Sheets gespeichert wurde.
+- Eine neue Anmeldung ist nicht an eine Geräte-ID gebunden. Jede neue Anmeldung
+  bekommt eine neue zufällige submissionId; nur ein Retry derselben Anmeldung
+  verwendet dieselbe ID zur Duplikatvermeidung.

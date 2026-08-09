@@ -41,6 +41,9 @@
       <nav class="tab-bar" aria-label="Admin-Bereiche">
         <button type="button" class="tab-button active" data-tab="overview">Übersicht</button>
         <button type="button" class="tab-button" data-tab="shopping">Einkauf</button>
+        <button type="button" class="tab-button" data-tab="tickets">
+          Tickets <span class="tab-count" id="ticketTabCount">0</span>
+        </button>
       </nav>
 
       <section class="tab-panel active" data-panel="overview">
@@ -176,6 +179,62 @@
               <strong id="shoppingRemainingBottom">0,00 €</strong>
             </div>
           </div>
+        </section>
+      </section>
+      <section class="tab-panel" data-panel="tickets">
+        <div class="metric-grid ticket-metrics">
+          <article class="metric-card">
+            <span>Tickets gesamt</span>
+            <strong id="metricTickets">0</strong>
+          </article>
+          <article class="metric-card metric-positive">
+            <span>Offen</span>
+            <strong id="metricTicketsOpen">0</strong>
+          </article>
+        </div>
+
+        <section class="admin-card">
+          <div class="card-heading">
+            <div>
+              <p class="eyebrow">Kontaktanfragen</p>
+              <h2>Tickets</h2>
+            </div>
+            <div class="save-indicator" id="ticketSaveStatus" aria-live="polite">Aktuell</div>
+          </div>
+
+          <div class="toolbar ticket-toolbar">
+            <label class="search-box">
+              <span class="sr-only">Tickets suchen</span>
+              <input id="ticketSearch"
+                     type="search"
+                     placeholder="Name, Kontakt oder Nachricht suchen …" />
+            </label>
+
+            <label>
+              <span>Status</span>
+              <select id="ticketFilter">
+                <option value="all">Alle</option>
+                <option value="OPEN">Offen</option>
+                <option value="DONE">Erledigt</option>
+              </select>
+            </label>
+
+            <label>
+              <span>Sortieren</span>
+              <select id="ticketSort">
+                <option value="newest">Neueste zuerst</option>
+                <option value="oldest">Älteste zuerst</option>
+                <option value="name">Name A–Z</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="result-line">
+            <span id="ticketResultCount">0 Tickets</span>
+            <button id="refreshTickets" class="text-button" type="button">Neu laden</button>
+          </div>
+
+          <div class="ticket-list" id="ticketList" aria-live="polite"></div>
         </section>
       </section>
     </section>

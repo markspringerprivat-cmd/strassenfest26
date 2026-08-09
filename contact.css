@@ -1,0 +1,273 @@
+:root {
+  --bg: #0d1f66;
+  --card: rgba(34, 31, 99, .76);
+  --border: rgba(221, 202, 255, .22);
+  --muted: rgba(255,255,255,.68);
+  --gold: #ffc23e;
+  --gold-light: #ffe08b;
+  --danger: #ffb7c5;
+  --success: #94efbd;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+}
+
+* { box-sizing: border-box; }
+
+html, body {
+  min-height: 100%;
+  margin: 0;
+  background: var(--bg);
+  color: #fff;
+}
+
+body {
+  min-height: 100dvh;
+  overflow-x: hidden;
+}
+
+.page-background {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background:
+    linear-gradient(rgba(8, 17, 63, .66), rgba(8, 17, 63, .84)),
+    url("assets/strassenfest-hilchenbach.png") center 38% / cover no-repeat;
+}
+
+.contact-shell {
+  position: relative;
+  z-index: 1;
+  width: min(620px, calc(100% - 28px));
+  margin: 0 auto;
+  padding: max(22px, env(safe-area-inset-top)) 0 94px;
+}
+
+.page-header {
+  margin-bottom: 16px;
+}
+
+.back-link {
+  display: inline-block;
+  margin-bottom: 17px;
+  color: rgba(255,255,255,.78);
+  text-decoration: none;
+  font-size: .82rem;
+}
+
+.eyebrow {
+  margin: 0 0 4px;
+  color: var(--gold-light);
+  font-size: .69rem;
+  font-weight: 850;
+  letter-spacing: .11em;
+  text-transform: uppercase;
+}
+
+h1, h2 {
+  margin: 0;
+  letter-spacing: -.025em;
+}
+
+h1 {
+  font-size: clamp(2rem, 8vw, 3.15rem);
+}
+
+h2 {
+  font-size: clamp(1.35rem, 6vw, 1.9rem);
+}
+
+.intro,
+.success-card p {
+  margin: 8px 0 0;
+  color: var(--muted);
+  line-height: 1.55;
+  font-size: .86rem;
+}
+
+.contact-card,
+.success-card {
+  padding: 18px;
+  border: 1px solid var(--border);
+  border-radius: 22px;
+  background:
+    linear-gradient(145deg, rgba(58, 45, 126, .66), rgba(21, 24, 73, .82));
+  box-shadow: 0 24px 70px rgba(3, 7, 31, .28);
+  backdrop-filter: blur(15px);
+  -webkit-backdrop-filter: blur(15px);
+}
+
+#contactForm {
+  display: grid;
+  gap: 13px;
+}
+
+.field {
+  display: grid;
+  gap: 6px;
+}
+
+.field > span {
+  color: rgba(255,255,255,.76);
+  font-size: .72rem;
+  font-weight: 750;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid rgba(221, 201, 255, .30);
+  border-radius: 12px;
+  outline: none;
+  background: rgba(13, 18, 67, .58);
+  color: #fff;
+  padding: 10px 12px;
+  font: inherit;
+  font-size: 16px;
+}
+
+textarea {
+  min-height: 150px;
+  resize: vertical;
+  line-height: 1.45;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  border-color: rgba(255, 202, 73, .82);
+  box-shadow: 0 0 0 3px rgba(255, 194, 62, .09);
+}
+
+input.invalid,
+select.invalid,
+textarea.invalid {
+  border-color: rgba(255, 137, 163, .88);
+  box-shadow: 0 0 0 3px rgba(255, 137, 163, .08);
+}
+
+.privacy-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: .67rem;
+  line-height: 1.45;
+}
+
+.privacy-note a,
+.simple-footer a {
+  color: var(--gold-light);
+}
+
+.form-status {
+  min-height: 19px;
+  margin: 0;
+  color: var(--danger);
+  font-size: .72rem;
+  line-height: 1.35;
+}
+
+.primary-button,
+.primary-link {
+  min-height: 48px;
+  border: 1px solid rgba(255, 224, 139, .88);
+  border-radius: 13px;
+  background: linear-gradient(135deg, #ffd75c, #ffb32f);
+  color: #2a205e;
+  font-weight: 850;
+}
+
+.primary-button {
+  width: 100%;
+  cursor: pointer;
+}
+
+.primary-button:disabled {
+  opacity: .56;
+  cursor: wait;
+}
+
+.primary-link {
+  display: grid;
+  place-items: center;
+  margin-top: 17px;
+  text-decoration: none;
+}
+
+.success-card {
+  text-align: center;
+}
+
+.success-icon {
+  display: grid;
+  place-items: center;
+  width: 52px;
+  height: 52px;
+  margin: 0 auto 12px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #ffd75c, #ffb32f);
+  color: #2a205e;
+  font-size: 1.65rem;
+  font-weight: 900;
+}
+
+.ticket-reference {
+  display: grid;
+  gap: 3px;
+  margin-top: 15px;
+  padding: 11px;
+  border: 1px solid rgba(255, 199, 65, .25);
+  border-radius: 13px;
+  background: rgba(255, 195, 59, .05);
+}
+
+.ticket-reference span {
+  color: var(--muted);
+  font-size: .63rem;
+}
+
+.ticket-reference strong {
+  color: var(--gold-light);
+  font-size: .82rem;
+  word-break: break-all;
+}
+
+.simple-footer {
+  position: fixed;
+  z-index: 3;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  justify-content: center;
+  gap: 22px;
+  padding: 12px 12px calc(12px + env(safe-area-inset-bottom));
+  border-top: 1px solid rgba(255,255,255,.12);
+  background: rgba(7, 24, 82, .90);
+  backdrop-filter: blur(10px);
+}
+
+.simple-footer a {
+  font-size: .68rem;
+  text-decoration: none;
+}
+
+.honeypot {
+  position: absolute !important;
+  left: -10000px !important;
+  width: 1px !important;
+  height: 1px !important;
+  overflow: hidden !important;
+}
+
+.hidden { display: none !important; }
+
+@media (max-width: 480px) {
+  .contact-card,
+  .success-card {
+    padding: 15px;
+  }
+
+  .contact-shell {
+    width: min(100% - 22px, 620px);
+  }
+}
