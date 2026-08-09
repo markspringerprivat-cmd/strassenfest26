@@ -1566,3 +1566,31 @@ textarea {
     height: 18px;
   }
 }
+
+
+/* ================================================================
+   v22 – Schritt 1 ohne Überlagerung + Feuerwerk
+   ================================================================ */
+
+/* Auf Schritt 1 darf die Aktionsleiste nicht über der Personenliste schweben.
+   Sie bleibt statisch direkt UNTER der Liste – auch bei geöffneter Tastatur. */
+.step[data-step="1"] .step-actions,
+body.keyboard-open .step[data-step="1"] .step-actions {
+  position: relative !important;
+  bottom: auto !important;
+  z-index: 2 !important;
+  margin-top: 10px !important;
+  padding-top: 0 !important;
+  background: transparent !important;
+}
+
+.step[data-step="1"] .people-table {
+  position: relative;
+  z-index: 3;
+}
+
+/* Feuerwerk etwas heller, klarer und ohne optische Stauchung. */
+.fireworks {
+  opacity: .84;
+  filter: brightness(1.09) saturate(1.12);
+}

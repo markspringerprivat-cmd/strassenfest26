@@ -2177,7 +2177,8 @@
   refreshMyRegistrationHint();
   addPersonRow();
 
-  // Ruhiges Feuerwerk: etwas größer und häufiger, aber mit langen, weichen Abständen.
+  // Feuerwerk v22: sauber auf die tatsächliche Canvas-Größe skaliert,
+  // etwas heller und mit runderen, klareren Explosionen.
   const canvas = document.getElementById("fireworks");
   const ctx = canvas.getContext("2d");
   const reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
@@ -2188,65 +2189,125 @@
     const palette = [
       "255, 222, 118",
       "255, 170, 195",
-      "255, 246, 222",
-      "209, 190, 255",
-      "118, 225, 255"
+      "255, 247, 225",
+      "210, 190, 255",
+      "120, 226, 255",
+      "255, 191, 92"
     ];
 
-    let width = 0;
-    let height = 0;
+    let width = 1;
+    let height = 1;
     let dpr = 1;
-    let nextLaunch = performance.now() + 450;
+    let nextLaunch = performance.now() + 350;
 
     function resizeCanvas() {
+      const rect = canvas.getBoundingClientRect();
+
+      width = Math.max(1, Math.round(rect.width));
+      height = Math.max(1, Math.round(rect.height));
       dpr = Math.min(window.devicePixelRatio || 1, 2);
-      width = Math.round(canvas.clientWidth);
-      height = Math.round(canvas.clientHeight);
+
+      // CSS- und Zeichenfläche explizit synchron halten. Dadurch kann das
+      // Feuerwerk auf mobilen Browsern nicht mehr horizontal/vertikal gestaucht
+      // werden, wenn sich die Browserleiste oder Viewport-Höhe verändert.
+      canvas.style.width = `${width}px`;
+      canvas.style.height = `${height}px`;
       canvas.width = Math.round(width * dpr);
       canvas.height = Math.round(height * dpr);
-      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+
+      if (typeof ctx.resetTransform === "function") {
+        ctx.resetTransform();
+      } else {
+        ctx.setTransform(1, 0, 0, 1, 0, 0);
+      }
+
+      ctx.scale(dpr, dpr);
     }
 
     resizeCanvas();
-    window.addEventListener("resize", () => { if (!viewport.keyboardOpen) resizeCanvas(); }, { passive: true });
+
+    window.addEventListener("resize", () => {
+      if (!viewport.keyboardOpen) resizeCanvas();
+    }, { passive: true });
+
+    window.addEventListener("orientationchange", () => {
+      window.setTimeout(resizeCanvas, 180);
+    }, { passive: true });
 
     function launchRocket(delayOffset = 0) {
-      setTimeout(() => {
-        const targetX = width * (0.07 + Math.random() * 0.86);
-        const targetY = height * (0.10 + Math.random() * 0.36);
-        const startX = targetX + (Math.random() - 0.5) * 85;
+      window.setTimeout(() => {
+        const targetX = width * (0.08 + Math.random() * 0.84);
+        const targetY = height * (0.09 + Math.random() * 0.34);
+        const startX = targetX + (Math.random() - 0.5) * 90;
+
         rockets.push({
           x: startX,
-          y: height + 15,
-          vx: (targetX - startX) / 62,
-          vy: -(1.82 + Math.random() * 0.48),
+          y: height + 18,
+          vx: (targetX - startX) / (56 + Math.random() * 12),
+          vy: -(2.05 + Math.random() * 0.52),
           targetY,
-          alpha: 0.45,
+          alpha: .72,
           color: palette[Math.floor(Math.random() * palette.length)]
         });
       }, delayOffset);
     }
 
     function explode(rocket) {
-      const count = 30 + Math.floor(Math.random() * 18);
-      const speed = 0.82 + Math.random() * 0.52;
-      const rings = Math.random() > .58 ? 2 : 1;
-      for (let ring = 0; ring < rings; ring += 1) {
+      const count = 42 + Math.floor(Math.random() * 20);
+      const baseSpeed = 1.10 + Math.random() * .52;
+      const doubleRing = Math.random() > .62;
+
+      const addRing = (speedFactor, alphaFactor, sizeFactor) => {
         for (let i = 0; i < count; i += 1) {
-          const angle = (Math.PI * 2 * i) / count + Math.random() * .08;
-          const variation = (0.58 + Math.random() * 0.62) * (ring === 0 ? 1 : .58);
+          const angle =
+            (Math.PI * 2 * i) / count +
+            (Math.random() - .5) * .055;
+
+          const speed =
+            baseSpeed *
+            speedFactor *
+            (.78 + Math.random() * .34);
+
           particles.push({
             x: rocket.x,
             y: rocket.y,
-            vx: Math.cos(angle) * speed * variation,
-            vy: Math.sin(angle) * speed * variation,
-            gravity: .0105,
-            alpha: .38 + Math.random() * .17,
-            fade: .0021 + Math.random() * .00145,
-            size: 1.35 + Math.random() * 2.3,
+            oldX: rocket.x,
+            oldY: rocket.y,
+            vx: Math.cos(angle) * speed,
+            vy: Math.sin(angle) * speed,
+            gravity: .012,
+            alpha: (.60 + Math.random() * .23) * alphaFactor,
+            fade: .0030 + Math.random() * .0016,
+            size: (1.35 + Math.random() * 1.55) * sizeFactor,
             color: rocket.color
           });
         }
+      };
+
+      addRing(1, 1, 1);
+
+      if (doubleRing) {
+        addRing(.58, .72, .76);
+      }
+
+      // Kleiner heller Kern, damit die Explosion definierter wirkt.
+      for (let i = 0; i < 10; i += 1) {
+        const angle = Math.random() * Math.PI * 2;
+        const speed = .35 + Math.random() * .55;
+
+        particles.push({
+          x: rocket.x,
+          y: rocket.y,
+          oldX: rocket.x,
+          oldY: rocket.y,
+          vx: Math.cos(angle) * speed,
+          vy: Math.sin(angle) * speed,
+          gravity: .009,
+          alpha: .92,
+          fade: .006 + Math.random() * .002,
+          size: 1.7 + Math.random() * 1.25,
+          color: "255, 248, 222"
+        });
       }
     }
 
@@ -2254,50 +2315,91 @@
       ctx.clearRect(0, 0, width, height);
 
       if (document.visibilityState === "visible" && now >= nextLaunch) {
-        const total = Math.random() > .62 ? 2 : 1;
-        for (let i = 0; i < total; i += 1) launchRocket(i * 450);
-        nextLaunch = now + 2200 + Math.random() * 2200;
+        const total = Math.random() > .67 ? 2 : 1;
+
+        for (let i = 0; i < total; i += 1) {
+          launchRocket(i * 360);
+        }
+
+        nextLaunch = now + 1750 + Math.random() * 1850;
       }
 
+      // Raketen
+      ctx.globalCompositeOperation = "source-over";
+
       for (let i = rockets.length - 1; i >= 0; i -= 1) {
-        const r = rockets[i];
-        const oldX = r.x;
-        const oldY = r.y;
-        r.x += r.vx;
-        r.y += r.vy;
+        const rocket = rockets[i];
+        const oldX = rocket.x;
+        const oldY = rocket.y;
+
+        rocket.x += rocket.vx;
+        rocket.y += rocket.vy;
+
         ctx.beginPath();
-        ctx.moveTo(oldX, oldY + 8);
-        ctx.lineTo(r.x, r.y);
-        ctx.strokeStyle = `rgba(${r.color}, ${r.alpha * .78})`;
-        ctx.lineWidth = 1.45;
+        ctx.moveTo(oldX, oldY + 9);
+        ctx.lineTo(rocket.x, rocket.y);
+        ctx.strokeStyle = `rgba(${rocket.color}, ${rocket.alpha * .82})`;
+        ctx.lineWidth = 1.55;
         ctx.stroke();
+
         ctx.beginPath();
-        ctx.arc(r.x, r.y, 1.9, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${r.color}, ${r.alpha})`;
+        ctx.arc(rocket.x, rocket.y, 2.05, 0, Math.PI * 2);
+        ctx.fillStyle = `rgba(${rocket.color}, ${rocket.alpha})`;
         ctx.fill();
-        if (r.y <= r.targetY) {
-          explode(r);
+
+        if (rocket.y <= rocket.targetY) {
+          explode(rocket);
           rockets.splice(i, 1);
         }
       }
 
+      // Additives Zeichnen macht die Funken heller, ohne das Bild zuzudecken.
+      ctx.globalCompositeOperation = "lighter";
+
       for (let i = particles.length - 1; i >= 0; i -= 1) {
-        const p = particles[i];
-        p.x += p.vx;
-        p.y += p.vy;
-        p.vy += p.gravity;
-        p.vx *= .996;
-        p.alpha -= p.fade;
-        if (p.alpha <= 0) {
+        const particle = particles[i];
+
+        particle.oldX = particle.x;
+        particle.oldY = particle.y;
+
+        particle.x += particle.vx;
+        particle.y += particle.vy;
+        particle.vy += particle.gravity;
+        particle.vx *= .995;
+        particle.alpha -= particle.fade;
+
+        if (particle.alpha <= 0) {
           particles.splice(i, 1);
           continue;
         }
+
+        const alpha = Math.max(0, particle.alpha);
+
+        // Kurzer Schweif
         ctx.beginPath();
-        ctx.arc(p.x, p.y, p.size, 0, Math.PI * 2);
-        ctx.fillStyle = `rgba(${p.color}, ${Math.max(0, p.alpha)})`;
+        ctx.moveTo(particle.oldX, particle.oldY);
+        ctx.lineTo(
+          particle.x - particle.vx * 1.8,
+          particle.y - particle.vy * 1.8
+        );
+        ctx.strokeStyle = `rgba(${particle.color}, ${alpha * .42})`;
+        ctx.lineWidth = Math.max(.65, particle.size * .48);
+        ctx.stroke();
+
+        // Funkenkopf
+        ctx.beginPath();
+        ctx.arc(
+          particle.x,
+          particle.y,
+          particle.size,
+          0,
+          Math.PI * 2
+        );
+        ctx.fillStyle = `rgba(${particle.color}, ${alpha})`;
         ctx.fill();
       }
 
+      ctx.globalCompositeOperation = "source-over";
       requestAnimationFrame(animate);
     }
 

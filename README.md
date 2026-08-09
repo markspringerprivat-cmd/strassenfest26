@@ -290,3 +290,17 @@ zum Timeout geführt haben konnten.
 - Einzelne Personen löschbar; Hauptperson nur mit Nachfolger.
 - Einkaufsliste einzeilig; Kategorie/Notiz hinter Notizsymbol.
 - Tickets werden beim Abschließen gelöscht.
+
+
+## Update v22
+- Admin: iOS-Autozoom bei allen Eingabefeldern verhindert (16px Mindestschrift).
+- Einkauf: jeder gespeicherte Posten ist jetzt eine echte Ein-Zeilen-Liste:
+  Bezeichnung · Preis · Notizsymbol · Löschen.
+- „Posten hinzufügen“ öffnet zuerst ein Popup. Erst „Hinzufügen“ speichert den
+  neuen Posten und nimmt ihn in die Berechnung auf.
+- Das Notizsymbol öffnet dasselbe Popup zum Bearbeiten von Bezeichnung, Preis,
+  Kategorie und Notiz.
+- Schritt 1: die Aktionsleiste ist nicht mehr sticky und kann zusätzliche
+  Personenzeilen bei geöffneter Tastatur nicht mehr überdecken.
+- Feuerwerk: Canvas-Skalierung synchronisiert, Explosionen runder, heller und
+  klarer mit dezenten Funken-Schweifen.

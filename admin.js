@@ -18,6 +18,7 @@
     expenseTimers: new Map(),
     expandedRegistrations: new Set(),
     expandedExpenseId: "",
+    editingExpenseId: "",
     pendingPrimaryDeletion: null
   };
 
@@ -86,6 +87,17 @@
   const replacementPrimarySelect = document.getElementById("replacementPrimarySelect");
   const cancelPrimaryDelete = document.getElementById("cancelPrimaryDelete");
   const confirmPrimaryDelete = document.getElementById("confirmPrimaryDelete");
+
+  const expenseModal = document.getElementById("expenseModal");
+  const expenseModalTitle = document.getElementById("expenseModalTitle");
+  const expenseForm = document.getElementById("expenseForm");
+  const expenseModalItem = document.getElementById("expenseModalItem");
+  const expenseModalAmount = document.getElementById("expenseModalAmount");
+  const expenseModalCategory = document.getElementById("expenseModalCategory");
+  const expenseModalNote = document.getElementById("expenseModalNote");
+  const expenseModalError = document.getElementById("expenseModalError");
+  const cancelExpenseModal = document.getElementById("cancelExpenseModal");
+  const saveExpenseModal = document.getElementById("saveExpenseModal");
 
   function secureRequestId(prefix = "sf") {
     const bytes = new Uint8Array(18);
@@ -1007,164 +1019,164 @@
     }
 
     expenseList.innerHTML = state.expenses.map((expense) => {
-      const expanded = state.expandedExpenseId === expense.id;
-      const hasNote = Boolean(String(expense.note || "").trim());
+      const hasDetails = Boolean(
+        String(expense.note || "").trim() ||
+        String(expense.category || "").trim()
+      );
 
       return `
-        <article class="expense-row ${expanded ? "is-expanded" : ""}"
+        <article class="expense-row expense-list-row"
                  data-expense-id="${escapeAttr(expense.id)}">
-          <div class="expense-compact-line">
-            <input class="expense-item"
-                   type="text"
-                   maxlength="100"
-                   value="${escapeAttr(expense.item || "")}"
-                   placeholder="Was wurde gekauft?"
-                   aria-label="Einkauf">
-
-            <div class="expense-price-wrap">
-              <input class="expense-amount"
-                     type="number"
-                     inputmode="decimal"
-                     min="0"
-                     step="0.01"
-                     value="${Number(expense.amount || 0).toFixed(2)}"
-                     aria-label="Betrag in Euro">
-              <span>€</span>
-            </div>
-
-            <button class="expense-note-toggle ${hasNote ? "has-note" : ""}"
-                    type="button"
-                    aria-expanded="${expanded ? "true" : "false"}"
-                    aria-label="Kategorie und Notiz bearbeiten"
-                    title="Kategorie und Notiz">
-              <svg viewBox="0 0 24 24" aria-hidden="true">
-                <path d="M6 3h9l4 4v14H6z"/>
-                <path d="M15 3v5h5M9 12h7M9 16h7"/>
-              </svg>
-            </button>
-
-            <button class="delete-expense"
-                    type="button"
-                    aria-label="Posten löschen"
-                    title="Posten löschen">×</button>
+          <div class="expense-list-item">
+            ${escapeHtml(expense.item || "Ohne Bezeichnung")}
           </div>
 
-          <div class="expense-extra ${expanded ? "" : "hidden"}">
-            <label>
-              <span>Kategorie</span>
-              <select class="expense-category" aria-label="Kategorie">
-                ${["Essen", "Getränke", "Spielzeug", "Sonstiges"].map((category) => `
-                  <option value="${escapeAttr(category)}" ${expense.category === category ? "selected" : ""}>
-                    ${escapeHtml(category)}
-                  </option>`).join("")}
-              </select>
-            </label>
+          <strong class="expense-list-price">
+            ${formatMoney(expense.amount)}
+          </strong>
 
-            <label>
-              <span>Notiz</span>
-              <textarea class="expense-note"
-                        maxlength="220"
-                        rows="2"
-                        placeholder="Notiz (optional)"
-                        aria-label="Notiz">${escapeHtml(expense.note || "")}</textarea>
-            </label>
-          </div>
+          <button class="expense-note-toggle ${hasDetails ? "has-note" : ""}"
+                  type="button"
+                  aria-label="${escapeAttr(expense.item || "Posten")} bearbeiten"
+                  title="Kategorie, Notiz und Posten bearbeiten">
+            <svg viewBox="0 0 24 24" aria-hidden="true">
+              <path d="M6 3h9l4 4v14H6z"/>
+              <path d="M15 3v5h5M9 12h7M9 16h7"/>
+            </svg>
+          </button>
+
+          <button class="delete-expense"
+                  type="button"
+                  aria-label="${escapeAttr(expense.item || "Posten")} löschen"
+                  title="Posten löschen">×</button>
         </article>`;
     }).join("");
 
     updateShoppingTotals();
   }
 
-  function readExpenseRow(row) {
-    return {
-      id: row.dataset.expenseId,
-      category: row.querySelector(".expense-category").value,
-      item: row.querySelector(".expense-item").value.trim(),
-      amount: Number(row.querySelector(".expense-amount").value || 0),
-      note: row.querySelector(".expense-note").value.trim()
-    };
+  function parseExpenseAmount(value) {
+    const cleaned = String(value || "")
+      .trim()
+      .replace(/\s/g, "")
+      .replace(",", ".");
+
+    if (!cleaned) return NaN;
+
+    const amount = Number(cleaned);
+    return Number.isFinite(amount) ? amount : NaN;
   }
 
-  function syncExpenseLocal(expense) {
-    const index = state.expenses.findIndex((item) => item.id === expense.id);
-    if (index >= 0) state.expenses[index] = { ...state.expenses[index], ...expense };
-    updateShoppingTotals();
+  function closeExpenseModal() {
+    state.editingExpenseId = "";
+    expenseModal.classList.add("hidden");
+    expenseModalError.textContent = "";
+    expenseForm.reset();
+    expenseModalCategory.value = "Essen";
+    saveExpenseModal.disabled = false;
   }
 
-  function scheduleExpenseSave(row) {
-    const id = row.dataset.expenseId;
-    window.clearTimeout(state.expenseTimers.get(id));
+  function openExpenseModal(expense = null) {
+    state.editingExpenseId = expense?.id || "";
 
-    const draft = readExpenseRow(row);
-    syncExpenseLocal(draft);
-    row.querySelector(".expense-note-toggle")?.classList.toggle(
-      "has-note",
-      Boolean(draft.note)
-    );
+    expenseModalTitle.textContent = expense
+      ? "Posten bearbeiten"
+      : "Posten hinzufügen";
 
-    if (!draft.item) {
-      setSaveStatus(shoppingSaveStatus, "Bezeichnung fehlt", "error");
+    saveExpenseModal.textContent = expense
+      ? "Speichern"
+      : "Hinzufügen";
+
+    expenseModalItem.value = expense?.item || "";
+    expenseModalAmount.value = expense
+      ? Number(expense.amount || 0).toFixed(2).replace(".", ",")
+      : "";
+    expenseModalCategory.value = expense?.category || "Essen";
+    expenseModalNote.value = expense?.note || "";
+    expenseModalError.textContent = "";
+    expenseModal.classList.remove("hidden");
+
+    // Fokus erst nach dem Öffnen, ohne Scrollsprung der Seite.
+    window.setTimeout(() => {
+      expenseModalItem.focus({ preventScroll: true });
+    }, 30);
+  }
+
+  addExpenseButton.addEventListener("click", () => {
+    openExpenseModal();
+  });
+
+  cancelExpenseModal.addEventListener("click", closeExpenseModal);
+
+  expenseModal.addEventListener("click", (event) => {
+    if (event.target.matches("[data-close-expense-modal]")) {
+      closeExpenseModal();
+    }
+  });
+
+  expenseForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+    if (saveExpenseModal.disabled) return;
+
+    const item = expenseModalItem.value.trim();
+    const amount = parseExpenseAmount(expenseModalAmount.value);
+    const category = expenseModalCategory.value;
+    const note = expenseModalNote.value.trim();
+
+    if (!item) {
+      expenseModalError.textContent = "Bitte eintragen, was eingekauft wurde.";
+      expenseModalItem.focus({ preventScroll: true });
       return;
     }
 
-    setSaveStatus(shoppingSaveStatus, "Speichert …", "saving");
+    if (!Number.isFinite(amount) || amount < 0) {
+      expenseModalError.textContent = "Bitte einen gültigen Preis eintragen.";
+      expenseModalAmount.focus({ preventScroll: true });
+      return;
+    }
 
-    const timer = window.setTimeout(() => {
-      void saveExpenseRow(row);
-    }, 650);
-
-    state.expenseTimers.set(id, timer);
-  }
-
-  async function saveExpenseRow(row) {
-    const expense = readExpenseRow(row);
-    if (!expense.item) return;
-
-    window.clearTimeout(state.expenseTimers.get(expense.id));
+    saveExpenseModal.disabled = true;
+    expenseModalError.textContent = "";
     setSaveStatus(shoppingSaveStatus, "Speichert …", "saving");
 
     try {
       const result = await apiRequest("adminSaveExpense", {
         token: state.token,
-        expense
+        expense: {
+          id: state.editingExpenseId || "",
+          category,
+          item,
+          amount,
+          note
+        }
       });
 
-      const index = state.expenses.findIndex((item) => item.id === expense.id);
-      if (index >= 0) state.expenses[index] = result.expense;
+      const index = state.expenses.findIndex(
+        (expense) => expense.id === result.expense.id
+      );
 
-      row.dataset.expenseId = result.expense.id;
+      if (index >= 0) {
+        state.expenses[index] = result.expense;
+      } else {
+        state.expenses.push(result.expense);
+      }
+
+      renderExpenses();
+      closeExpenseModal();
       setSaveStatus(shoppingSaveStatus, "Gespeichert");
-      updateShoppingTotals();
-      window.setTimeout(() => setSaveStatus(shoppingSaveStatus, "Aktuell"), 1100);
+
+      window.setTimeout(() => {
+        setSaveStatus(shoppingSaveStatus, "Aktuell");
+      }, 1100);
+
     } catch (error) {
+      saveExpenseModal.disabled = false;
+
       if (!handleApiError(error)) {
+        expenseModalError.textContent = error.message;
         setSaveStatus(shoppingSaveStatus, "Fehler", "error");
-        showToast(error.message);
       }
     }
-  }
-
-  expenseList.addEventListener("input", (event) => {
-    const row = event.target.closest(".expense-row");
-    if (!row) return;
-    scheduleExpenseSave(row);
-  });
-
-  expenseList.addEventListener("change", (event) => {
-    const row = event.target.closest(".expense-row");
-    if (!row) return;
-    scheduleExpenseSave(row);
-  });
-
-  expenseList.addEventListener("focusout", (event) => {
-    const row = event.target.closest(".expense-row");
-    if (!row) return;
-
-    window.setTimeout(() => {
-      if (!row.contains(document.activeElement)) {
-        void saveExpenseRow(row);
-      }
-    }, 0);
   });
 
   expenseList.addEventListener("click", async (event) => {
@@ -1172,29 +1184,28 @@
 
     if (noteButton) {
       const row = noteButton.closest(".expense-row");
-      const id = row?.dataset.expenseId;
-      if (!id) return;
+      const expense = state.expenses.find(
+        (item) => item.id === row?.dataset.expenseId
+      );
 
-      const opening = state.expandedExpenseId !== id;
-      state.expandedExpenseId = opening ? id : "";
-
-      row.classList.toggle("is-expanded", opening);
-      row.querySelector(".expense-extra")?.classList.toggle("hidden", !opening);
-      noteButton.setAttribute("aria-expanded", String(opening));
+      if (expense) openExpenseModal(expense);
       return;
     }
 
-    const button = event.target.closest(".delete-expense");
-    if (!button) return;
+    const deleteButton = event.target.closest(".delete-expense");
+    if (!deleteButton) return;
 
-    const row = button.closest(".expense-row");
+    const row = deleteButton.closest(".expense-row");
     const id = row?.dataset.expenseId;
     if (!id) return;
 
-    if (!window.confirm("Diesen Einkaufsposten wirklich löschen?")) return;
+    const expense = state.expenses.find((item) => item.id === id);
+    const label = expense?.item || "diesen Einkaufsposten";
 
-    setSaveStatus(shoppingSaveStatus, "Speichert …", "saving");
-    button.disabled = true;
+    if (!window.confirm(`${label} wirklich löschen?`)) return;
+
+    setSaveStatus(shoppingSaveStatus, "Löscht …", "saving");
+    deleteButton.disabled = true;
 
     try {
       await apiRequest("adminDeleteExpense", {
@@ -1203,55 +1214,20 @@
       });
 
       state.expenses = state.expenses.filter((item) => item.id !== id);
-      if (state.expandedExpenseId === id) state.expandedExpenseId = "";
       renderExpenses();
       setSaveStatus(shoppingSaveStatus, "Gespeichert");
-      window.setTimeout(() => setSaveStatus(shoppingSaveStatus, "Aktuell"), 1100);
+
+      window.setTimeout(() => {
+        setSaveStatus(shoppingSaveStatus, "Aktuell");
+      }, 1100);
+
     } catch (error) {
-      button.disabled = false;
+      deleteButton.disabled = false;
+
       if (!handleApiError(error)) {
         setSaveStatus(shoppingSaveStatus, "Fehler", "error");
         showToast(error.message);
       }
-    }
-  });
-
-  addExpenseButton.addEventListener("click", async () => {
-    setSaveStatus(shoppingSaveStatus, "Speichert …", "saving");
-    addExpenseButton.disabled = true;
-
-    try {
-      const result = await apiRequest("adminSaveExpense", {
-        token: state.token,
-        expense: {
-          category: "Sonstiges",
-          item: "Neuer Posten",
-          amount: 0,
-          note: ""
-        }
-      });
-
-      state.expenses.push(result.expense);
-      state.expandedExpenseId = result.expense.id;
-      renderExpenses();
-
-      const row = expenseList.querySelector(`[data-expense-id="${CSS.escape(result.expense.id)}"]`);
-      const itemInput = row?.querySelector(".expense-item");
-
-      if (itemInput) {
-        itemInput.focus();
-        itemInput.select();
-      }
-
-      setSaveStatus(shoppingSaveStatus, "Gespeichert");
-      window.setTimeout(() => setSaveStatus(shoppingSaveStatus, "Aktuell"), 1100);
-    } catch (error) {
-      if (!handleApiError(error)) {
-        setSaveStatus(shoppingSaveStatus, "Fehler", "error");
-        showToast(error.message);
-      }
-    } finally {
-      addExpenseButton.disabled = false;
     }
   });
 
