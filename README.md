@@ -85,3 +85,15 @@ Die Inhalte in den Dialogen sind aktuell Platzhalter und müssen vor Veröffentl
 - „Was wird noch gebraucht?“ ist jetzt eine eigene Kachel/Ansicht mit Statistik. Ein Klick auf + öffnet das Mitbringsel-Formular mit bereits voreingestellter Kategorie bzw. Unterkategorie.
 - Neuer Zahlungsschritt mit Kostenübersicht (20 € ab 18 Jahren) und zwei Zahlungswegen: Briefkasten oder persönliche Abholung.
 - Abschlussübersicht enthält jetzt auch die Zahlung.
+
+
+## Update v6
+
+- iOS-Autozoom in Eingabefeldern verhindert (16px Form-Schrift + feste Viewport-Skalierung)
+- Anmeldebox behält beim Tastatur-Öffnen exakt dieselbe Breite und Größe
+- bei Tastatur wird ausschließlich die Box vertikal verschoben, damit das aktive Feld sichtbar bleibt
+- Hintergrund bleibt dabei vollständig statisch und wird nicht mehr mit dem VisualViewport verschoben
+- beim Schließen der Tastatur kehrt die Box exakt zur Ausgangsposition zurück
+- Seiten-/Horizontal-Scrolling gesperrt; nur interne Listen können scrollen
+- Browser-Viewport-Höhe wird nach Tastaturschluss neu gesetzt, damit die Footerleiste sichtbar bleibt
+- Hintergrundmotiv ca. 32 CSS-Pixel nach oben versetzt

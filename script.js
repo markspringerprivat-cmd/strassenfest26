@@ -81,18 +81,28 @@
   const viewport = {
     baseHeight: 0,
     stageTop: 0,
-    keyboardOpen: false
+    keyboardOpen: false,
+    shift: 0
   };
 
-  function setupStaticViewport() {
-    const current = Math.max(window.innerHeight, window.visualViewport?.height || 0);
-    if (!viewport.baseHeight || current > viewport.baseHeight - 20) {
-      viewport.baseHeight = current;
-    }
+  function currentVisibleHeight() {
+    return Math.round(window.visualViewport?.height || window.innerHeight);
+  }
 
-    viewport.stageTop = Math.max(220, Math.min(340, Math.round(viewport.baseHeight * 0.34)));
-    document.documentElement.style.setProperty("--base-height", `${viewport.baseHeight}px`);
-    document.documentElement.style.setProperty("--stage-top", `${viewport.stageTop}px`);
+  function setupStaticViewport(force = false) {
+    const vv = window.visualViewport;
+    const visibleHeight = currentVisibleHeight();
+    const keyboardOpen = viewport.baseHeight > 0 && (viewport.baseHeight - visibleHeight > 120);
+
+    // The normal page height is always the current browser content area while the
+    // keyboard is CLOSED. We never enlarge it to a previous maximum, because that
+    // was what pushed the footer underneath Chrome/Safari browser controls.
+    if (force || !keyboardOpen || !viewport.baseHeight) {
+      viewport.baseHeight = visibleHeight;
+      viewport.stageTop = Math.max(220, Math.min(340, Math.round(viewport.baseHeight * 0.34)));
+      document.documentElement.style.setProperty("--base-height", `${viewport.baseHeight}px`);
+      document.documentElement.style.setProperty("--stage-top", `${viewport.stageTop}px`);
+    }
   }
 
   function keepFocusedRowVisible(active) {
@@ -111,73 +121,124 @@
     }
   }
 
+  function setStageShift(px) {
+    viewport.shift = Math.round(px || 0);
+    document.documentElement.style.setProperty("--stage-shift", `${viewport.shift}px`);
+  }
+
+  function restoreClosedLayout() {
+    viewport.keyboardOpen = false;
+    document.body.classList.remove("keyboard-open");
+    setStageShift(0);
+    // Never allow a browser focus-pan to leave the document displaced.
+    window.scrollTo(0, 0);
+    setupStaticViewport(true);
+  }
+
   function updateKeyboardPosition() {
     const vv = window.visualViewport;
-    if (!vv) return;
+    if (!vv) {
+      setupStaticViewport(true);
+      return;
+    }
 
-    const keyboardOpen = viewport.baseHeight - vv.height > 120;
+    const visibleHeight = Math.round(vv.height);
+    if (!viewport.baseHeight) setupStaticViewport(true);
+
+    const active = document.activeElement;
+    const activeIsEditable = Boolean(
+      active &&
+      wizardCard.contains(active) &&
+      active.matches("input, textarea, select")
+    );
+    const keyboardOpen = activeIsEditable && (viewport.baseHeight - visibleHeight > 120);
     viewport.keyboardOpen = keyboardOpen;
     document.body.classList.toggle("keyboard-open", keyboardOpen);
 
     if (!keyboardOpen) {
-      document.documentElement.style.setProperty("--stage-shift", "0px");
-      document.documentElement.style.setProperty("--visual-offset-y", "0px");
+      restoreClosedLayout();
       return;
     }
 
-    const active = document.activeElement;
-    keepFocusedRowVisible(active);
-
-    const visibleTop = vv.offsetTop + 8;
-    const visibleBottom = vv.offsetTop + vv.height - 10;
-    const availableHeight = visibleBottom - visibleTop;
-    const cardHeight = wizardCard.offsetHeight;
-
-    let targetTop = viewport.stageTop;
-
-    if (cardHeight <= availableHeight) {
-      targetTop = Math.min(viewport.stageTop, visibleBottom - cardHeight);
-      targetTop = Math.max(visibleTop, targetTop);
-    } else {
-      targetTop = visibleTop;
+    if (!activeIsEditable) {
+      setStageShift(0);
+      return;
     }
 
-    document.documentElement.style.setProperty("--stage-shift", `${Math.round(targetTop - viewport.stageTop)}px`);
-    document.documentElement.style.setProperty("--visual-offset-y", `${Math.round(vv.offsetTop)}px`);
+    keepFocusedRowVisible(active);
 
+    // iOS may pan the visual viewport after focusing an input. The background and
+    // card width remain untouched; only the card receives a Y translation.
     requestAnimationFrame(() => {
-      if (!active || !wizardCard.contains(active)) return;
-      const rect = active.getBoundingClientRect();
-      const safeBottom = vv.height - 18;
-      if (rect.bottom > safeBottom) {
-        const extra = rect.bottom - safeBottom + 12;
-        const currentShift = targetTop - viewport.stageTop;
-        document.documentElement.style.setProperty("--stage-shift", `${Math.round(currentShift - extra)}px`);
-      }
+      if (!viewport.keyboardOpen || document.activeElement !== active) return;
+
+      const visualTop = vv.offsetTop;
+      const visualBottom = vv.offsetTop + vv.height;
+      const safeTop = visualTop + 18;
+      const safeBottom = visualBottom - 24;
+      const targetCenter = safeTop + (safeBottom - safeTop) * 0.46;
+
+      const activeRect = active.getBoundingClientRect();
+      const activeCenter = activeRect.top + activeRect.height / 2;
+      let shift = viewport.shift + (targetCenter - activeCenter);
+
+      // Do not push the entire card unnecessarily far down. Upward movement is
+      // intentionally unrestricted enough for lower rows/textareas to stay visible.
+      const baseCardTop = viewport.stageTop;
+      const maxDown = Math.max(0, safeTop + 16 - baseCardTop);
+      shift = Math.min(shift, maxDown);
+
+      setStageShift(shift);
+
+      requestAnimationFrame(() => {
+        const r = active.getBoundingClientRect();
+        let correction = 0;
+        if (r.bottom > safeBottom) correction -= (r.bottom - safeBottom + 12);
+        if (r.top < safeTop) correction += (safeTop - r.top + 12);
+        if (correction) setStageShift(viewport.shift + correction);
+      });
     });
   }
 
-  setupStaticViewport();
+  setupStaticViewport(true);
   updateKeyboardPosition();
 
   window.addEventListener("resize", () => {
-    if (!viewport.keyboardOpen) setupStaticViewport();
+    // Detect the keyboard against the last CLOSED viewport before changing the
+    // baseline. This prevents the keyboard height from becoming the new page height.
     window.setTimeout(updateKeyboardPosition, 30);
+    window.setTimeout(updateKeyboardPosition, 180);
   }, { passive: true });
 
-  window.visualViewport?.addEventListener("resize", () => window.setTimeout(updateKeyboardPosition, 20), { passive: true });
-  window.visualViewport?.addEventListener("scroll", updateKeyboardPosition, { passive: true });
+  window.visualViewport?.addEventListener("resize", () => {
+    window.setTimeout(updateKeyboardPosition, 20);
+    window.setTimeout(updateKeyboardPosition, 180);
+  }, { passive: true });
+
+  window.visualViewport?.addEventListener("scroll", () => {
+    // Do not translate/scale the background to follow Safari's focus pan.
+    window.setTimeout(updateKeyboardPosition, 0);
+  }, { passive: true });
 
   document.addEventListener("focusin", (event) => {
     if (!wizardCard.contains(event.target)) return;
-    window.setTimeout(updateKeyboardPosition, 80);
-    window.setTimeout(updateKeyboardPosition, 260);
+    window.setTimeout(updateKeyboardPosition, 70);
+    window.setTimeout(updateKeyboardPosition, 240);
   });
 
   document.addEventListener("focusout", () => {
-    window.setTimeout(updateKeyboardPosition, 120);
-    window.setTimeout(updateKeyboardPosition, 340);
+    // Wait until Safari's keyboard-close animation is complete, then return the
+    // card to exactly its initial Y position and refresh the closed viewport height.
+    window.setTimeout(updateKeyboardPosition, 140);
+    window.setTimeout(updateKeyboardPosition, 420);
   });
+
+  // The document itself never scrolls. Scrolling stays limited to the participant,
+  // needs and summary lists, plus modal dialogs.
+  document.addEventListener("touchmove", (event) => {
+    if (event.target.closest(".people-rows, .needs-table-wrap, .summary-content, .modal")) return;
+    event.preventDefault();
+  }, { passive: false });
 
   function setStep(step) {
     state.step = String(step);
@@ -191,7 +252,7 @@
     });
     stepProgress.classList.toggle("hidden", state.step === "done");
 
-    document.documentElement.style.setProperty("--stage-shift", "0px");
+    setStageShift(0);
     window.setTimeout(updateKeyboardPosition, 20);
   }
 
