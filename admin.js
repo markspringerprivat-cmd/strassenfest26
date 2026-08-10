@@ -15,9 +15,7 @@
       paid: 0,
       open: 0
     },
-    expenseTimers: new Map(),
     expandedRegistrations: new Set(),
-    expandedExpenseId: "",
     editingExpenseId: "",
     pendingPrimaryDeletion: null
   };
@@ -29,8 +27,10 @@
   const loginError = document.getElementById("loginError");
   const adminApp = document.getElementById("adminApp");
   const logoutButton = document.getElementById("logoutButton");
-  const apiTransportHost = document.getElementById("apiTransportHost");
   const adminToast = document.getElementById("adminToast");
+
+  const tabButtons = [...document.querySelectorAll(".tab-button")];
+  const tabPanels = [...document.querySelectorAll(".tab-panel")];
 
   const peopleToolsToggle = document.getElementById("peopleToolsToggle");
   const peopleToolsPanel = document.getElementById("peopleToolsPanel");
@@ -115,12 +115,21 @@
         return;
       }
 
-      const callbackName = `__sfApi_${requestId.replace(/[^a-z0-9_]/gi, "_")}_${Date.now()}`;
+      const callbackName =
+        `__sfApi_${requestId.replace(/[^a-z0-9_]/gi, "_")}_${Date.now()}`;
+
       const script = document.createElement("script");
-      let callbackCalled = false;
+      let settled = false;
+      let attemptTimer = null;
 
       const cleanup = () => {
+        if (attemptTimer) {
+          window.clearTimeout(attemptTimer);
+          attemptTimer = null;
+        }
+
         script.remove();
+
         try {
           delete window[callbackName];
         } catch {
@@ -128,14 +137,32 @@
         }
       };
 
+      const retry = (delay) => {
+        if (settled) return;
+        settled = true;
+        cleanup();
+
+        if (Date.now() >= deadline) {
+          reject(new Error(
+            "Die Datenbank konnte nicht erreicht werden. Bitte versuche es erneut."
+          ));
+          return;
+        }
+
+        window.setTimeout(() => {
+          pollApiResult(requestId, deadline).then(resolve, reject);
+        }, delay);
+      };
+
       window[callbackName] = (message) => {
-        callbackCalled = true;
+        if (settled) return;
+        settled = true;
         cleanup();
 
         if (!message || message.pending) {
           window.setTimeout(() => {
             pollApiResult(requestId, deadline).then(resolve, reject);
-          }, 320);
+          }, 280);
           return;
         }
 
@@ -161,39 +188,13 @@
 
       script.src = url.toString();
       script.async = true;
-
-      script.onerror = () => {
-        cleanup();
-
-        if (Date.now() >= deadline) {
-          reject(new Error(
-            "Die Datenbank konnte nicht erreicht werden. Bitte versuche es erneut."
-          ));
-          return;
-        }
-
-        window.setTimeout(() => {
-          pollApiResult(requestId, deadline).then(resolve, reject);
-        }, 500);
-      };
+      script.onerror = () => retry(450);
 
       script.onload = () => {
-        if (callbackCalled) return;
-
-        cleanup();
-
-        if (Date.now() >= deadline) {
-          reject(new Error(
-            "Die Datenbank hat keine verwertbare Antwort geliefert."
-          ));
-          return;
-        }
-
-        window.setTimeout(() => {
-          pollApiResult(requestId, deadline).then(resolve, reject);
-        }, 350);
+        if (!settled) retry(300);
       };
 
+      attemptTimer = window.setTimeout(() => retry(250), 3500);
       document.head.appendChild(script);
     });
   }
@@ -212,28 +213,31 @@
       ...data
     };
 
-    try {
-      // Die POST-Antwort selbst wird bewusst nicht gelesen. Google Apps Script
-      // leitet ContentService-Antworten auf googleusercontent.com um. Mit
-      // no-cors darf der Browser den Schreibauftrag trotzdem absenden.
-      await fetch(API_ENDPOINT, {
-        method: "POST",
-        mode: "no-cors",
-        credentials: "omit",
-        redirect: "follow",
-        headers: {
-          "Content-Type": "text/plain;charset=UTF-8"
-        },
-        body: JSON.stringify(payload)
-      });
-    } catch (error) {
-      console.error("POST an Apps Script fehlgeschlagen:", error);
-      throw new Error(
-        "Die Datenbank konnte nicht erreicht werden. Bitte prüfe deine Internetverbindung."
-      );
-    }
+    const confirmationPromise = pollApiResult(requestId, deadline);
 
-    return pollApiResult(requestId, deadline);
+    const postFailurePromise = fetch(API_ENDPOINT, {
+      method: "POST",
+      mode: "no-cors",
+      credentials: "omit",
+      redirect: "follow",
+      headers: {
+        "Content-Type": "text/plain;charset=UTF-8"
+      },
+      body: JSON.stringify(payload)
+    }).then(
+      () => new Promise(() => {}),
+      (error) => {
+        console.error("POST an Apps Script fehlgeschlagen:", error);
+        throw new Error(
+          "Die Datenbank konnte nicht erreicht werden. Bitte prüfe deine Internetverbindung."
+        );
+      }
+    );
+
+    return Promise.race([
+      confirmationPromise,
+      postFailurePromise
+    ]);
   }
 
   function formatMoney(value) {
@@ -342,14 +346,17 @@
     }
   });
 
-  document.querySelectorAll(".tab-button").forEach((button) => {
+  tabButtons.forEach((button) => {
     button.addEventListener("click", () => {
-      document.querySelectorAll(".tab-button").forEach((item) => {
+      tabButtons.forEach((item) => {
         item.classList.toggle("active", item === button);
       });
 
-      document.querySelectorAll(".tab-panel").forEach((panel) => {
-        panel.classList.toggle("active", panel.dataset.panel === button.dataset.tab);
+      tabPanels.forEach((panel) => {
+        panel.classList.toggle(
+          "active",
+          panel.dataset.panel === button.dataset.tab
+        );
       });
     });
   });

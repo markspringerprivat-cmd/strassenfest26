@@ -352,15 +352,14 @@ zum Timeout geführt haben konnten.
 - Kontaktformular zeigt ebenfalls einen sichtbaren Ladeindikator beim Senden.
 
 
-## Update v26
-- Allgemeine Kachelwechsel sind jetzt ruhige Crossfades:
-  alte Kachel blendet sanft aus, neue gleichzeitig ein.
-- Im eigentlichen Anmeldeprozess entsteht ein Rondell-/Karussellgefühl:
-  - Weiter: aktuelle Kachel gleitet nach links heraus,
-    nächste kommt gleichzeitig von rechts herein.
-  - Zurück: Bewegungsrichtung wird automatisch umgedreht.
-- Übergänge dauern ca. 0,4–0,46 Sekunden und verwenden weiche Easing-Kurven.
-- Unterschiedliche Kachelhöhen werden während des Wechsels weich angeglichen,
-  damit der Rahmen nicht abrupt springt.
-- Während der kurzen Animation sind Doppelklicks blockiert.
-- `prefers-reduced-motion` wird weiterhin respektiert.
+## Update v27 – vollständiger Rückbau auf v25 + Optimierung
+- HTML, CSS und Bilddateien sind byte-identisch mit v25.
+- Der v26-Rondell-/Slide-Versuch ist vollständig entfernt.
+- POST und Serverbestätigung laufen parallel, ohne auf echte Bestätigung zu verzichten.
+- Die finale Anmeldung wechselt erst nach bestätigtem Datenbankeintrag zum Anmeldecode.
+- Häufige DOM-Abfragen werden gecacht.
+- Nicht mehr erreichbarer Legacy-Modalcode und tote Variablen wurden entfernt.
+- Admin-Polling besitzt einen zusätzlichen Watchdog gegen festhängende Einzelrequests.
+- Feuerwerk pausiert bei inaktivem Browser-Tab und begrenzt intern Partikel.
+- Apps Script v12 verwendet kurzlebige, sichere Caches für Anmeldebestätigung
+  und Bedarfsstatistik.

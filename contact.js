@@ -219,8 +219,11 @@
 
   async function apiRequest(action, data) {
     const requestId = secureId("contact-request");
+    const deadline = Date.now() + 22000;
 
-    await fetch(API_ENDPOINT, {
+    const confirmationPromise = pollResult(requestId, deadline);
+
+    const postFailurePromise = fetch(API_ENDPOINT, {
       method: "POST",
       mode: "no-cors",
       credentials: "omit",
@@ -233,9 +236,20 @@
         action,
         ...data
       })
-    });
+    }).then(
+      () => new Promise(() => {}),
+      (error) => {
+        console.error("Kontakt-POST fehlgeschlagen:", error);
+        throw new Error(
+          "Die Datenbank konnte nicht erreicht werden. Bitte prüfe deine Internetverbindung."
+        );
+      }
+    );
 
-    return pollResult(requestId, Date.now() + 22000);
+    return Promise.race([
+      confirmationPromise,
+      postFailurePromise
+    ]);
   }
 
   form.addEventListener("input", (event) => {

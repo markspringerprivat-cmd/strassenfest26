@@ -73,7 +73,6 @@
   const codeContinueButton = document.getElementById("codeContinueButton");
   const codeCountdownHint = document.getElementById("codeCountdownHint");
   const openSavedRegistrationButton = document.getElementById("openSavedRegistrationButton");
-  const apiTransportHost = document.getElementById("apiTransportHost");
   const existingContributions = document.getElementById("existingContributions");
   const existingContributionsList = document.getElementById("existingContributionsList");
 
@@ -107,6 +106,17 @@
   const frontExistingPdf = document.getElementById("frontExistingPdf");
   const frontExistingOther = document.getElementById("frontExistingOther");
   const frontExistingHome = document.getElementById("frontExistingHome");
+
+  // Häufig verwendete statische DOM-Mengen einmalig cachen.
+  const progressDots = [...document.querySelectorAll(".progress-dot")];
+  const paymentChoiceButtons = [...document.querySelectorAll(".payment-choice")];
+  const stepPanels = new Map(
+    [...document.querySelectorAll(".step")].map((panel) => [
+      String(panel.dataset.step),
+      panel
+    ])
+  );
+  let activeStepPanel = document.querySelector(".step.active");
 
 
   function setButtonBusy(button, busy, label = "Wird geladen …") {
@@ -265,28 +275,33 @@
       ...data
     };
 
-    try {
-      // Die POST-Antwort selbst wird bewusst nicht gelesen. Google Apps Script
-      // leitet ContentService-Antworten auf googleusercontent.com um. Mit
-      // no-cors darf der Browser den Schreibauftrag trotzdem absenden.
-      await fetch(SUBMIT_ENDPOINT, {
-        method: "POST",
-        mode: "no-cors",
-        credentials: "omit",
-        redirect: "follow",
-        headers: {
-          "Content-Type": "text/plain;charset=UTF-8"
-        },
-        body: JSON.stringify(payload)
-      });
-    } catch (error) {
-      console.error("POST an Apps Script fehlgeschlagen:", error);
-      throw new Error(
-        "Die Datenbank konnte nicht erreicht werden. Bitte prüfe deine Internetverbindung."
-      );
-    }
+    // POST und Bestätigungsabfrage starten parallel. Die Aktion gilt trotzdem
+    // erst dann als erfolgreich, wenn der Server sie ausdrücklich bestätigt.
+    const confirmationPromise = pollApiResult(requestId, deadline);
 
-    return pollApiResult(requestId, deadline);
+    const postFailurePromise = fetch(SUBMIT_ENDPOINT, {
+      method: "POST",
+      mode: "no-cors",
+      credentials: "omit",
+      redirect: "follow",
+      headers: {
+        "Content-Type": "text/plain;charset=UTF-8"
+      },
+      body: JSON.stringify(payload)
+    }).then(
+      () => new Promise(() => {}),
+      (error) => {
+        console.error("POST an Apps Script fehlgeschlagen:", error);
+        throw new Error(
+          "Die Datenbank konnte nicht erreicht werden. Bitte prüfe deine Internetverbindung."
+        );
+      }
+    );
+
+    return Promise.race([
+      confirmationPromise,
+      postFailurePromise
+    ]);
   }
 
   function getSavedRegistrationIdentity() {
@@ -928,24 +943,23 @@
     event.target.closest?.(".validation-error-target")?.classList.remove("validation-error-target");
   });
 
-  const REGISTRATION_STEP_ORDER = new Map([
-    ["intro", 0],
-    ["1", 1],
-    ["2", 2],
-    ["needs", 2.5],
-    ["3", 3],
-    ["4", 4],
-    ["5", 5],
-    ["code", 6],
-    ["done", 7]
-  ]);
+  function setStep(step) {
+    const nextStep = String(step);
+    const currentPanel = activeStepPanel;
+    const nextPanel = stepPanels.get(nextStep);
 
-  let stepTransitionLocked = false;
+    if (!nextPanel || nextPanel === currentPanel) return;
 
-  function updateStepProgress(nextStep) {
-    const progressStep = nextStep === "needs" ? 2 : Number(nextStep);
+    state.step = nextStep;
+    resetKeyboardViewForStepChange();
 
-    document.querySelectorAll(".progress-dot").forEach((dot) => {
+    currentPanel?.classList.remove("active");
+    nextPanel.classList.add("active");
+    activeStepPanel = nextPanel;
+
+    const progressStep = state.step === "needs" ? 2 : Number(state.step);
+
+    progressDots.forEach((dot) => {
       dot.classList.toggle(
         "active",
         Number(dot.dataset.progress) === progressStep
@@ -961,267 +975,23 @@
       "payment-view",
       "code",
       "done"
-    ].includes(nextStep);
+    ].includes(state.step);
 
     stepProgress.classList.toggle("hidden", progressHidden);
-  }
-
-  function registrationTransitionDirection(currentStep, nextStep) {
-    if (
-      !REGISTRATION_STEP_ORDER.has(currentStep) ||
-      !REGISTRATION_STEP_ORDER.has(nextStep)
-    ) {
-      return 0;
-    }
-
-    const currentIndex = REGISTRATION_STEP_ORDER.get(currentStep);
-    const nextIndex = REGISTRATION_STEP_ORDER.get(nextStep);
-
-    if (nextIndex === currentIndex) return 0;
-    return nextIndex > currentIndex ? 1 : -1;
-  }
-
-  function finishStepTransition(currentPanel, nextPanel, form, nextStep) {
-    currentPanel?.classList.remove(
-      "active",
-      "step-transition-panel",
-      "step-transition-outgoing"
-    );
-
-    nextPanel.classList.remove(
-      "step-transition-panel",
-      "step-transition-incoming"
-    );
-
-    nextPanel.classList.add("active");
-
-    if (form) {
-      form.style.removeProperty("height");
-      form.style.removeProperty("min-height");
-      form.style.removeProperty("overflow");
-    }
-
-    wizardCard.classList.remove(
-      "is-step-transitioning",
-      "is-registration-slide",
-      "is-soft-fade"
-    );
 
     wizardCard.scrollTop = 0;
-    state.step = nextStep;
-    updateStepProgress(nextStep);
     updateNormalGeometry();
-    stepTransitionLocked = false;
-  }
 
-  function setStep(step) {
-    const nextStep = String(step);
-    const currentPanel = document.querySelector(".step.active");
-    const nextPanel = document.querySelector(
-      `.step[data-step="${CSS.escape(nextStep)}"]`
-    );
+    // Exakt die zurückgesetzte v25-Animation – keine Layoutklassen aus v26.
+    animateElement(nextPanel, [
+      { opacity: 0, transform: "translateY(7px) scale(.996)" },
+      { opacity: 1, transform: "translateY(0) scale(1)" }
+    ], { duration: 260 });
 
-    if (
-      !nextPanel ||
-      nextPanel === currentPanel ||
-      stepTransitionLocked
-    ) {
-      return;
-    }
-
-    const currentStep = String(currentPanel?.dataset.step || state.step || "");
-    const direction = registrationTransitionDirection(
-      currentStep,
-      nextStep
-    );
-
-    state.step = nextStep;
-    resetKeyboardViewForStepChange();
-    updateStepProgress(nextStep);
-    wizardCard.scrollTop = 0;
-
-    // Bei reduzierter Bewegung sofort umschalten.
-    if (!canAnimate() || !currentPanel || typeof currentPanel.animate !== "function") {
-      currentPanel?.classList.remove("active");
-      nextPanel.classList.add("active");
-      updateNormalGeometry();
-      return;
-    }
-
-    stepTransitionLocked = true;
-
-    const form = registrationForm;
-    const currentHeight = currentPanel.getBoundingClientRect().height;
-
-    // Beide Kacheln liegen während des Wechsels übereinander. So verlässt
-    // die alte Kachel den Bereich, während die neue gleichzeitig eintritt.
-    currentPanel.classList.add(
-      "step-transition-panel",
-      "step-transition-outgoing"
-    );
-
-    nextPanel.classList.add(
-      "active",
-      "step-transition-panel",
-      "step-transition-incoming"
-    );
-
-    const nextHeight = nextPanel.getBoundingClientRect().height;
-    const keyboardIsStillOpen =
-      viewport.keyboardOpen && keyboardViewportReduced();
-
-    if (!keyboardIsStillOpen && form && currentHeight > 0 && nextHeight > 0) {
-      form.style.height = `${currentHeight}px`;
-      form.style.minHeight = `${Math.min(currentHeight, nextHeight)}px`;
-      form.style.overflow = "hidden";
-
-      form.animate(
-        [
-          { height: `${currentHeight}px` },
-          { height: `${nextHeight}px` }
-        ],
-        {
-          duration: direction ? 460 : 380,
-          easing: "cubic-bezier(.22,.72,.18,1)",
-          fill: "forwards"
-        }
-      );
-    }
-
-    let outgoingAnimation;
-    let incomingAnimation;
-
-    if (direction) {
-      // Anmeldung: Rondell-/Karussellgefühl.
-      // Vorwärts: alt nach links, neu von rechts herein.
-      // Zurück: exakt umgekehrt.
-      const sign = direction > 0 ? 1 : -1;
-
-      wizardCard.classList.add(
-        "is-step-transitioning",
-        "is-registration-slide"
-      );
-
-      outgoingAnimation = currentPanel.animate(
-        [
-          {
-            opacity: 1,
-            transform: "translateX(0) scale(1)",
-            filter: "blur(0px)"
-          },
-          {
-            opacity: .55,
-            transform: `translateX(${-sign * 11}%) scale(.992)`,
-            offset: .72
-          },
-          {
-            opacity: 0,
-            transform: `translateX(${-sign * 18}%) scale(.985)`,
-            filter: "blur(.6px)"
-          }
-        ],
-        {
-          duration: 460,
-          easing: "cubic-bezier(.34,.02,.18,1)",
-          fill: "forwards"
-        }
-      );
-
-      incomingAnimation = nextPanel.animate(
-        [
-          {
-            opacity: 0,
-            transform: `translateX(${sign * 18}%) scale(.985)`,
-            filter: "blur(.6px)"
-          },
-          {
-            opacity: .68,
-            transform: `translateX(${sign * 7}%) scale(.995)`,
-            offset: .58
-          },
-          {
-            opacity: 1,
-            transform: "translateX(0) scale(1)",
-            filter: "blur(0px)"
-          }
-        ],
-        {
-          duration: 460,
-          easing: "cubic-bezier(.22,.72,.18,1)",
-          fill: "forwards"
-        }
-      );
-    } else {
-      // Startseite, Zahlungsstatus, bestehende Anmeldung usw.:
-      // ruhiges Crossfade ohne hektische Richtungsbewegung.
-      wizardCard.classList.add(
-        "is-step-transitioning",
-        "is-soft-fade"
-      );
-
-      outgoingAnimation = currentPanel.animate(
-        [
-          {
-            opacity: 1,
-            transform: "translateY(0) scale(1)"
-          },
-          {
-            opacity: 0,
-            transform: "translateY(-3px) scale(.994)"
-          }
-        ],
-        {
-          duration: 340,
-          easing: "cubic-bezier(.4,0,.2,1)",
-          fill: "forwards"
-        }
-      );
-
-      incomingAnimation = nextPanel.animate(
-        [
-          {
-            opacity: 0,
-            transform: "translateY(4px) scale(.994)"
-          },
-          {
-            opacity: 1,
-            transform: "translateY(0) scale(1)"
-          }
-        ],
-        {
-          duration: 390,
-          delay: 45,
-          easing: "cubic-bezier(.22,.72,.18,1)",
-          fill: "forwards"
-        }
-      );
-    }
-
-    // Nach Ende der längeren Animation räumen wir die temporären
-    // Überlagerungsregeln auf. Ein Timeout dient als Fallback.
-    let cleanedUp = false;
-
-    const cleanup = () => {
-      if (cleanedUp) return;
-      cleanedUp = true;
-
-      outgoingAnimation?.cancel();
-      incomingAnimation?.cancel();
-
-      finishStepTransition(
-        currentPanel,
-        nextPanel,
-        form,
-        nextStep
-      );
-    };
-
-    incomingAnimation.addEventListener("finish", cleanup, { once: true });
-
-    window.setTimeout(
-      cleanup,
-      direction ? 560 : 500
-    );
+    animateElement(wizardCard, [
+      { transform: "scale(.997)" },
+      { transform: "scale(1)" }
+    ], { duration: 230 });
   }
 
   let personRowSerial = 0;
@@ -1752,7 +1522,7 @@
         </div>`).join("")}
       <div class="payment-total"><span>Gesamt</span><strong>${cost.total.toFixed(2).replace(".", ",")} €</strong></div>`;
 
-    document.querySelectorAll(".payment-choice").forEach((button) => button.classList.remove("selected"));
+    paymentChoiceButtons.forEach((button) => button.classList.remove("selected"));
     paymentError.textContent = "";
 
     if (cost.total === 0) {
@@ -1766,10 +1536,10 @@
     }
   }
 
-  document.querySelectorAll(".payment-choice").forEach((button) => {
+  paymentChoiceButtons.forEach((button) => {
     button.addEventListener("click", () => {
       state.paymentMethod = button.dataset.payment;
-      document.querySelectorAll(".payment-choice").forEach((item) => item.classList.toggle("selected", item === button));
+      paymentChoiceButtons.forEach((item) => item.classList.toggle("selected", item === button));
       paymentError.textContent = "";
     });
   });
@@ -2139,43 +1909,47 @@
 
     let postWarning = null;
 
-    try {
-      await fetch(SUBMIT_ENDPOINT, {
-        method: "POST",
-        mode: "no-cors",
-        credentials: "omit",
-        redirect: "follow",
-        signal: controller?.signal,
-        headers: {
-          "Content-Type": "text/plain;charset=UTF-8"
-        },
-        body: JSON.stringify({
-          requestId: secureRequestId("create"),
-          action: "create",
-          registration: payload
-        })
-      });
-    } catch (error) {
-      // Ein Timeout/Abort bedeutet nicht zwingend, dass Apps Script den POST
-      // nicht erhalten hat. Deshalb prüfen wir danach trotzdem die Anmeldung.
+    // Speicherung und Datenbankbestätigung starten parallel.
+    // Weitergeschaltet wird trotzdem erst nach einer echten gespeicherten
+    // Anmeldung inklusive serverseitig erzeugtem Anmeldecode.
+    const confirmationPromise = pollCreatedRegistration(
+      payload.id,
+      Date.now() + 40000
+    );
+
+    const postPromise = fetch(SUBMIT_ENDPOINT, {
+      method: "POST",
+      mode: "no-cors",
+      credentials: "omit",
+      redirect: "follow",
+      signal: controller?.signal,
+      headers: {
+        "Content-Type": "text/plain;charset=UTF-8"
+      },
+      body: JSON.stringify({
+        requestId: secureRequestId("create"),
+        action: "create",
+        registration: payload
+      })
+    }).catch((error) => {
       postWarning = error;
       console.warn("CREATE-POST wurde lokal nicht bestätigt:", error);
-    } finally {
+    }).finally(() => {
       if (postTimeout) window.clearTimeout(postTimeout);
-    }
+    });
 
     try {
-      const registration = await pollCreatedRegistration(
-        payload.id,
-        Date.now() + 40000
-      );
-
+      const registration = await confirmationPromise;
       saveLocalRegistration(registration);
+      void postPromise;
       return registration;
     } catch (statusError) {
+      await postPromise;
+
       if (postWarning) {
         console.warn("Zusätzlicher POST-Hinweis:", postWarning);
       }
+
       throw statusError;
     }
   }
@@ -2635,72 +2409,6 @@
     return escapeHtml(value).replaceAll("`", "&#096;");
   }
 
-  function openModal(type) {
-    if (type === "impressum") {
-      modalTitle.textContent = "Impressum";
-      modalContent.innerHTML = `<p><strong>Platzhalter für das Impressum</strong></p><p>Hier bitte später Veranstalter, Anschrift, vertretungsberechtigte Person und die gesetzlich erforderlichen Angaben eintragen.</p>`;
-    }
-    if (type === "kontakt") {
-      modalTitle.textContent = "Kontakt";
-      modalContent.innerHTML = `<p><strong>Kontakt zum Straßenfest</strong></p><p>E-Mail und weitere Kontaktdaten können hier später hinterlegt werden.</p>`;
-    }
-    if (type === "admin") renderAdminModal();
-    modalBackdrop.hidden = false;
-
-    animateElement(modalBackdrop, [
-      { opacity: 0 },
-      { opacity: 1 }
-    ], { duration: 180 });
-
-    animateElement(modalBackdrop.querySelector(".modal"), [
-      { opacity: 0, transform: "translateY(7px) scale(.985)" },
-      { opacity: 1, transform: "translateY(0) scale(1)" }
-    ], { duration: 230 });
-
-    modalClose.focus({ preventScroll: true });
-  }
-
-  function renderAdminModal() {
-    const registrations = getLocalRegistrations();
-    modalTitle.textContent = "Admin · lokaler Cache";
-    if (!registrations.length) {
-      modalContent.innerHTML = `<p>In diesem Browser wurden noch keine lokalen Anmeldedaten zwischengespeichert.</p><p>Für eine gemeinsame Teilnehmerliste auf mehreren Geräten braucht die GitHub-Pages-Version später einen externen Backend-/Datenbank-Endpunkt.</p>`;
-      return;
-    }
-
-    const entries = registrations.slice().reverse().map((entry) => {
-      const people = (entry.people || []).map((person) => `${escapeHtml(person.firstName || person.name || "")} ${escapeHtml(person.lastName || "")} (${person.age})`).join(", ");
-      const c = normalizeStoredContribution(entry);
-      const contributionText = c ? `${escapeHtml(c.category)}${c.subtype ? ` · ${escapeHtml(c.subtype)}` : ""}: ${escapeHtml(c.note)}` : "Bringt nichts mit";
-      const pay = entry.payment?.total ?? 0;
-      return `<div class="admin-entry"><strong>${people}</strong><br>${contributionText}<br>Zahlung: ${Number(pay).toFixed(2).replace(".", ",")} €</div>`;
-    }).join("");
-
-    modalContent.innerHTML = `
-      <p>${registrations.length} lokal gespeicherte ${registrations.length === 1 ? "Anmeldung" : "Anmeldungen"} auf diesem Gerät.</p>
-      <div class="admin-list">${entries}</div>
-      <div class="admin-actions">
-        <button type="button" id="exportAdmin">JSON exportieren</button>
-        <button type="button" id="clearAdmin">Lokal löschen</button>
-      </div>`;
-
-    document.getElementById("exportAdmin")?.addEventListener("click", () => {
-      const blob = new Blob([JSON.stringify(registrations, null, 2)], { type: "application/json" });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `strassenfest-anmeldungen-${new Date().toISOString().slice(0, 10)}.json`;
-      link.click();
-      URL.revokeObjectURL(url);
-    });
-
-    document.getElementById("clearAdmin")?.addEventListener("click", () => {
-      localStorage.removeItem(STORAGE_KEY);
-      renderAdminModal();
-    });
-  }
-
-  document.querySelectorAll("[data-modal]").forEach((button) => button.addEventListener("click", () => openModal(button.dataset.modal)));
   modalClose.addEventListener("click", () => { modalBackdrop.hidden = true; });
   modalBackdrop.addEventListener("click", (event) => { if (event.target === modalBackdrop) modalBackdrop.hidden = true; });
   window.addEventListener("keydown", (event) => { if (event.key === "Escape" && !modalBackdrop.hidden) modalBackdrop.hidden = true; });
@@ -2737,6 +2445,15 @@
     let height = 1;
     let dpr = 1;
     let nextLaunch = performance.now() + 350;
+    let fireworksPaused = document.visibilityState !== "visible";
+
+    document.addEventListener("visibilitychange", () => {
+      fireworksPaused = document.visibilityState !== "visible";
+
+      if (!fireworksPaused) {
+        nextLaunch = performance.now() + 250;
+      }
+    });
 
     function resizeCanvas() {
       const rect = canvas.getBoundingClientRect();
@@ -2806,6 +2523,10 @@
             speedFactor *
             (.78 + Math.random() * .34);
 
+          if (particles.length >= 420) {
+            particles.splice(0, Math.min(60, particles.length));
+          }
+
           particles.push({
             x: rocket.x,
             y: rocket.y,
@@ -2850,9 +2571,14 @@
     }
 
     function animate(now) {
+      if (fireworksPaused) {
+        requestAnimationFrame(animate);
+        return;
+      }
+
       ctx.clearRect(0, 0, width, height);
 
-      if (document.visibilityState === "visible" && now >= nextLaunch) {
+      if (now >= nextLaunch) {
         const total = Math.random() > .67 ? 2 : 1;
 
         for (let i = 0; i < total; i += 1) {
