@@ -252,6 +252,7 @@
 
     submitting = true;
     submitButton.disabled = true;
+    submitButton.classList.add("is-processing");
     submitButton.textContent = "Wird gesendet …";
     status.textContent = "Deine Anfrage wird gespeichert …";
 
@@ -268,6 +269,7 @@
       status.textContent = error.message;
       submitting = false;
       submitButton.disabled = false;
+      submitButton.classList.remove("is-processing");
       submitButton.textContent = "Anfrage senden";
     }
   });

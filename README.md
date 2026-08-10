@@ -333,3 +333,20 @@ zum Timeout geführt haben konnten.
 - Der Status liest direkt die vom Admin gepflegten Werte aus `zahlungen`.
 - Zusätzlich wurde der Code-only-Abruf der bestehenden Anmeldung im Frontend
   korrigiert (kein undefinierter Nachnamen-Parameter mehr).
+
+
+## Update v25
+- Kritischer HTML-Fehler behoben: Zahlungsstatus und bestehende Anmeldung sind
+  keine verschachtelten `<form>`-Elemente mehr. Dadurch funktionieren die
+  Startseiten-Buttons, Zurück-Navigation und der finale Absenden-Button wieder.
+- Zahlungsstatus und bestehende Anmeldung reagieren auf Button und Enter-Taste.
+- Falscher/unbekannter Code zeigt direkt „Der Anmeldecode ist falsch oder wurde nicht gefunden.“
+- Ablaufübersicht auf vier kompakte Punkte reduziert:
+  Person eintragen · Mitbringsel auswählen (optional) · Zahlung festlegen · Prüfen und absenden.
+- Pfeil aus „Anmeldung starten“ entfernt.
+- Schritt 1 stellt immer mindestens eine leere Personenzeile mit Beispiel-Platzhaltern bereit.
+- Bei geöffneter Tastatur bleibt die Aktionsleiste von Schritt 1 vollständig im sichtbaren Kartenbereich;
+  die Personenliste scrollt stattdessen intern.
+- Bedarfsliste zeigt beim Serverabruf einen zentrierten Ladekreis.
+- Serverabhängige Frontend-Buttons zeigen einen Ladekreis während der Wartezeit.
+- Kontaktformular zeigt ebenfalls einen sichtbaren Ladeindikator beim Senden.

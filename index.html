@@ -93,62 +93,40 @@
               <div>
                 <p class="eyebrow">Neue Anmeldung</p>
                 <h2>So funktioniert die Anmeldung</h2>
-                <p>In fünf kurzen Schritten ist alles erledigt.</p>
+                <p>Ein kurzer Überblick über den Ablauf.</p>
               </div>
             </div>
 
             <div class="registration-flow" aria-label="Ablauf der Anmeldung">
               <div class="flow-step">
                 <span class="flow-number">1</span>
-                <div>
-                  <strong>Personen eintragen</strong>
-                  <small>Wer nimmt am Straßenfest teil?</small>
-                </div>
+                <div><strong>Person eintragen</strong></div>
               </div>
               <div class="flow-arrow" aria-hidden="true">↓</div>
 
               <div class="flow-step">
                 <span class="flow-number">2</span>
-                <div>
-                  <strong>Mitbringsel auswählen</strong>
-                  <small>Entscheiden, ob du etwas mitbringen möchtest.</small>
-                </div>
+                <div><strong>Mitbringsel auswählen <span class="flow-optional">(optional)</span></strong></div>
               </div>
               <div class="flow-arrow" aria-hidden="true">↓</div>
 
               <div class="flow-step">
                 <span class="flow-number">3</span>
-                <div>
-                  <strong>Mitbringsel beschreiben</strong>
-                  <small>Falls ja: Kategorie und Beitrag kurz angeben.</small>
-                </div>
+                <div><strong>Zahlung festlegen</strong></div>
               </div>
               <div class="flow-arrow" aria-hidden="true">↓</div>
 
               <div class="flow-step">
                 <span class="flow-number">4</span>
-                <div>
-                  <strong>Zahlung festlegen</strong>
-                  <small>Beitrag und gewünschten Zahlungsweg prüfen.</small>
-                </div>
-              </div>
-              <div class="flow-arrow" aria-hidden="true">↓</div>
-
-              <div class="flow-step">
-                <span class="flow-number">5</span>
-                <div>
-                  <strong>Prüfen &amp; absenden</strong>
-                  <small>Angaben kontrollieren und Anmeldung speichern.</small>
-                </div>
+                <div><strong>Prüfen und absenden</strong></div>
               </div>
             </div>
 
             <div class="step-actions intro-actions">
               <div class="button-row">
-                <button class="secondary-button" id="introBack" type="button">Zurück</button>
+                <button class="secondary-button" id="introBack" type="button" data-go="home">Zurück</button>
                 <button class="primary-button" id="introStart" type="button">
                   <span>Anmeldung starten</span>
-                  <span class="button-chevron" aria-hidden="true">›</span>
                 </button>
               </div>
             </div>
@@ -167,10 +145,9 @@
               </div>
             </div>
 
-            <form id="paymentStatusForm"
-                  class="front-lookup-form"
-                  novalidate
-                  autocomplete="off">
+            <div id="paymentStatusForm"
+                 class="front-lookup-form"
+                 role="form">
               <label class="field">
                 <span>Anmeldecode</span>
                 <input id="paymentStatusCode"
@@ -189,15 +166,15 @@
                 <div class="button-row">
                   <button class="secondary-button"
                           id="paymentStatusBack"
-                          type="button">Zurück</button>
+                          type="button" data-go="home">Zurück</button>
                   <button class="primary-button"
                           id="paymentStatusSubmit"
-                          type="submit">
+                          type="button">
                     Status prüfen
                   </button>
                 </div>
               </div>
-            </form>
+            </div>
           </section>
 
           <section class="step payment-status-view-step" data-step="payment-view">
@@ -247,10 +224,9 @@
               </div>
             </div>
 
-            <form id="frontRegistrationLookupForm"
-                  class="front-lookup-form"
-                  novalidate
-                  autocomplete="off">
+            <div id="frontRegistrationLookupForm"
+                 class="front-lookup-form"
+                 role="form">
               <label class="field">
                 <span>Anmeldecode</span>
                 <input id="frontLookupCode"
@@ -269,15 +245,15 @@
                 <div class="button-row">
                   <button class="secondary-button"
                           id="existingBack"
-                          type="button">Zurück</button>
+                          type="button" data-go="home">Zurück</button>
                   <button class="primary-button"
                           id="frontLookupSubmit"
-                          type="submit">
+                          type="button">
                     Anmeldung anzeigen
                   </button>
                 </div>
               </div>
-            </form>
+            </div>
           </section>
 
           <section class="step existing-view-step" data-step="existing-view">

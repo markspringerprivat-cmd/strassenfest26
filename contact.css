@@ -271,3 +271,22 @@ textarea.invalid {
     width: min(100% - 22px, 620px);
   }
 }
+
+
+/* v25 – sichtbarer Server-Ladezustand */
+.primary-button.is-processing {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.primary-button.is-processing::after {
+  content: "";
+  width: 14px;
+  height: 14px;
+  border: 2px solid rgba(255,255,255,.34);
+  border-top-color: rgba(255,255,255,.96);
+  border-radius: 50%;
+  animation: contactSpinner .72s linear infinite;
+}
+@keyframes contactSpinner { to { transform: rotate(360deg); } }

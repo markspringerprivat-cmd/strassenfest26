@@ -1871,3 +1871,138 @@ body.keyboard-open .step[data-step="1"] .step-actions {
 .payment-status-step input {
   font-size: 16px;
 }
+
+
+/* ================================================================
+   v25 – robuste Navigation, Ladezustände, Tastatur-Sicherheit
+   ================================================================ */
+
+.flow-optional {
+  color: var(--muted);
+  font-weight: 650;
+}
+
+.primary-button.is-server-loading,
+.secondary-button.is-server-loading,
+.choice-button.is-server-loading {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  pointer-events: none;
+}
+
+.button-inline-spinner,
+.server-spinner {
+  display: inline-block;
+  width: 14px;
+  height: 14px;
+  flex: 0 0 14px;
+  border: 2px solid rgba(255,255,255,.32);
+  border-top-color: rgba(255,255,255,.96);
+  border-radius: 50%;
+  animation: serverSpinner .72s linear infinite;
+}
+
+.server-spinner {
+  width: 18px;
+  height: 18px;
+  flex-basis: 18px;
+  border-color: rgba(255, 207, 93, .25);
+  border-top-color: var(--accent-light);
+}
+
+@keyframes serverSpinner {
+  to { transform: rotate(360deg); }
+}
+
+.needs-loading {
+  padding: 18px 8px !important;
+  text-align: center !important;
+  vertical-align: middle !important;
+}
+
+.needs-loading-state {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 9px;
+  width: 100%;
+  min-height: 54px;
+  color: var(--muted);
+  text-align: center;
+}
+
+/* Bei geöffneter Bildschirmtastatur ist Schritt 1 eine feste kleine
+   Arbeitsfläche: Kopf oben, Personenliste scrollt in der Mitte,
+   Person hinzufügen + Weiter bleiben vollständig sichtbar unten. */
+body.keyboard-open .wizard-card:has(.step[data-step="1"].active) {
+  overflow: hidden !important;
+}
+
+body.keyboard-open .step[data-step="1"].active {
+  display: grid !important;
+  grid-template-rows: auto minmax(72px, 1fr) auto auto;
+  min-height: 0;
+  height: max(250px, calc(var(--keyboard-card-height) - 30px));
+  max-height: calc(var(--keyboard-card-height) - 30px);
+  overflow: hidden;
+}
+
+body.keyboard-open .step[data-step="1"] .step-heading {
+  margin-bottom: 7px;
+}
+
+body.keyboard-open .step[data-step="1"] .people-table {
+  display: flex;
+  min-height: 0;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+body.keyboard-open .step[data-step="1"] .people-rows {
+  flex: 1 1 auto;
+  min-height: 0;
+  max-height: none !important;
+  overflow-y: auto;
+}
+
+body.keyboard-open .step[data-step="1"] .field-error {
+  min-height: 0;
+  margin: 4px 0 0;
+}
+
+body.keyboard-open .step[data-step="1"] .step-actions {
+  position: relative !important;
+  bottom: auto !important;
+  z-index: 10 !important;
+  flex: 0 0 auto;
+  margin: 6px 0 0 !important;
+  padding: 0 !important;
+  background: rgba(25, 21, 78, .94) !important;
+  border-radius: 12px;
+}
+
+body.keyboard-open .step[data-step="1"] .step-actions-stack {
+  gap: 6px;
+}
+
+body.keyboard-open .step[data-step="1"] .add-person-button,
+body.keyboard-open .step[data-step="1"] #peopleContinue {
+  min-height: 40px;
+}
+
+/* Fallback für Browser ohne :has(). Die innere Personenliste übernimmt
+   ohnehin das Scrollen, sodass die Buttons nicht unter die Tastatur rutschen. */
+@supports not selector(:has(*)) {
+  body.keyboard-open .step[data-step="1"] .people-rows {
+    max-height: clamp(72px, calc(var(--keyboard-card-height) - 210px), 150px) !important;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .button-inline-spinner,
+  .server-spinner {
+    animation-duration: 1.5s;
+  }
+}

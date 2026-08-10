@@ -109,6 +109,44 @@
   const frontExistingHome = document.getElementById("frontExistingHome");
 
 
+  function setButtonBusy(button, busy, label = "Wird geladen …") {
+    if (!button) return;
+
+    if (busy) {
+      if (!button.dataset.busyOriginalHtml) {
+        button.dataset.busyOriginalHtml = button.innerHTML;
+      }
+      button.disabled = true;
+      button.classList.add("is-server-loading");
+      button.setAttribute("aria-busy", "true");
+      button.innerHTML = `<span>${escapeHtml(label)}</span><span class="button-inline-spinner" aria-hidden="true"></span>`;
+      return;
+    }
+
+    button.disabled = false;
+    button.classList.remove("is-server-loading");
+    button.removeAttribute("aria-busy");
+
+    if (button.dataset.busyOriginalHtml) {
+      button.innerHTML = button.dataset.busyOriginalHtml;
+      delete button.dataset.busyOriginalHtml;
+    }
+  }
+
+  function friendlyLookupError(error) {
+    if (error?.code === "NOT_FOUND") {
+      return "Der Anmeldecode ist falsch oder wurde nicht gefunden.";
+    }
+
+    return error?.message || "Die Daten konnten gerade nicht geladen werden.";
+  }
+
+  function ensureInitialPersonRow() {
+    if (!peopleRows.querySelector(".person-row")) {
+      addPersonRow();
+    }
+  }
+
   function secureRequestId(prefix = "sf") {
     const bytes = new Uint8Array(18);
     crypto.getRandomValues(bytes);
@@ -1244,9 +1282,15 @@
     setStep(4);
   });
 
-  showNeeds.addEventListener("click", () => {
-    renderNeeds();
+  showNeeds.addEventListener("click", async () => {
+    setButtonBusy(showNeeds, true, "Wird geladen …");
     setStep("needs");
+
+    try {
+      await renderNeeds();
+    } finally {
+      setButtonBusy(showNeeds, false);
+    }
   });
 
   category.addEventListener("change", () => {
@@ -1385,7 +1429,12 @@
   async function renderNeeds() {
     needsTableBody.innerHTML = `
       <tr>
-        <td colspan="3" class="needs-loading">Zentrale Planung wird geladen …</td>
+        <td colspan="3" class="needs-loading">
+          <div class="needs-loading-state">
+            <span class="server-spinner" aria-hidden="true"></span>
+            <span>Zentrale Planung wird geladen …</span>
+          </div>
+        </td>
       </tr>`;
     needsNote.textContent = "Die Angaben werden aus der gemeinsamen Anmeldung geladen.";
 
@@ -1525,6 +1574,7 @@
   });
 
   introStart.addEventListener("click", () => {
+    ensureInitialPersonRow();
     setStep(1);
   });
 
@@ -1570,20 +1620,15 @@
     setStep("home");
   });
 
-  paymentStatusForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
-
+  async function checkPaymentStatus() {
     const code = paymentStatusCode.value.trim();
 
     if (!code) {
-      paymentStatusError.textContent =
-        "Bitte deinen Anmeldecode eingeben.";
+      paymentStatusError.textContent = "Bitte deinen Anmeldecode eingeben.";
       return;
     }
 
-    const originalText = paymentStatusSubmit.textContent;
-    paymentStatusSubmit.disabled = true;
-    paymentStatusSubmit.textContent = "Wird geprüft …";
+    setButtonBusy(paymentStatusSubmit, true, "Wird geprüft …");
     paymentStatusError.textContent = "";
 
     try {
@@ -1595,12 +1640,20 @@
 
       renderPaymentStatus(result.paymentStatus);
     } catch (error) {
-      paymentStatusError.textContent =
-        error.message || "Der Zahlungsstatus konnte nicht geladen werden.";
+      paymentStatusError.textContent = friendlyLookupError(error);
     } finally {
-      paymentStatusSubmit.disabled = false;
-      paymentStatusSubmit.textContent = originalText;
+      setButtonBusy(paymentStatusSubmit, false);
     }
+  }
+
+  paymentStatusSubmit.addEventListener("click", () => {
+    void checkPaymentStatus();
+  });
+
+  paymentStatusCode.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    void checkPaymentStatus();
   });
 
   paymentStatusCheckAgain.addEventListener("click", () => {
@@ -1629,20 +1682,15 @@
     setStep("home");
   });
 
-  frontRegistrationLookupForm.addEventListener("submit", async (event) => {
-    event.preventDefault();
-
+  async function lookupExistingRegistration() {
     const code = frontLookupCode.value.trim();
 
     if (!code) {
-      frontLookupError.textContent =
-        "Bitte deinen Anmeldecode eingeben.";
+      frontLookupError.textContent = "Bitte deinen Anmeldecode eingeben.";
       return;
     }
 
-    const originalText = frontLookupSubmit.textContent;
-    frontLookupSubmit.disabled = true;
-    frontLookupSubmit.textContent = "Wird geladen …";
+    setButtonBusy(frontLookupSubmit, true, "Wird geladen …");
     frontLookupError.textContent = "";
 
     try {
@@ -1650,12 +1698,20 @@
       saveRegistrationIdentity(registration);
       showExistingRegistration(registration);
     } catch (error) {
-      frontLookupError.textContent =
-        error.message || "Die Anmeldung konnte nicht geladen werden.";
+      frontLookupError.textContent = friendlyLookupError(error);
     } finally {
-      frontLookupSubmit.disabled = false;
-      frontLookupSubmit.textContent = originalText;
+      setButtonBusy(frontLookupSubmit, false);
     }
+  }
+
+  frontLookupSubmit.addEventListener("click", () => {
+    void lookupExistingRegistration();
+  });
+
+  frontLookupCode.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    void lookupExistingRegistration();
   });
 
   frontExistingPdf.addEventListener("click", async () => {
@@ -1686,6 +1742,12 @@
 
   document.querySelectorAll("[data-go]").forEach((button) => {
     button.addEventListener("click", () => setStep(button.dataset.go));
+  });
+
+  document.addEventListener("click", (event) => {
+    const navButton = event.target.closest?.("[data-go]");
+    if (!navButton || navButton.disabled) return;
+    setStep(navButton.dataset.go);
   });
 
   function buildPayload() {
@@ -2244,7 +2306,7 @@
     event.preventDefault();
     if (state.step !== "5" || state.submitting) return;
 
-    const submitButton = form.querySelector('button[type="submit"]');
+    const submitButton = document.getElementById("finalSubmitButton");
     const originalButtonHtml = submitButton.innerHTML;
 
     state.submitting = true;
@@ -2400,7 +2462,7 @@
   });
 
   refreshMyRegistrationHint();
-  addPersonRow();
+  ensureInitialPersonRow();
 
   // Feuerwerk v22: sauber auf die tatsächliche Canvas-Größe skaliert,
   // etwas heller und mit runderen, klareren Explosionen.
