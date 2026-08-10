@@ -22,7 +22,7 @@
       <section class="wizard-card" id="wizardCard">
         <div class="card-glow" aria-hidden="true"></div>
 
-        <div class="step-progress" id="stepProgress" aria-label="Fortschritt">
+        <div class="step-progress hidden" id="stepProgress" aria-label="Fortschritt">
           <span class="progress-dot active" data-progress="1"></span>
           <span class="progress-dot" data-progress="2"></span>
           <span class="progress-dot" data-progress="3"></span>
@@ -31,7 +31,295 @@
         </div>
 
         <form id="registrationForm" novalidate autocomplete="off">
-          <section class="step active" data-step="1">
+          <section class="step active landing-step" data-step="home">
+            <div class="landing-heading">
+              <p class="eyebrow">Straßenfest in Hilchenbach</p>
+              <h1>Willkommen bei der Anmeldung</h1>
+              <p>
+                Willkommen auf der Seite zum Straßenfest in der
+                <strong>Nassauischen Straße</strong>.
+                Was möchtest du machen?
+              </p>
+            </div>
+
+            <div class="landing-choice-list">
+              <button class="landing-choice landing-choice-primary"
+                      id="homeNewRegistration"
+                      type="button">
+                <span class="landing-choice-icon" aria-hidden="true">＋</span>
+                <span>
+                  <strong>Neue Anmeldung</strong>
+                  <small>Eine neue Anmeldung für das Straßenfest starten</small>
+                </span>
+                <span class="landing-choice-chevron" aria-hidden="true">›</span>
+              </button>
+
+              <a class="landing-choice"
+                 href="informationen.html">
+                <span class="landing-choice-icon" aria-hidden="true">i</span>
+                <span>
+                  <strong>Informationen</strong>
+                  <small>Informationen zum Straßenfest ansehen</small>
+                </span>
+                <span class="landing-choice-chevron" aria-hidden="true">›</span>
+              </a>
+
+              <button class="landing-choice"
+                      id="homeExistingRegistration"
+                      type="button">
+                <span class="landing-choice-icon" aria-hidden="true">⌁</span>
+                <span>
+                  <strong>Bestehende Anmeldung</strong>
+                  <small>Anmeldung mit deinem Anmeldecode wieder aufrufen</small>
+                </span>
+                <span class="landing-choice-chevron" aria-hidden="true">›</span>
+              </button>
+
+              <button class="landing-choice"
+                      id="homePaymentStatus"
+                      type="button">
+                <span class="landing-choice-icon" aria-hidden="true">€</span>
+                <span>
+                  <strong>Zahlungsstatus</strong>
+                  <small>Prüfen, ob deine Zahlung bereits als beglichen eingetragen ist</small>
+                </span>
+                <span class="landing-choice-chevron" aria-hidden="true">›</span>
+              </button>
+            </div>
+          </section>
+
+          <section class="step registration-intro-step" data-step="intro">
+            <div class="step-heading intro-heading">
+              <div>
+                <p class="eyebrow">Neue Anmeldung</p>
+                <h2>So funktioniert die Anmeldung</h2>
+                <p>In fünf kurzen Schritten ist alles erledigt.</p>
+              </div>
+            </div>
+
+            <div class="registration-flow" aria-label="Ablauf der Anmeldung">
+              <div class="flow-step">
+                <span class="flow-number">1</span>
+                <div>
+                  <strong>Personen eintragen</strong>
+                  <small>Wer nimmt am Straßenfest teil?</small>
+                </div>
+              </div>
+              <div class="flow-arrow" aria-hidden="true">↓</div>
+
+              <div class="flow-step">
+                <span class="flow-number">2</span>
+                <div>
+                  <strong>Mitbringsel auswählen</strong>
+                  <small>Entscheiden, ob du etwas mitbringen möchtest.</small>
+                </div>
+              </div>
+              <div class="flow-arrow" aria-hidden="true">↓</div>
+
+              <div class="flow-step">
+                <span class="flow-number">3</span>
+                <div>
+                  <strong>Mitbringsel beschreiben</strong>
+                  <small>Falls ja: Kategorie und Beitrag kurz angeben.</small>
+                </div>
+              </div>
+              <div class="flow-arrow" aria-hidden="true">↓</div>
+
+              <div class="flow-step">
+                <span class="flow-number">4</span>
+                <div>
+                  <strong>Zahlung festlegen</strong>
+                  <small>Beitrag und gewünschten Zahlungsweg prüfen.</small>
+                </div>
+              </div>
+              <div class="flow-arrow" aria-hidden="true">↓</div>
+
+              <div class="flow-step">
+                <span class="flow-number">5</span>
+                <div>
+                  <strong>Prüfen &amp; absenden</strong>
+                  <small>Angaben kontrollieren und Anmeldung speichern.</small>
+                </div>
+              </div>
+            </div>
+
+            <div class="step-actions intro-actions">
+              <div class="button-row">
+                <button class="secondary-button" id="introBack" type="button">Zurück</button>
+                <button class="primary-button" id="introStart" type="button">
+                  <span>Anmeldung starten</span>
+                  <span class="button-chevron" aria-hidden="true">›</span>
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <section class="step payment-status-step" data-step="payment">
+            <div class="step-heading hero-heading">
+              <div class="heading-icon" aria-hidden="true">€</div>
+              <div>
+                <p class="eyebrow">Zahlungsstatus</p>
+                <h2>Zahlung prüfen</h2>
+                <p>
+                  Gib deinen persönlichen Anmeldecode ein. Angezeigt wird nur,
+                  ob die Zahlung beglichen ist und welcher Betrag noch offen ist.
+                </p>
+              </div>
+            </div>
+
+            <form id="paymentStatusForm"
+                  class="front-lookup-form"
+                  novalidate
+                  autocomplete="off">
+              <label class="field">
+                <span>Anmeldecode</span>
+                <input id="paymentStatusCode"
+                       type="text"
+                       autocomplete="off"
+                       autocapitalize="characters"
+                       spellcheck="false"
+                       placeholder="z. B. HIL26-ABCD-EFGH" />
+              </label>
+
+              <p class="field-error"
+                 id="paymentStatusError"
+                 role="alert"></p>
+
+              <div class="step-actions">
+                <div class="button-row">
+                  <button class="secondary-button"
+                          id="paymentStatusBack"
+                          type="button">Zurück</button>
+                  <button class="primary-button"
+                          id="paymentStatusSubmit"
+                          type="submit">
+                    Status prüfen
+                  </button>
+                </div>
+              </div>
+            </form>
+          </section>
+
+          <section class="step payment-status-view-step" data-step="payment-view">
+            <div class="step-heading hero-heading">
+              <div class="heading-icon" id="paymentStatusViewIcon" aria-hidden="true">✓</div>
+              <div>
+                <p class="eyebrow">Zahlungsstatus</p>
+                <h2 id="paymentStatusViewTitle">Zahlungsstatus</h2>
+                <p id="paymentStatusViewText">–</p>
+              </div>
+            </div>
+
+            <div class="payment-status-result" id="paymentStatusResult">
+              <span>Noch offen</span>
+              <strong id="paymentStatusRemaining">–</strong>
+            </div>
+
+            <p class="payment-status-note">
+              Es wird bewusst keine Zahlungsaufstellung einzelner Personen angezeigt.
+            </p>
+
+            <div class="existing-view-actions">
+              <button class="primary-button"
+                      id="paymentStatusCheckAgain"
+                      type="button">
+                Erneut prüfen
+              </button>
+
+              <button class="secondary-button"
+                      id="paymentStatusHome"
+                      type="button">
+                Zur Startseite
+              </button>
+            </div>
+          </section>
+
+          <section class="step existing-registration-step" data-step="existing">
+            <div class="step-heading hero-heading">
+              <div class="heading-icon" aria-hidden="true">⌁</div>
+              <div>
+                <p class="eyebrow">Bestehende Anmeldung</p>
+                <h2>Anmeldung aufrufen</h2>
+                <p>
+                  Gib deinen persönlichen Anmeldecode ein, um deine
+                  gespeicherten Daten wieder aufzurufen.
+                </p>
+              </div>
+            </div>
+
+            <form id="frontRegistrationLookupForm"
+                  class="front-lookup-form"
+                  novalidate
+                  autocomplete="off">
+              <label class="field">
+                <span>Anmeldecode</span>
+                <input id="frontLookupCode"
+                       type="text"
+                       autocomplete="off"
+                       autocapitalize="characters"
+                       spellcheck="false"
+                       placeholder="z. B. HIL26-ABCD-EFGH" />
+              </label>
+
+              <p class="field-error"
+                 id="frontLookupError"
+                 role="alert"></p>
+
+              <div class="step-actions">
+                <div class="button-row">
+                  <button class="secondary-button"
+                          id="existingBack"
+                          type="button">Zurück</button>
+                  <button class="primary-button"
+                          id="frontLookupSubmit"
+                          type="submit">
+                    Anmeldung anzeigen
+                  </button>
+                </div>
+              </div>
+            </form>
+          </section>
+
+          <section class="step existing-view-step" data-step="existing-view">
+            <div class="step-heading hero-heading">
+              <div class="heading-icon" aria-hidden="true">✓</div>
+              <div>
+                <p class="eyebrow">Bestehende Anmeldung</p>
+                <h2>Deine gespeicherten Daten</h2>
+                <p>Hier findest du die Angaben aus deiner Anmeldung.</p>
+              </div>
+            </div>
+
+            <div class="existing-view-code">
+              <span>Anmeldecode</span>
+              <strong id="frontExistingCode">–</strong>
+            </div>
+
+            <div class="existing-view-details"
+                 id="frontExistingDetails"></div>
+
+            <div class="existing-view-actions">
+              <button class="primary-button"
+                      id="frontExistingPdf"
+                      type="button">
+                Daten als PDF herunterladen
+              </button>
+
+              <button class="secondary-button"
+                      id="frontExistingOther"
+                      type="button">
+                Andere Anmeldung aufrufen
+              </button>
+
+              <button class="secondary-button"
+                      id="frontExistingHome"
+                      type="button">
+                Zur Startseite
+              </button>
+            </div>
+          </section>
+
+          <section class="step" data-step="1">
             <div class="step-heading hero-heading">
               <div class="heading-icon" aria-hidden="true">🎉</div>
               <div>
@@ -63,7 +351,7 @@
                 <span>Weiter</span><span class="button-chevron" aria-hidden="true">›</span>
               </button>
 
-              <button class="my-registration-button" id="myRegistrationButton" type="button">
+              <button class="my-registration-button hidden" id="myRegistrationButton" type="button">
                 <span class="my-registration-icon" aria-hidden="true">⌁</span>
                 <span>
                   <strong>Meine Anmeldung</strong>
@@ -222,7 +510,7 @@
               <div class="payment-choice-grid">
                 <button type="button" class="payment-choice" data-payment="briefkasten">
                   <span class="payment-choice-title">Barzahlung in den Briefkasten</span>
-                  <span class="payment-choice-text">Bitte den Betrag in einem Umschlag mit Namen in den Briefkasten <strong>Nassauer Straße 1, Springer</strong> einwerfen.</span>
+                  <span class="payment-choice-text">Bitte den Betrag in einem Umschlag mit Namen in den Briefkasten <strong>Nassauische Straße 1, Springer</strong> einwerfen.</span>
                 </button>
 
                 <button type="button" class="payment-choice" data-payment="abholung">

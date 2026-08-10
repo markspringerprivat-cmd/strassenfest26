@@ -304,3 +304,32 @@ zum Timeout geführt haben konnten.
   Personenzeilen bei geöffneter Tastatur nicht mehr überdecken.
 - Feuerwerk: Canvas-Skalierung synchronisiert, Explosionen runder, heller und
   klarer mit dezenten Funken-Schweifen.
+
+
+## Update v23
+- Neue Startseite im Hauptkasten:
+  - Neue Anmeldung
+  - Informationen
+  - Bestehende Anmeldung
+- Vor einer neuen Anmeldung erscheint eine kompakte Übersicht der fünf Schritte.
+- Neue Informationsseite `informationen.html` als ausbaufähige Platzhalterseite.
+- Bestehende Anmeldung wird direkt innerhalb der Hauptseite aufgerufen und dort
+  mit allen gespeicherten Daten sowie PDF-Download angezeigt.
+- Bestehende Anmeldungen werden wie gewünscht nur mit dem persönlichen
+  Anmeldecode aufgerufen.
+- „Neue Anmeldung“ nach Abschluss führt zurück zur neuen Startseite.
+- Schreibweise überall korrigiert: `Nassauische Straße`.
+
+
+## Update v24
+- Startseite hat zusätzlich „Zahlungsstatus“.
+- Zahlungsstatus wird nur mit dem persönlichen Anmeldecode geprüft.
+- Anzeige ist bewusst kompakt:
+  - Zahlung beglichen
+  - Zahlung noch offen
+  - keine Zahlung erforderlich
+  - jeweils nur der noch offene Gesamtbetrag
+- Keine Zahlungsaufstellung und keine einzelnen Personen auf dieser Ansicht.
+- Der Status liest direkt die vom Admin gepflegten Werte aus `zahlungen`.
+- Zusätzlich wurde der Code-only-Abruf der bestehenden Anmeldung im Frontend
+  korrigiert (kein undefinierter Nachnamen-Parameter mehr).

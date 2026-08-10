@@ -8,7 +8,7 @@
   const ADULT_AGE = 18;
 
   const state = {
-    step: "1",
+    step: "home",
     people: [],
     bringing: null,
     category: "",
@@ -76,6 +76,37 @@
   const apiTransportHost = document.getElementById("apiTransportHost");
   const existingContributions = document.getElementById("existingContributions");
   const existingContributionsList = document.getElementById("existingContributionsList");
+
+  const homeNewRegistration = document.getElementById("homeNewRegistration");
+  const homeExistingRegistration = document.getElementById("homeExistingRegistration");
+  const homePaymentStatus = document.getElementById("homePaymentStatus");
+
+  const paymentStatusForm = document.getElementById("paymentStatusForm");
+  const paymentStatusCode = document.getElementById("paymentStatusCode");
+  const paymentStatusError = document.getElementById("paymentStatusError");
+  const paymentStatusBack = document.getElementById("paymentStatusBack");
+  const paymentStatusSubmit = document.getElementById("paymentStatusSubmit");
+
+  const paymentStatusViewIcon = document.getElementById("paymentStatusViewIcon");
+  const paymentStatusViewTitle = document.getElementById("paymentStatusViewTitle");
+  const paymentStatusViewText = document.getElementById("paymentStatusViewText");
+  const paymentStatusRemaining = document.getElementById("paymentStatusRemaining");
+  const paymentStatusCheckAgain = document.getElementById("paymentStatusCheckAgain");
+  const paymentStatusHome = document.getElementById("paymentStatusHome");
+  const introBack = document.getElementById("introBack");
+  const introStart = document.getElementById("introStart");
+
+  const frontRegistrationLookupForm = document.getElementById("frontRegistrationLookupForm");
+  const frontLookupCode = document.getElementById("frontLookupCode");
+  const frontLookupError = document.getElementById("frontLookupError");
+  const frontLookupSubmit = document.getElementById("frontLookupSubmit");
+  const existingBack = document.getElementById("existingBack");
+
+  const frontExistingCode = document.getElementById("frontExistingCode");
+  const frontExistingDetails = document.getElementById("frontExistingDetails");
+  const frontExistingPdf = document.getElementById("frontExistingPdf");
+  const frontExistingOther = document.getElementById("frontExistingOther");
+  const frontExistingHome = document.getElementById("frontExistingHome");
 
 
   function secureRequestId(prefix = "sf") {
@@ -247,9 +278,16 @@
 
   function refreshMyRegistrationHint() {
     const saved = getSavedRegistrationIdentity();
-    myRegistrationHint.textContent = saved
-      ? `Gespeichert: ${saved.code}`
-      : "Mit Anmeldecode wieder aufrufen";
+
+    if (myRegistrationHint) {
+      myRegistrationHint.textContent = saved
+        ? `Gespeichert: ${saved.code}`
+        : "Mit Anmeldecode wieder aufrufen";
+    }
+
+    if (saved) {
+      frontLookupCode.value = saved.code || "";
+    }
   }
 
   function formatMoney(value) {
@@ -291,7 +329,7 @@
 
   function paymentMethodLabelFor(method) {
     if (method === "briefkasten") {
-      return "Barzahlung in den Briefkasten – Nassauer Straße 1, Springer, im Umschlag mit Namen.";
+      return "Barzahlung in den Briefkasten – Nassauische Straße 1, Springer, im Umschlag mit Namen.";
     }
     if (method === "abholung") {
       return "Persönliche Abholung am 30. August ab 18 Uhr.";
@@ -395,7 +433,7 @@
       error.textContent = "Wird geladen …";
 
       try {
-        const registration = await loadRegistration(code, lastName);
+        const registration = await loadRegistration(code, "");
         saveRegistrationIdentity(registration);
         renderRegistrationModal(registration);
       } catch (requestError) {
@@ -869,7 +907,19 @@
     document.querySelectorAll(".progress-dot").forEach((dot) => {
       dot.classList.toggle("active", Number(dot.dataset.progress) === progressStep);
     });
-    stepProgress.classList.toggle("hidden", ["code", "done"].includes(state.step));
+
+    const progressHidden = [
+      "home",
+      "intro",
+      "existing",
+      "existing-view",
+      "payment",
+      "payment-view",
+      "code",
+      "done"
+    ].includes(state.step);
+
+    stepProgress.classList.toggle("hidden", progressHidden);
 
     wizardCard.scrollTop = 0;
     updateNormalGeometry();
@@ -1459,6 +1509,181 @@
     summaryPayment.innerHTML = `<div><strong>${state.totalCost.toFixed(2).replace(".", ",")} €</strong></div><div>${escapeHtml(paymentMethodLabel())}</div>`;
   }
 
+  function showExistingRegistration(registration) {
+    state.savedRegistration = registration;
+    frontExistingCode.textContent = registration.accessCode || "–";
+    frontExistingDetails.innerHTML = registrationDetailsHtml(registration);
+    setStep("existing-view");
+  }
+
+  homeNewRegistration.addEventListener("click", () => {
+    setStep("intro");
+  });
+
+  introBack.addEventListener("click", () => {
+    setStep("home");
+  });
+
+  introStart.addEventListener("click", () => {
+    setStep(1);
+  });
+
+  function renderPaymentStatus(status) {
+    const remaining = Math.max(0, Number(status.remaining || 0));
+
+    if (status.state === "free") {
+      paymentStatusViewIcon.textContent = "✓";
+      paymentStatusViewTitle.textContent = "Keine Zahlung erforderlich";
+      paymentStatusViewText.textContent =
+        "Für diese Anmeldung ist kein Kostenbeitrag offen.";
+      paymentStatusRemaining.textContent = formatMoney(0);
+    } else if (status.state === "paid") {
+      paymentStatusViewIcon.textContent = "✓";
+      paymentStatusViewTitle.textContent = "Zahlung beglichen";
+      paymentStatusViewText.textContent =
+        "Die Zahlung wurde im System als vollständig getätigt eingetragen.";
+      paymentStatusRemaining.textContent = formatMoney(0);
+    } else {
+      paymentStatusViewIcon.textContent = "€";
+      paymentStatusViewTitle.textContent = "Zahlung noch offen";
+      paymentStatusViewText.textContent =
+        "Die Zahlung ist im System noch nicht vollständig als beglichen eingetragen.";
+      paymentStatusRemaining.textContent = formatMoney(remaining);
+    }
+
+    setStep("payment-view");
+  }
+
+  homePaymentStatus.addEventListener("click", () => {
+    const saved = getSavedRegistrationIdentity();
+
+    if (saved) {
+      paymentStatusCode.value = saved.code || "";
+    }
+
+    paymentStatusError.textContent = "";
+    setStep("payment");
+  });
+
+  paymentStatusBack.addEventListener("click", () => {
+    paymentStatusError.textContent = "";
+    setStep("home");
+  });
+
+  paymentStatusForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const code = paymentStatusCode.value.trim();
+
+    if (!code) {
+      paymentStatusError.textContent =
+        "Bitte deinen Anmeldecode eingeben.";
+      return;
+    }
+
+    const originalText = paymentStatusSubmit.textContent;
+    paymentStatusSubmit.disabled = true;
+    paymentStatusSubmit.textContent = "Wird geprüft …";
+    paymentStatusError.textContent = "";
+
+    try {
+      const result = await apiRequest("paymentStatus", { code });
+
+      if (!result.paymentStatus) {
+        throw new Error("Der Zahlungsstatus konnte nicht geladen werden.");
+      }
+
+      renderPaymentStatus(result.paymentStatus);
+    } catch (error) {
+      paymentStatusError.textContent =
+        error.message || "Der Zahlungsstatus konnte nicht geladen werden.";
+    } finally {
+      paymentStatusSubmit.disabled = false;
+      paymentStatusSubmit.textContent = originalText;
+    }
+  });
+
+  paymentStatusCheckAgain.addEventListener("click", () => {
+    paymentStatusError.textContent = "";
+    setStep("payment");
+  });
+
+  paymentStatusHome.addEventListener("click", () => {
+    paymentStatusError.textContent = "";
+    setStep("home");
+  });
+
+  homeExistingRegistration.addEventListener("click", () => {
+    const saved = getSavedRegistrationIdentity();
+
+    if (saved) {
+      frontLookupCode.value = saved.code || "";
+    }
+
+    frontLookupError.textContent = "";
+    setStep("existing");
+  });
+
+  existingBack.addEventListener("click", () => {
+    frontLookupError.textContent = "";
+    setStep("home");
+  });
+
+  frontRegistrationLookupForm.addEventListener("submit", async (event) => {
+    event.preventDefault();
+
+    const code = frontLookupCode.value.trim();
+
+    if (!code) {
+      frontLookupError.textContent =
+        "Bitte deinen Anmeldecode eingeben.";
+      return;
+    }
+
+    const originalText = frontLookupSubmit.textContent;
+    frontLookupSubmit.disabled = true;
+    frontLookupSubmit.textContent = "Wird geladen …";
+    frontLookupError.textContent = "";
+
+    try {
+      const registration = await loadRegistration(code, "");
+      saveRegistrationIdentity(registration);
+      showExistingRegistration(registration);
+    } catch (error) {
+      frontLookupError.textContent =
+        error.message || "Die Anmeldung konnte nicht geladen werden.";
+    } finally {
+      frontLookupSubmit.disabled = false;
+      frontLookupSubmit.textContent = originalText;
+    }
+  });
+
+  frontExistingPdf.addEventListener("click", async () => {
+    if (!state.savedRegistration || frontExistingPdf.disabled) return;
+
+    const originalText = frontExistingPdf.textContent;
+    frontExistingPdf.disabled = true;
+    frontExistingPdf.textContent = "PDF wird vorbereitet …";
+
+    try {
+      await downloadRegistrationPdf(state.savedRegistration);
+    } finally {
+      frontExistingPdf.disabled = false;
+      frontExistingPdf.textContent = originalText;
+    }
+  });
+
+  frontExistingOther.addEventListener("click", () => {
+    state.savedRegistration = null;
+    frontLookupError.textContent = "";
+    frontLookupCode.value = "";
+    setStep("existing");
+  });
+
+  frontExistingHome.addEventListener("click", () => {
+    setStep("home");
+  });
+
   document.querySelectorAll("[data-go]").forEach((button) => {
     button.addEventListener("click", () => setStep(button.dataset.go));
   });
@@ -1713,7 +1938,7 @@
     openRegistrationLookup();
   });
 
-  myRegistrationButton.addEventListener("click", openRegistrationLookup);
+  myRegistrationButton?.addEventListener("click", openRegistrationLookup);
 
   function registrationPdfLines(registration) {
     const created = registration.createdAt
@@ -2061,7 +2286,7 @@
 
   restartButton.addEventListener("click", () => {
     stopConfirmationCountdown();
-    state.step = "1";
+    state.step = "home";
     state.people = [];
     state.bringing = null;
     state.category = "";
@@ -2081,7 +2306,7 @@
     personError.textContent = "";
     paymentError.textContent = "";
     submitStatus.textContent = "";
-    setStep(1);
+    setStep("home");
   });
 
   function escapeHtml(value) {

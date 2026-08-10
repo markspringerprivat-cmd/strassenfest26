@@ -85,3 +85,88 @@ a { color: var(--gold-light); }
 @media (max-width: 500px) {
   .legal-card { padding: 16px; }
 }
+
+
+/* ================================================================
+   Informationsseite
+   ================================================================ */
+
+.information-intro {
+  margin-top: 0;
+}
+
+.information-list {
+  display: grid;
+  gap: 8px;
+  margin-top: 18px;
+}
+
+.information-list article {
+  display: grid;
+  grid-template-columns: 36px minmax(0, 1fr);
+  gap: 11px;
+  align-items: start;
+  padding: 12px;
+  border: 1px solid rgba(255,255,255,.09);
+  border-radius: 13px;
+  background: rgba(255,255,255,.035);
+}
+
+.information-number {
+  display: grid;
+  place-items: center;
+  width: 34px;
+  height: 34px;
+  border: 1px solid rgba(255, 208, 103, .34);
+  border-radius: 10px;
+  color: var(--gold-light);
+  font-size: .68rem;
+  font-weight: 850;
+}
+
+.information-list h2 {
+  margin: 0 0 3px;
+  font-size: .88rem;
+}
+
+.information-list p {
+  margin: 0;
+  font-size: .78rem;
+}
+
+.information-actions {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 8px;
+  margin-top: 17px;
+}
+
+.information-primary-link,
+.information-secondary-link {
+  display: grid;
+  place-items: center;
+  min-height: 43px;
+  padding: 8px 10px;
+  border-radius: 11px;
+  font-size: .75rem;
+  font-weight: 800;
+  text-decoration: none;
+}
+
+.information-primary-link {
+  border: 1px solid rgba(255, 224, 139, .8);
+  background: linear-gradient(135deg, #ffd75c, #ffb32f);
+  color: #2a205e;
+}
+
+.information-secondary-link {
+  border: 1px solid rgba(255,255,255,.14);
+  background: rgba(255,255,255,.045);
+  color: #fff;
+}
+
+@media (max-width: 480px) {
+  .information-actions {
+    grid-template-columns: 1fr;
+  }
+}
