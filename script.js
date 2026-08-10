@@ -928,22 +928,28 @@
     event.target.closest?.(".validation-error-target")?.classList.remove("validation-error-target");
   });
 
-  function setStep(step) {
-    const nextStep = String(step);
-    const currentPanel = document.querySelector(".step.active");
-    const nextPanel = document.querySelector(`.step[data-step="${CSS.escape(nextStep)}"]`);
+  const REGISTRATION_STEP_ORDER = new Map([
+    ["intro", 0],
+    ["1", 1],
+    ["2", 2],
+    ["needs", 2.5],
+    ["3", 3],
+    ["4", 4],
+    ["5", 5],
+    ["code", 6],
+    ["done", 7]
+  ]);
 
-    if (!nextPanel || nextPanel === currentPanel) return;
+  let stepTransitionLocked = false;
 
-    state.step = nextStep;
-    resetKeyboardViewForStepChange();
+  function updateStepProgress(nextStep) {
+    const progressStep = nextStep === "needs" ? 2 : Number(nextStep);
 
-    currentPanel?.classList.remove("active");
-    nextPanel.classList.add("active");
-
-    const progressStep = state.step === "needs" ? 2 : Number(state.step);
     document.querySelectorAll(".progress-dot").forEach((dot) => {
-      dot.classList.toggle("active", Number(dot.dataset.progress) === progressStep);
+      dot.classList.toggle(
+        "active",
+        Number(dot.dataset.progress) === progressStep
+      );
     });
 
     const progressHidden = [
@@ -955,22 +961,267 @@
       "payment-view",
       "code",
       "done"
-    ].includes(state.step);
+    ].includes(nextStep);
 
     stepProgress.classList.toggle("hidden", progressHidden);
+  }
+
+  function registrationTransitionDirection(currentStep, nextStep) {
+    if (
+      !REGISTRATION_STEP_ORDER.has(currentStep) ||
+      !REGISTRATION_STEP_ORDER.has(nextStep)
+    ) {
+      return 0;
+    }
+
+    const currentIndex = REGISTRATION_STEP_ORDER.get(currentStep);
+    const nextIndex = REGISTRATION_STEP_ORDER.get(nextStep);
+
+    if (nextIndex === currentIndex) return 0;
+    return nextIndex > currentIndex ? 1 : -1;
+  }
+
+  function finishStepTransition(currentPanel, nextPanel, form, nextStep) {
+    currentPanel?.classList.remove(
+      "active",
+      "step-transition-panel",
+      "step-transition-outgoing"
+    );
+
+    nextPanel.classList.remove(
+      "step-transition-panel",
+      "step-transition-incoming"
+    );
+
+    nextPanel.classList.add("active");
+
+    if (form) {
+      form.style.removeProperty("height");
+      form.style.removeProperty("min-height");
+      form.style.removeProperty("overflow");
+    }
+
+    wizardCard.classList.remove(
+      "is-step-transitioning",
+      "is-registration-slide",
+      "is-soft-fade"
+    );
 
     wizardCard.scrollTop = 0;
+    state.step = nextStep;
+    updateStepProgress(nextStep);
     updateNormalGeometry();
+    stepTransitionLocked = false;
+  }
 
-    animateElement(nextPanel, [
-      { opacity: 0, transform: "translateY(7px) scale(.996)" },
-      { opacity: 1, transform: "translateY(0) scale(1)" }
-    ], { duration: 260 });
+  function setStep(step) {
+    const nextStep = String(step);
+    const currentPanel = document.querySelector(".step.active");
+    const nextPanel = document.querySelector(
+      `.step[data-step="${CSS.escape(nextStep)}"]`
+    );
 
-    animateElement(wizardCard, [
-      { transform: "scale(.997)" },
-      { transform: "scale(1)" }
-    ], { duration: 230 });
+    if (
+      !nextPanel ||
+      nextPanel === currentPanel ||
+      stepTransitionLocked
+    ) {
+      return;
+    }
+
+    const currentStep = String(currentPanel?.dataset.step || state.step || "");
+    const direction = registrationTransitionDirection(
+      currentStep,
+      nextStep
+    );
+
+    state.step = nextStep;
+    resetKeyboardViewForStepChange();
+    updateStepProgress(nextStep);
+    wizardCard.scrollTop = 0;
+
+    // Bei reduzierter Bewegung sofort umschalten.
+    if (!canAnimate() || !currentPanel || typeof currentPanel.animate !== "function") {
+      currentPanel?.classList.remove("active");
+      nextPanel.classList.add("active");
+      updateNormalGeometry();
+      return;
+    }
+
+    stepTransitionLocked = true;
+
+    const form = registrationForm;
+    const currentHeight = currentPanel.getBoundingClientRect().height;
+
+    // Beide Kacheln liegen während des Wechsels übereinander. So verlässt
+    // die alte Kachel den Bereich, während die neue gleichzeitig eintritt.
+    currentPanel.classList.add(
+      "step-transition-panel",
+      "step-transition-outgoing"
+    );
+
+    nextPanel.classList.add(
+      "active",
+      "step-transition-panel",
+      "step-transition-incoming"
+    );
+
+    const nextHeight = nextPanel.getBoundingClientRect().height;
+    const keyboardIsStillOpen =
+      viewport.keyboardOpen && keyboardViewportReduced();
+
+    if (!keyboardIsStillOpen && form && currentHeight > 0 && nextHeight > 0) {
+      form.style.height = `${currentHeight}px`;
+      form.style.minHeight = `${Math.min(currentHeight, nextHeight)}px`;
+      form.style.overflow = "hidden";
+
+      form.animate(
+        [
+          { height: `${currentHeight}px` },
+          { height: `${nextHeight}px` }
+        ],
+        {
+          duration: direction ? 460 : 380,
+          easing: "cubic-bezier(.22,.72,.18,1)",
+          fill: "forwards"
+        }
+      );
+    }
+
+    let outgoingAnimation;
+    let incomingAnimation;
+
+    if (direction) {
+      // Anmeldung: Rondell-/Karussellgefühl.
+      // Vorwärts: alt nach links, neu von rechts herein.
+      // Zurück: exakt umgekehrt.
+      const sign = direction > 0 ? 1 : -1;
+
+      wizardCard.classList.add(
+        "is-step-transitioning",
+        "is-registration-slide"
+      );
+
+      outgoingAnimation = currentPanel.animate(
+        [
+          {
+            opacity: 1,
+            transform: "translateX(0) scale(1)",
+            filter: "blur(0px)"
+          },
+          {
+            opacity: .55,
+            transform: `translateX(${-sign * 11}%) scale(.992)`,
+            offset: .72
+          },
+          {
+            opacity: 0,
+            transform: `translateX(${-sign * 18}%) scale(.985)`,
+            filter: "blur(.6px)"
+          }
+        ],
+        {
+          duration: 460,
+          easing: "cubic-bezier(.34,.02,.18,1)",
+          fill: "forwards"
+        }
+      );
+
+      incomingAnimation = nextPanel.animate(
+        [
+          {
+            opacity: 0,
+            transform: `translateX(${sign * 18}%) scale(.985)`,
+            filter: "blur(.6px)"
+          },
+          {
+            opacity: .68,
+            transform: `translateX(${sign * 7}%) scale(.995)`,
+            offset: .58
+          },
+          {
+            opacity: 1,
+            transform: "translateX(0) scale(1)",
+            filter: "blur(0px)"
+          }
+        ],
+        {
+          duration: 460,
+          easing: "cubic-bezier(.22,.72,.18,1)",
+          fill: "forwards"
+        }
+      );
+    } else {
+      // Startseite, Zahlungsstatus, bestehende Anmeldung usw.:
+      // ruhiges Crossfade ohne hektische Richtungsbewegung.
+      wizardCard.classList.add(
+        "is-step-transitioning",
+        "is-soft-fade"
+      );
+
+      outgoingAnimation = currentPanel.animate(
+        [
+          {
+            opacity: 1,
+            transform: "translateY(0) scale(1)"
+          },
+          {
+            opacity: 0,
+            transform: "translateY(-3px) scale(.994)"
+          }
+        ],
+        {
+          duration: 340,
+          easing: "cubic-bezier(.4,0,.2,1)",
+          fill: "forwards"
+        }
+      );
+
+      incomingAnimation = nextPanel.animate(
+        [
+          {
+            opacity: 0,
+            transform: "translateY(4px) scale(.994)"
+          },
+          {
+            opacity: 1,
+            transform: "translateY(0) scale(1)"
+          }
+        ],
+        {
+          duration: 390,
+          delay: 45,
+          easing: "cubic-bezier(.22,.72,.18,1)",
+          fill: "forwards"
+        }
+      );
+    }
+
+    // Nach Ende der längeren Animation räumen wir die temporären
+    // Überlagerungsregeln auf. Ein Timeout dient als Fallback.
+    let cleanedUp = false;
+
+    const cleanup = () => {
+      if (cleanedUp) return;
+      cleanedUp = true;
+
+      outgoingAnimation?.cancel();
+      incomingAnimation?.cancel();
+
+      finishStepTransition(
+        currentPanel,
+        nextPanel,
+        form,
+        nextStep
+      );
+    };
+
+    incomingAnimation.addEventListener("finish", cleanup, { once: true });
+
+    window.setTimeout(
+      cleanup,
+      direction ? 560 : 500
+    );
   }
 
   let personRowSerial = 0;

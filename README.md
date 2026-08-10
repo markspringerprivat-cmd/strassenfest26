@@ -350,3 +350,17 @@ zum Timeout geführt haben konnten.
 - Bedarfsliste zeigt beim Serverabruf einen zentrierten Ladekreis.
 - Serverabhängige Frontend-Buttons zeigen einen Ladekreis während der Wartezeit.
 - Kontaktformular zeigt ebenfalls einen sichtbaren Ladeindikator beim Senden.
+
+
+## Update v26
+- Allgemeine Kachelwechsel sind jetzt ruhige Crossfades:
+  alte Kachel blendet sanft aus, neue gleichzeitig ein.
+- Im eigentlichen Anmeldeprozess entsteht ein Rondell-/Karussellgefühl:
+  - Weiter: aktuelle Kachel gleitet nach links heraus,
+    nächste kommt gleichzeitig von rechts herein.
+  - Zurück: Bewegungsrichtung wird automatisch umgedreht.
+- Übergänge dauern ca. 0,4–0,46 Sekunden und verwenden weiche Easing-Kurven.
+- Unterschiedliche Kachelhöhen werden während des Wechsels weich angeglichen,
+  damit der Rahmen nicht abrupt springt.
+- Während der kurzen Animation sind Doppelklicks blockiert.
+- `prefers-reduced-motion` wird weiterhin respektiert.
