@@ -2449,3 +2449,54 @@ body.keyboard-open .step[data-step="1"] #peopleContinue {
     padding: 9px;
   }
 }
+
+
+/* ================================================================
+   v34 – Logische OCR-Plausibilitätsprüfung
+   ================================================================ */
+
+.receipt-field-insight {
+  display: block;
+  margin-top: 4px;
+  color: var(--muted);
+  font-size: .56rem;
+  line-height: 1.35;
+}
+
+.receipt-field-insight[data-confidence="high"] {
+  color: rgba(184, 245, 206, .92);
+}
+
+.receipt-field-insight[data-confidence="medium"] {
+  color: rgba(255, 222, 131, .92);
+}
+
+.receipt-field-insight[data-confidence="low"] {
+  color: rgba(255, 180, 180, .92);
+}
+
+.receipt-logic-summary {
+  padding: 8px 9px;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 10px;
+  font-size: .59rem;
+  line-height: 1.4;
+}
+
+.receipt-logic-summary.confidence-high {
+  border-color: rgba(142, 232, 179, .24);
+  background: rgba(98, 196, 139, .07);
+  color: rgba(206, 249, 223, .92);
+}
+
+.receipt-logic-summary.confidence-medium {
+  border-color: rgba(255, 211, 99, .24);
+  background: rgba(255, 194, 55, .055);
+  color: rgba(255, 232, 171, .92);
+}
+
+.receipt-logic-summary.confidence-low {
+  border-color: rgba(255, 143, 143, .23);
+  background: rgba(220, 83, 83, .055);
+  color: rgba(255, 199, 199, .92);
+}

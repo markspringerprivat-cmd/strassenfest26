@@ -545,12 +545,16 @@
                        maxlength="100"
                        autocomplete="organization"
                        placeholder="z. B. REWE" />
+                <small class="receipt-field-insight"
+                       id="receiptMerchantInsight"></small>
               </label>
 
               <label class="field">
                 <span>Kaufdatum</span>
                 <input id="receiptPurchaseDate"
                        type="date" />
+                <small class="receipt-field-insight"
+                       id="receiptDateInsight"></small>
               </label>
 
               <label class="field">
@@ -563,7 +567,13 @@
                          placeholder="0,00" />
                   <span>€</span>
                 </div>
+                <small class="receipt-field-insight"
+                       id="receiptAmountInsight"></small>
               </label>
+
+              <div class="receipt-logic-summary hidden"
+                   id="receiptLogicSummary"
+                   aria-live="polite"></div>
 
               <label class="receipt-confirm-check">
                 <input id="receiptUserConfirmed"
@@ -1191,8 +1201,8 @@
     </section>
   </div>
 
-  <script src="api-client.js?v=33" defer></script>
-  <script src="receipt-ocr.js?v=33" defer></script>
-  <script src="script.js?v=33" defer></script>
+  <script src="api-client.js?v=34" defer></script>
+  <script src="receipt-ocr.js?v=34" defer></script>
+  <script src="script.js?v=34" defer></script>
 </body>
 </html>

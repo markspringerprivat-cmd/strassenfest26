@@ -460,3 +460,23 @@ zum Timeout geführt haben konnten.
   Anmeldungen, Einnahmen, offene Beiträge, Einkaufsliste, geprüfte Kassenbons,
   Erstattungen, finalisierte Kosten und aktueller Kassenstand.
 - PDF-Export enthält zusätzlich die Kassenbon-Bilder als Anlagen.
+
+
+## Update v34 – intelligentere Kassenbon-Auswertung
+- Vor der OCR wird zusätzlich eine kontrastoptimierte Graustufenfassung erzeugt.
+  Das Original-/Uploadbild bleibt davon unberührt.
+- Händlernamen werden nicht mehr einfach aus der ersten Textzeile übernommen.
+  Offensichtliche Adressen, URLs, Copyright-Zeilen, USt-/Steuerdaten,
+  Artikelzeilen und sonstige typische Fehlkandidaten werden verworfen.
+- Bekannte Händlerketten werden gezielt erkannt.
+- Gesamtbeträge werden über ein Punktesystem bewertet:
+  SUMME/GESAMT/TOTAL/ZU ZAHLEN erhalten hohe Priorität.
+  BAR/GEGEBEN, RÜCKGELD und Steuerwerte werden als Gesamtbetrag abgewertet.
+- Zusätzlich werden unabhängige Plausibilitätsprüfungen verwendet:
+  gegebener Betrag minus Rückgeld sowie erkennbare Artikel-/Mengenrechnungen.
+- Beispiel: 10,00 EUR gegeben - 4,13 EUR Rückgeld = 5,87 EUR.
+  Wenn zusätzlich "SUMME 5,87" erkannt wird, erhält 5,87 EUR hohe Sicherheit.
+- Für Geschäft, Datum und Betrag zeigt die Oberfläche jetzt
+  Hohe/Mittlere Sicherheit oder Unsicher sowie eine kurze Begründung.
+- Unsichere Händlerangaben werden lieber leer gelassen als mit offensichtlich
+  falschem Text vorausgefüllt.

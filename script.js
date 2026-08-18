@@ -147,6 +147,10 @@
   const receiptMerchant = document.getElementById("receiptMerchant");
   const receiptPurchaseDate = document.getElementById("receiptPurchaseDate");
   const receiptAmount = document.getElementById("receiptAmount");
+  const receiptMerchantInsight = document.getElementById("receiptMerchantInsight");
+  const receiptDateInsight = document.getElementById("receiptDateInsight");
+  const receiptAmountInsight = document.getElementById("receiptAmountInsight");
+  const receiptLogicSummary = document.getElementById("receiptLogicSummary");
   const receiptUserConfirmed = document.getElementById("receiptUserConfirmed");
   const receiptOcrTextPreview = document.getElementById("receiptOcrTextPreview");
   const receiptUploadError = document.getElementById("receiptUploadError");
@@ -2024,6 +2028,11 @@
     receiptMerchant.value = "";
     receiptPurchaseDate.value = "";
     receiptAmount.value = "";
+    receiptMerchantInsight.textContent = "";
+    receiptDateInsight.textContent = "";
+    receiptAmountInsight.textContent = "";
+    receiptLogicSummary.textContent = "";
+    receiptLogicSummary.className = "receipt-logic-summary hidden";
     receiptUserConfirmed.checked = false;
     receiptOcrTextPreview.textContent = "";
     receiptUploadError.textContent = "";
@@ -2132,6 +2141,81 @@
     setStep("receipt-lookup");
   });
 
+  function receiptConfidenceText(level) {
+    if (level === "high") return "Hohe Sicherheit";
+    if (level === "medium") return "Mittlere Sicherheit";
+    return "Unsicher";
+  }
+
+  function applyReceiptInsight(element, level, text) {
+    element.textContent =
+      text
+        ? `${receiptConfidenceText(level)} · ${text}`
+        : "";
+
+    element.dataset.confidence = level || "low";
+  }
+
+  function renderReceiptLogic(fields) {
+    const confidence = fields?.confidence || {};
+    const insights = fields?.insights || {};
+
+    applyReceiptInsight(
+      receiptMerchantInsight,
+      confidence.merchant,
+      insights.merchant
+    );
+
+    applyReceiptInsight(
+      receiptDateInsight,
+      confidence.purchaseDate,
+      insights.purchaseDate
+    );
+
+    applyReceiptInsight(
+      receiptAmountInsight,
+      confidence.amount,
+      insights.amount
+    );
+
+    const levels = [
+      confidence.merchant,
+      confidence.purchaseDate,
+      confidence.amount
+    ];
+
+    const hasLow = levels.includes("low");
+    const amountHigh = confidence.amount === "high";
+
+    receiptLogicSummary.classList.remove("hidden");
+
+    if (amountHigh && !hasLow) {
+      receiptLogicSummary.className =
+        "receipt-logic-summary confidence-high";
+      receiptLogicSummary.textContent =
+        "Die wichtigsten Angaben konnten logisch gegengeprüft werden. Bitte trotzdem kurz mit dem Originalbon vergleichen.";
+      return;
+    }
+
+    if (amountHigh) {
+      receiptLogicSummary.className =
+        "receipt-logic-summary confidence-medium";
+      receiptLogicSummary.textContent =
+        "Der Gesamtbetrag ist sehr plausibel. Einzelne andere Angaben konnten jedoch nicht sicher erkannt werden und sollten manuell geprüft werden.";
+      return;
+    }
+
+    receiptLogicSummary.className =
+      hasLow
+        ? "receipt-logic-summary confidence-low"
+        : "receipt-logic-summary confidence-medium";
+
+    receiptLogicSummary.textContent =
+      hasLow
+        ? "Mindestens eine Angabe ist unsicher. Bitte die vorausgefüllten Felder sorgfältig mit dem Kassenbon vergleichen."
+        : "Die Angaben wirken plausibel, konnten aber nicht vollständig unabhängig gegengeprüft werden.";
+  }
+
   receiptFileInput.addEventListener("change", async () => {
     const file = receiptFileInput.files?.[0];
 
@@ -2160,7 +2244,7 @@
 
       try {
         const recognized = await window.ReceiptOcr.recognize(
-          prepared.dataUrl,
+          prepared.ocrDataUrl || prepared.dataUrl,
           (progress) => {
             setReceiptProgress(
               0.2 + progress.progress * 0.78,
@@ -2181,11 +2265,21 @@
           ? Number(fields.amount).toFixed(2).replace(".", ",")
           : "";
 
+        renderReceiptLogic(fields);
+
         setReceiptProgress(1, "Texterkennung abgeschlossen");
       } catch (ocrError) {
         state.receiptOcrText = "";
         receiptOcrTextPreview.textContent =
           "Die automatische Texterkennung war nicht verfügbar.";
+
+        receiptLogicSummary.className =
+          "receipt-logic-summary confidence-low";
+        receiptLogicSummary.textContent =
+          "Die automatische Auswertung war nicht verfügbar. Bitte alle Angaben manuell mit dem Kassenbon abgleichen.";
+        receiptMerchantInsight.textContent = "";
+        receiptDateInsight.textContent = "";
+        receiptAmountInsight.textContent = "";
 
         receiptUploadError.textContent =
           `${ocrError.message} Bitte Geschäft, Datum und Betrag manuell eintragen.`;
