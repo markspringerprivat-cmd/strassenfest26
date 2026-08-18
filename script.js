@@ -2220,7 +2220,7 @@
     return new Promise((resolve, reject) => {
       if (Date.now() >= deadline) {
         reject(new Error(
-          "Die Anmeldung wurde möglicherweise gespeichert, aber die Bestätigung konnte nicht geladen werden. Bitte nicht erneut absenden. Lade die Seite kurz neu und prüfe „Meine Anmeldung“."
+          "Die Anmeldung konnte innerhalb des Zeitlimits noch nicht bestätigt werden."
         ));
         return;
       }
@@ -2252,7 +2252,7 @@
 
         if (Date.now() >= deadline) {
           reject(new Error(
-            "Die Anmeldung wurde möglicherweise gespeichert, aber die Bestätigung konnte nicht geladen werden. Bitte nicht erneut absenden. Lade die Seite kurz neu und prüfe „Meine Anmeldung“."
+            "Die Anmeldung konnte innerhalb des Zeitlimits noch nicht bestätigt werden."
           ));
           return;
         }
@@ -2270,7 +2270,7 @@
         if (!message || message.pending) {
           window.setTimeout(() => {
             pollCreatedRegistration(registrationId, deadline).then(resolve, reject);
-          }, 450);
+          }, 900);
           return;
         }
 
@@ -2295,40 +2295,42 @@
       script.src = url.toString();
       script.async = true;
 
-      script.onerror = () => retry(650);
+      script.onerror = () => retry(900);
 
       script.onload = () => {
-        if (!settled) retry(420);
+        if (!settled) retry(700);
       };
 
-      // Verhindert ein endloses „Wird gespeichert …“, wenn genau ein
-      // Browser-/Netzwerkrequest hängen bleibt.
-      attemptTimer = window.setTimeout(() => retry(300), 4000);
+      // Der direkte Sheet-Fallback darf etwas länger laufen. Ein zu kurzer
+      // Watchdog erzeugt sonst mehrere parallele Apps-Script-Ausführungen.
+      attemptTimer = window.setTimeout(() => retry(650), 7000);
 
       document.head.appendChild(script);
     });
   }
 
   async function submitRegistration(payload) {
-    // Jede neue Anmeldung hat eine eigene submissionId. Sie ist NICHT an das
-    // Gerät gekoppelt. Dieselbe ID wird nur bei einem Retry derselben Anmeldung
-    // wiederverwendet, damit keine Duplikate entstehen.
+    // Dieselbe submissionId bleibt bei allen Wiederholungen erhalten.
+    // Dadurch kann der Server einen erneuten Versuch eindeutig als dieselbe
+    // Anmeldung erkennen und erzeugt keinen doppelten Datensatz.
+    const requestId = secureRequestId("create");
     const controller = typeof AbortController !== "undefined"
       ? new AbortController()
       : null;
 
     const postTimeout = controller
-      ? window.setTimeout(() => controller.abort(), 10000)
+      ? window.setTimeout(() => controller.abort(), 12000)
       : null;
 
     let postWarning = null;
 
-    // Speicherung und Datenbankbestätigung starten parallel.
-    // Weitergeschaltet wird trotzdem erst nach einer echten gespeicherten
-    // Anmeldung inklusive serverseitig erzeugtem Anmeldecode.
-    const confirmationPromise = pollCreatedRegistration(
-      payload.id,
-      Date.now() + 40000
+    // Primärer Bestätigungsweg:
+    // doPost speichert sein Ergebnis erst NACH erfolgreichem Schreiben in den
+    // Apps-Script-Cache. Wir pollen deshalb zunächst nur diesen sehr leichten
+    // Cache – nicht parallel ständig das komplette Google Sheet.
+    const resultPromise = pollApiResult(
+      requestId,
+      Date.now() + 26000
     );
 
     const postPromise = fetch(SUBMIT_ENDPOINT, {
@@ -2341,7 +2343,7 @@
         "Content-Type": "text/plain;charset=UTF-8"
       },
       body: JSON.stringify({
-        requestId: secureRequestId("create"),
+        requestId,
         action: "create",
         registration: payload
       })
@@ -2353,18 +2355,50 @@
     });
 
     try {
-      const registration = await confirmationPromise;
-      saveLocalRegistration(registration);
-      void postPromise;
-      return registration;
-    } catch (statusError) {
-      await postPromise;
+      const result = await resultPromise;
 
-      if (postWarning) {
-        console.warn("Zusätzlicher POST-Hinweis:", postWarning);
+      if (!result?.registration) {
+        throw new Error(
+          "Die gespeicherte Anmeldung konnte nicht vollständig bestätigt werden."
+        );
       }
 
-      throw statusError;
+      saveLocalRegistration(result.registration);
+      void postPromise;
+      return result.registration;
+
+    } catch (primaryError) {
+      // Fallback nur im Ausnahmefall:
+      // Sollte der kurze Ergebnis-Cache verloren gegangen sein, prüfen wir
+      // anhand der eindeutigen registrationId direkt, ob der Datensatz bereits
+      // im Sheet existiert. Erst jetzt wird das Sheet abgefragt.
+      console.warn(
+        "Primäre Anmeldebestätigung fehlgeschlagen, starte Fallback:",
+        primaryError
+      );
+
+      await postPromise;
+
+      try {
+        const registration = await pollCreatedRegistration(
+          payload.id,
+          Date.now() + 18000
+        );
+
+        saveLocalRegistration(registration);
+        return registration;
+
+      } catch (fallbackError) {
+        if (postWarning) {
+          console.warn("Zusätzlicher POST-Hinweis:", postWarning);
+        }
+
+        const error = new Error(
+          "Die Bestätigung dauert ungewöhnlich lange. Du kannst erneut auf „Absenden“ drücken. Die Anmeldung wird dabei nicht doppelt angelegt."
+        );
+        error.cause = fallbackError;
+        throw error;
+      }
     }
   }
 

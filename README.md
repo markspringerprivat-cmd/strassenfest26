@@ -391,3 +391,18 @@ zum Timeout geführt haben konnten.
   Anmeldecode → aktuellen Zahlungsweg laden → neuen Zahlungsweg auswählen → speichern.
 - Apps Script v14 ändert nur den Zahlungsweg, nicht den Bezahlstatus.
 - PayPal-Pool: https://www.paypal.com/pool/9rTjSFbk46?sr=wccr
+
+
+## Update v30 – Bestätigung nach dem Absenden repariert
+- Ursache der sporadischen Meldung auf Schritt 5 behoben.
+- Die Anmeldung wird jetzt primär über den bereits vorhandenen Request-Cache
+  bestätigt. Dieser Cache wird vom Server erst nach erfolgreicher Speicherung
+  des Datensatzes gesetzt.
+- Der teurere direkte Sheet-Abruf (`registrationstatus`) ist nur noch Fallback.
+- Dadurch werden nicht mehr während des Speicherns mehrere parallele
+  Sheet-Abfragen gestartet.
+- Fallback-Requests laufen mit längeren Abständen und erzeugen keinen
+  Request-Sturm mehr.
+- Falls selbst beide Bestätigungswege ausnahmsweise scheitern, darf derselbe
+  Absenden-Button erneut verwendet werden. Durch die unveränderte submissionId
+  wird dabei keine doppelte Anmeldung angelegt.
