@@ -265,6 +265,7 @@
   }
 
   function paymentMethodLabel(method) {
+    if (method === "paypal") return "PayPal";
     if (method === "briefkasten") return "Briefkasten";
     if (method === "abholung") return "Abholung";
     return "Keine Zahlung";

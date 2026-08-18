@@ -2006,3 +2006,83 @@ body.keyboard-open .step[data-step="1"] #peopleContinue {
     animation-duration: 1.5s;
   }
 }
+
+
+/* ================================================================
+   v28 – Digital / Bar im Zahlungsschritt
+   ================================================================ */
+
+.payment-mode-grid {
+  margin-bottom: 10px;
+}
+
+.payment-detail-panel {
+  display: grid;
+  gap: 9px;
+  margin-top: 10px;
+  padding: 11px 12px;
+  border: 1px solid rgba(193, 156, 255, .24);
+  border-radius: 15px;
+  background: rgba(48, 38, 112, .24);
+}
+
+.payment-detail-panel.hidden {
+  display: none !important;
+}
+
+.payment-detail-heading {
+  display: grid;
+  gap: 4px;
+}
+
+.payment-detail-heading strong {
+  color: rgba(255,255,255,.95);
+  font-size: .78rem;
+}
+
+.payment-detail-heading span,
+.payment-detail-note {
+  color: var(--muted);
+  font-size: .64rem;
+  line-height: 1.38;
+}
+
+.payment-subsection-label {
+  margin-bottom: 0;
+}
+
+.paypal-pool-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  min-height: 42px;
+  padding: 8px 12px;
+  border: 1px solid rgba(255, 229, 152, .72);
+  border-radius: 13px;
+  background: linear-gradient(135deg, #ffd35b 0%, #ffb934 52%, #ff9f32 100%);
+  color: #211b63;
+  box-shadow:
+    0 5px 14px rgba(255, 154, 35, .20),
+    inset 0 1px 6px rgba(255,255,255,.30);
+  font-size: .76rem;
+  font-weight: 840;
+  text-align: center;
+  text-decoration: none;
+}
+
+.paypal-pool-button:active {
+  transform: scale(.987);
+}
+
+@media (max-height: 760px) {
+  .payment-detail-panel {
+    gap: 7px;
+    margin-top: 8px;
+    padding: 9px 10px;
+  }
+
+  .payment-mode-grid {
+    margin-bottom: 7px;
+  }
+}

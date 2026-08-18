@@ -16,6 +16,7 @@
     contribution: "",
     contributionOrigin: "choice",
     presetContribution: false,
+    paymentMode: null,
     paymentMethod: null,
     totalCost: 0,
     savedRegistration: null,
@@ -50,6 +51,10 @@
   const contributionContinue = document.getElementById("contributionContinue");
   const paymentSummary = document.getElementById("paymentSummary");
   const paymentMethodArea = document.getElementById("paymentMethodArea");
+  const paymentModeButtons = [...document.querySelectorAll(".payment-mode-choice")];
+  const cashPaymentChoiceButtons = [...document.querySelectorAll(".cash-payment-choice")];
+  const paypalPaymentPanel = document.getElementById("paypalPaymentPanel");
+  const cashPaymentPanel = document.getElementById("cashPaymentPanel");
   const noPaymentNote = document.getElementById("noPaymentNote");
   const paymentError = document.getElementById("paymentError");
   const paymentBack = document.getElementById("paymentBack");
@@ -109,7 +114,6 @@
 
   // Häufig verwendete statische DOM-Mengen einmalig cachen.
   const progressDots = [...document.querySelectorAll(".progress-dot")];
-  const paymentChoiceButtons = [...document.querySelectorAll(".payment-choice")];
   const stepPanels = new Map(
     [...document.querySelectorAll(".step")].map((panel) => [
       String(panel.dataset.step),
@@ -381,6 +385,9 @@
   }
 
   function paymentMethodLabelFor(method) {
+    if (method === "paypal") {
+      return "Digitale Zahlung über den PayPal-Pool.";
+    }
     if (method === "briefkasten") {
       return "Barzahlung in den Briefkasten – Nassauische Straße 1, Springer, im Umschlag mit Namen.";
     }
@@ -1298,6 +1305,8 @@
     state.category = "";
     state.subtype = "";
     state.contribution = "";
+    state.paymentMode = null;
+    state.paymentMode = null;
     state.paymentMethod = null;
     preparePayment();
     setStep(4);
@@ -1510,6 +1519,19 @@
     };
   }
 
+  function resetPaymentSelectionUi() {
+    paymentModeButtons.forEach((button) => {
+      button.classList.remove("selected");
+    });
+
+    cashPaymentChoiceButtons.forEach((button) => {
+      button.classList.remove("selected");
+    });
+
+    paypalPaymentPanel.classList.add("hidden");
+    cashPaymentPanel.classList.add("hidden");
+  }
+
   function preparePayment() {
     const cost = calculateCost();
     state.totalCost = cost.total;
@@ -1522,7 +1544,9 @@
         </div>`).join("")}
       <div class="payment-total"><span>Gesamt</span><strong>${cost.total.toFixed(2).replace(".", ",")} €</strong></div>`;
 
-    paymentChoiceButtons.forEach((button) => button.classList.remove("selected"));
+    state.paymentMode = null;
+    state.paymentMethod = null;
+    resetPaymentSelectionUi();
     paymentError.textContent = "";
 
     if (cost.total === 0) {
@@ -1530,16 +1554,58 @@
       paymentMethodArea.classList.add("hidden");
       noPaymentNote.classList.remove("hidden");
     } else {
-      state.paymentMethod = null;
       paymentMethodArea.classList.remove("hidden");
       noPaymentNote.classList.add("hidden");
     }
   }
 
-  paymentChoiceButtons.forEach((button) => {
+  paymentModeButtons.forEach((button) => {
     button.addEventListener("click", () => {
+      const mode = button.dataset.paymentMode;
+
+      state.paymentMode = mode;
+      paymentError.textContent = "";
+
+      paymentModeButtons.forEach((item) => {
+        item.classList.toggle("selected", item === button);
+      });
+
+      if (mode === "digital") {
+        state.paymentMethod = "paypal";
+
+        cashPaymentChoiceButtons.forEach((item) => {
+          item.classList.remove("selected");
+        });
+
+        cashPaymentPanel.classList.add("hidden");
+        paypalPaymentPanel.classList.remove("hidden");
+        return;
+      }
+
+      state.paymentMethod = null;
+      paypalPaymentPanel.classList.add("hidden");
+      cashPaymentPanel.classList.remove("hidden");
+    });
+  });
+
+  cashPaymentChoiceButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      state.paymentMode = "cash";
       state.paymentMethod = button.dataset.payment;
-      paymentChoiceButtons.forEach((item) => item.classList.toggle("selected", item === button));
+
+      paymentModeButtons.forEach((item) => {
+        item.classList.toggle(
+          "selected",
+          item.dataset.paymentMode === "cash"
+        );
+      });
+
+      cashPaymentChoiceButtons.forEach((item) => {
+        item.classList.toggle("selected", item === button);
+      });
+
+      paypalPaymentPanel.classList.add("hidden");
+      cashPaymentPanel.classList.remove("hidden");
       paymentError.textContent = "";
     });
   });
@@ -1549,13 +1615,24 @@
   });
 
   paymentContinue.addEventListener("click", () => {
-    if (state.totalCost > 0 && !state.paymentMethod) {
-      const message = "Bitte einen Zahlungsweg auswählen.";
+    if (state.totalCost > 0 && !state.paymentMode) {
+      const message = "Bitte auswählen, ob du digital oder bar bezahlen möchtest.";
       paymentError.textContent = message;
-      const paymentChoices = document.querySelector(".payment-choice-grid");
-      reportValidationError(message, paymentChoices, { focus: false });
+      reportValidationError(message, paymentMethodArea, { focus: false });
       return;
     }
+
+    if (
+      state.totalCost > 0 &&
+      state.paymentMode === "cash" &&
+      !state.paymentMethod
+    ) {
+      const message = "Bitte auswählen, wie du bar bezahlen möchtest.";
+      paymentError.textContent = message;
+      reportValidationError(message, cashPaymentPanel, { focus: false });
+      return;
+    }
+
     renderSummary();
     setStep(5);
   });
@@ -2381,6 +2458,7 @@
     state.contribution = "";
     state.contributionOrigin = "choice";
     state.presetContribution = false;
+    state.paymentMode = null;
     state.paymentMethod = null;
     state.totalCost = 0;
     state.savedRegistration = null;

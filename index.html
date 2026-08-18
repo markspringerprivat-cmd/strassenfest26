@@ -482,18 +482,82 @@
             <div class="payment-summary" id="paymentSummary"></div>
 
             <div id="paymentMethodArea">
-              <div class="section-label">Zahlungsweg</div>
-              <div class="payment-choice-grid">
-                <button type="button" class="payment-choice" data-payment="briefkasten">
-                  <span class="payment-choice-title">Barzahlung in den Briefkasten</span>
-                  <span class="payment-choice-text">Bitte den Betrag in einem Umschlag mit Namen in den Briefkasten <strong>Nassauische Straße 1, Springer</strong> einwerfen.</span>
+              <div class="section-label">Wie möchtest du bezahlen?</div>
+
+              <div class="payment-choice-grid payment-mode-grid">
+                <button type="button"
+                        class="payment-choice payment-mode-choice"
+                        data-payment-mode="digital">
+                  <span class="payment-choice-title">Digital per PayPal</span>
+                  <span class="payment-choice-text">
+                    Den Kostenbeitrag bequem über den PayPal-Pool bezahlen.
+                  </span>
                 </button>
 
-                <button type="button" class="payment-choice" data-payment="abholung">
-                  <span class="payment-choice-title">Persönliche Abholung</span>
-                  <span class="payment-choice-text">Am <strong>30. August ab 18 Uhr</strong> kommt jemand persönlich vorbei, um das Geld abzuholen.</span>
+                <button type="button"
+                        class="payment-choice payment-mode-choice"
+                        data-payment-mode="cash">
+                  <span class="payment-choice-title">Bar bezahlen</span>
+                  <span class="payment-choice-text">
+                    Barzahlung per Briefkasten oder persönlicher Abholung.
+                  </span>
                 </button>
               </div>
+
+              <div class="payment-detail-panel hidden"
+                   id="paypalPaymentPanel">
+                <div class="payment-detail-heading">
+                  <strong>Digitale Zahlung über PayPal</strong>
+                  <span>
+                    Die Zahlung erfolgt über unseren PayPal-Pool. Bitte verwende
+                    nach Möglichkeit den Namen aus deiner Anmeldung, damit die
+                    Zahlung leichter zugeordnet werden kann.
+                  </span>
+                </div>
+
+                <a class="paypal-pool-button"
+                   href="https://www.paypal.com/pool/9rTjSFbk46?sr=wccr"
+                   target="_blank"
+                   rel="noopener noreferrer">
+                  Zum PayPal-Pool
+                </a>
+
+                <small class="payment-detail-note">
+                  Der Zahlungsstatus auf dieser Webseite wird aktualisiert,
+                  sobald die Zahlung im Admin-Bereich als bezahlt bestätigt wurde.
+                </small>
+              </div>
+
+              <div class="payment-detail-panel hidden"
+                   id="cashPaymentPanel">
+                <div class="section-label payment-subsection-label">
+                  Wie möchtest du bar bezahlen?
+                </div>
+
+                <div class="payment-choice-grid">
+                  <button type="button"
+                          class="payment-choice cash-payment-choice"
+                          data-payment="briefkasten">
+                    <span class="payment-choice-title">In den Briefkasten</span>
+                    <span class="payment-choice-text">
+                      Bitte den Betrag in einem Umschlag mit Namen in den
+                      Briefkasten <strong>Nassauische Straße 1, Springer</strong>
+                      einwerfen.
+                    </span>
+                  </button>
+
+                  <button type="button"
+                          class="payment-choice cash-payment-choice"
+                          data-payment="abholung">
+                    <span class="payment-choice-title">Persönliche Abholung</span>
+                    <span class="payment-choice-text">
+                      Am <strong>30. August ab 18 Uhr</strong> kommt jemand
+                      persönlich vorbei, um das Geld abzuholen.
+                    </span>
+                  </button>
+                </div>
+              </div>
+
               <p class="field-error" id="paymentError" role="alert"></p>
             </div>
 

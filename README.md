@@ -363,3 +363,18 @@ zum Timeout geführt haben konnten.
 - Feuerwerk pausiert bei inaktivem Browser-Tab und begrenzt intern Partikel.
 - Apps Script v12 verwendet kurzlebige, sichere Caches für Anmeldebestätigung
   und Bedarfsstatistik.
+
+
+## Update v28 – PayPal-Zahlung
+- Zahlungsschritt zuerst mit zwei Hauptoptionen:
+  - Digital per PayPal
+  - Bar bezahlen
+- Bei PayPal erscheint ein kurzer Hinweis und der direkte Pool-Link:
+  https://www.paypal.com/pool/9rTjSFbk46?sr=wccr
+- Bei Barzahlung erscheinen erst danach die zwei bisherigen Optionen:
+  - Briefkasten
+  - persönliche Abholung
+- Der gespeicherte Zahlungsweg `paypal` wird in Zusammenfassung, PDF,
+  bestehender Anmeldung und Admin korrekt angezeigt.
+- Der Zahlungsstatus wird weiterhin manuell über den Admin-Bereich bestätigt;
+  PayPal markiert eine Anmeldung nicht automatisch als bezahlt.
