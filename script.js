@@ -2103,6 +2103,391 @@
     return result.registration;
   }
 
+  let confirmationCountdownTimer = null;
+
+  function renderDoneRegistration(registration) {
+    accessCode.textContent = registration.accessCode || "–";
+
+    renderPostRegistrationPayment(registration, {
+      method: confirmationPaymentMethod,
+      amount: confirmationPaymentAmount,
+      paypal: confirmationPaypalArea,
+      changeButton: changePaymentAfterSubmitButton
+    });
+  }
+
+  function stopConfirmationCountdown() {
+    if (confirmationCountdownTimer) {
+      window.clearInterval(confirmationCountdownTimer);
+      confirmationCountdownTimer = null;
+    }
+  }
+
+  function startConfirmationCountdown() {
+    stopConfirmationCountdown();
+
+    let remaining = 10;
+    codeContinueButton.disabled = true;
+    codeContinueButton.textContent = `Weiter (${remaining})`;
+    codeCountdownHint.textContent =
+      `Bitte speichere deinen Anmeldecode. Weiter ist in ${remaining} Sekunden möglich.`;
+
+    confirmationCountdownTimer = window.setInterval(() => {
+      remaining -= 1;
+
+      if (remaining <= 0) {
+        stopConfirmationCountdown();
+        codeContinueButton.disabled = false;
+        codeContinueButton.textContent = "Weiter";
+        codeCountdownHint.textContent =
+          "Du kannst jetzt fortfahren.";
+        return;
+      }
+
+      codeContinueButton.textContent = `Weiter (${remaining})`;
+      codeCountdownHint.textContent =
+        `Bitte speichere deinen Anmeldecode. Weiter ist in ${remaining} Sekunden möglich.`;
+    }, 1000);
+  }
+
+  codeContinueButton.addEventListener("click", () => {
+    if (codeContinueButton.disabled) return;
+    stopConfirmationCountdown();
+    setStep("done");
+  });
+
+
+  changePaymentAfterSubmitButton.addEventListener("click", () => {
+    if (!state.savedRegistration) return;
+    openPaymentChange(state.savedRegistration, "code");
+  });
+
+  downloadPdfButton.addEventListener("click", async () => {
+    if (!state.savedRegistration || downloadPdfButton.disabled) return;
+
+    const originalText = downloadPdfButton.textContent;
+    downloadPdfButton.disabled = true;
+    downloadPdfButton.textContent = "PDF wird vorbereitet …";
+
+    try {
+      await downloadRegistrationPdf(state.savedRegistration);
+    } finally {
+      downloadPdfButton.disabled = false;
+      downloadPdfButton.textContent = originalText;
+    }
+  });
+
+  openSavedRegistrationButton.addEventListener("click", () => {
+    if (state.savedRegistration) {
+      renderRegistrationModal(state.savedRegistration);
+      modalBackdrop.hidden = false;
+      return;
+    }
+    openRegistrationLookup();
+  });
+
+  myRegistrationButton?.addEventListener("click", openRegistrationLookup);
+
+  function registrationPdfLines(registration) {
+    const created = registration.createdAt
+      ? new Date(registration.createdAt).toLocaleString("de-DE")
+      : new Date().toLocaleString("de-DE");
+
+    const lines = [
+      `ANMELDECODE: ${registration.accessCode || ""}`,
+      "",
+      "Straßenfest in Hilchenbach 2026",
+      "Anmeldebestätigung",
+      `Gespeichert am: ${created}`,
+      "",
+      "Angemeldete Personen:"
+    ];
+
+    (registration.people || []).forEach((person, index) => {
+      lines.push(
+        `${index + 1}. ${person.firstName} ${person.lastName}, ${person.age} Jahre - ${formatMoney(person.price)}`
+      );
+    });
+
+    lines.push("", "Mitbringsel:");
+
+    if (registration.bringing && registration.contribution) {
+      const type = registration.contribution.subtype
+        ? `${registration.contribution.category} - ${registration.contribution.subtype}`
+        : registration.contribution.category;
+      lines.push(type);
+      lines.push(registration.contribution.note || "");
+    } else {
+      lines.push("Es wird nichts mitgebracht.");
+    }
+
+    lines.push(
+      "",
+      "Zahlung:",
+      `Gesamtbetrag: ${formatMoney(registration.payment?.total)}`,
+      paymentMethodLabelFor(registration.payment?.method),
+      "",
+      "Hinweis:",
+      "Mit dem Anmeldecode und einem Nachnamen aus der Anmeldung",
+      "kann die Anmeldung später auf der Webseite wieder aufgerufen werden."
+    );
+
+    return lines;
+  }
+
+  function wrapPdfLines(lines, maxChars = 74) {
+    const output = [];
+
+    lines.forEach((line) => {
+      const text = String(line || "");
+      if (!text) {
+        output.push("");
+        return;
+      }
+
+      const words = text.split(/\s+/);
+      let current = "";
+
+      words.forEach((word) => {
+        const candidate = current ? `${current} ${word}` : word;
+
+        if (candidate.length <= maxChars) {
+          current = candidate;
+        } else {
+          if (current) output.push(current);
+          current = word;
+        }
+      });
+
+      if (current) output.push(current);
+    });
+
+    return output;
+  }
+
+  function pdfWinAnsiBytes(text) {
+    const cp1252 = new Map([
+      [0x20AC, 0x80], [0x201A, 0x82], [0x0192, 0x83], [0x201E, 0x84],
+      [0x2026, 0x85], [0x2020, 0x86], [0x2021, 0x87], [0x02C6, 0x88],
+      [0x2030, 0x89], [0x0160, 0x8A], [0x2039, 0x8B], [0x0152, 0x8C],
+      [0x017D, 0x8E], [0x2018, 0x91], [0x2019, 0x92], [0x201C, 0x93],
+      [0x201D, 0x94], [0x2022, 0x95], [0x2013, 0x96], [0x2014, 0x97],
+      [0x02DC, 0x98], [0x2122, 0x99], [0x0161, 0x9A], [0x203A, 0x9B],
+      [0x0153, 0x9C], [0x017E, 0x9E], [0x0178, 0x9F]
+    ]);
+
+    const bytes = [];
+
+    for (const char of String(text)) {
+      const code = char.codePointAt(0);
+
+      if (code <= 0xFF) {
+        bytes.push(code);
+      } else if (cp1252.has(code)) {
+        bytes.push(cp1252.get(code));
+      } else {
+        bytes.push(0x3F);
+      }
+    }
+
+    return new Uint8Array(bytes);
+  }
+
+  function concatBytes(parts) {
+    const total = parts.reduce((sum, part) => sum + part.length, 0);
+    const output = new Uint8Array(total);
+    let offset = 0;
+
+    parts.forEach((part) => {
+      output.set(part, offset);
+      offset += part.length;
+    });
+
+    return output;
+  }
+
+  function pdfEscape(text) {
+    return String(text)
+      .replaceAll("\\", "\\\\")
+      .replaceAll("(", "\\(")
+      .replaceAll(")", "\\)");
+  }
+
+  function createSimplePdf(lines) {
+    const wrapped = wrapPdfLines(lines);
+    const perPage = 41;
+    const pages = [];
+
+    for (let i = 0; i < wrapped.length; i += perPage) {
+      pages.push(wrapped.slice(i, i + perPage));
+    }
+
+    if (!pages.length) pages.push(["ANMELDECODE"]);
+
+    const objects = new Map();
+    const pageObjectIds = [];
+
+    objects.set(1, "<< /Type /Catalog /Pages 2 0 R >>");
+    objects.set(3, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica /Encoding /WinAnsiEncoding >>");
+    objects.set(4, "<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold /Encoding /WinAnsiEncoding >>");
+
+    pages.forEach((pageLines, index) => {
+      const pageId = 5 + index * 2;
+      const contentId = pageId + 1;
+      pageObjectIds.push(pageId);
+
+      objects.set(
+        pageId,
+        `<< /Type /Page /Parent 2 0 R /MediaBox [0 0 595 842] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents ${contentId} 0 R >>`
+      );
+
+      const commands = [
+        "BT",
+        "/F1 11 Tf",
+        "15 TL",
+        "46 792 Td"
+      ];
+
+      pageLines.forEach((line, lineIndex) => {
+        if (lineIndex > 0) commands.push("T*");
+
+        if (lineIndex === 0 && index === 0) {
+          commands.push("/F2 20 Tf");
+          commands.push(`(${pdfEscape(line)}) Tj`);
+          commands.push("/F1 11 Tf");
+        } else if (index === 0 && line === "Straßenfest in Hilchenbach 2026") {
+          commands.push("/F2 14 Tf");
+          commands.push(`(${pdfEscape(line)}) Tj`);
+          commands.push("/F1 11 Tf");
+        } else {
+          commands.push(`(${pdfEscape(line)}) Tj`);
+        }
+      });
+
+      commands.push("ET");
+      const stream = commands.join("\n");
+      const streamLength = pdfWinAnsiBytes(stream).length;
+
+      objects.set(
+        contentId,
+        `<< /Length ${streamLength} >>\nstream\n${stream}\nendstream`
+      );
+    });
+
+    objects.set(
+      2,
+      `<< /Type /Pages /Kids [${pageObjectIds.map((id) => `${id} 0 R`).join(" ")}] /Count ${pageObjectIds.length} >>`
+    );
+
+    const maxObjectId = Math.max(...objects.keys());
+    const chunks = [pdfWinAnsiBytes("%PDF-1.4\n%\xE2\xE3\xCF\xD3\n")];
+    const offsets = new Array(maxObjectId + 1).fill(0);
+    let cursor = chunks[0].length;
+
+    for (let id = 1; id <= maxObjectId; id += 1) {
+      const body = objects.get(id) || "<<>>";
+      const chunk = pdfWinAnsiBytes(`${id} 0 obj\n${body}\nendobj\n`);
+      offsets[id] = cursor;
+      chunks.push(chunk);
+      cursor += chunk.length;
+    }
+
+    const xrefOffset = cursor;
+    let xref = `xref\n0 ${maxObjectId + 1}\n`;
+    xref += "0000000000 65535 f \n";
+
+    for (let id = 1; id <= maxObjectId; id += 1) {
+      xref += `${String(offsets[id]).padStart(10, "0")} 00000 n \n`;
+    }
+
+    xref += `trailer\n<< /Size ${maxObjectId + 1} /Root 1 0 R >>\nstartxref\n${xrefOffset}\n%%EOF\n`;
+    chunks.push(pdfWinAnsiBytes(xref));
+
+    return concatBytes(chunks);
+  }
+
+  function isMobileBrowser() {
+    if (navigator.userAgentData?.mobile) return true;
+
+    return /Android|iPhone|iPad|iPod|Mobile/i.test(navigator.userAgent) ||
+      (navigator.platform === "MacIntel" && navigator.maxTouchPoints > 1);
+  }
+
+  function openPdfFallback(blob, fileName) {
+    const url = URL.createObjectURL(blob);
+
+    if (isMobileBrowser()) {
+      // Auf Smartphones ist ein geöffneter PDF-Tab zuverlässiger als ein
+      // erzwungener Blob-Download. Von dort kann die PDF über den Browser-
+      // bzw. Teilen-Dialog in „Dateien“ gespeichert werden.
+      const link = document.createElement("a");
+      link.href = url;
+      link.target = "_blank";
+      link.rel = "noopener noreferrer";
+      link.style.display = "none";
+      document.body.appendChild(link);
+      link.click();
+      link.remove();
+
+      // Der neue Tab braucht die Blob-URL noch eine Weile.
+      window.setTimeout(() => URL.revokeObjectURL(url), 60000);
+      return;
+    }
+
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = fileName;
+    link.style.display = "none";
+    document.body.appendChild(link);
+    link.click();
+    link.remove();
+
+    window.setTimeout(() => URL.revokeObjectURL(url), 10000);
+  }
+
+  async function downloadRegistrationPdf(registration) {
+    const bytes = createSimplePdf(registrationPdfLines(registration));
+    const blob = new Blob([bytes], { type: "application/pdf" });
+
+    const safeCode = String(registration.accessCode || "anmeldung")
+      .replace(/[^A-Z0-9-]+/gi, "-");
+
+    const fileName = `Strassenfest-Hilchenbach-${safeCode}.pdf`;
+
+    // Auf iPhone/iPad/Android bevorzugen wir den nativen Teilen-/Speichern-
+    // Dialog. Damit kann z. B. direkt „In Dateien sichern“ gewählt werden.
+    if (
+      isMobileBrowser() &&
+      typeof File !== "undefined" &&
+      typeof navigator.share === "function" &&
+      typeof navigator.canShare === "function"
+    ) {
+      const file = new File([blob], fileName, {
+        type: "application/pdf",
+        lastModified: Date.now()
+      });
+
+      try {
+        if (navigator.canShare({ files: [file] })) {
+          await navigator.share({
+            title: "Anmeldung Straßenfest in Hilchenbach",
+            files: [file]
+          });
+          return;
+        }
+      } catch (error) {
+        // Abbrechen durch den Nutzer ist kein Fehler und soll keinen zweiten
+        // Downloadversuch auslösen.
+        if (error?.name === "AbortError") return;
+
+        console.warn("Nativer PDF-Dialog nicht verfügbar:", error);
+      }
+    }
+
+    openPdfFallback(blob, fileName);
+  }
+
+
   form.addEventListener("submit", async (event) => {
     event.preventDefault();
     if (state.step !== "5" || state.submitting) return;

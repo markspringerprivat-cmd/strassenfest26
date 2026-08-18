@@ -422,3 +422,19 @@ zum Timeout geführt haben konnten.
   Kompatibilität für eventuell noch gecachte ältere Website-Versionen erhalten.
 - Ein Fehler im Legacy-Cache kann eine erfolgreiche Datenbankaktion nicht mehr
   in einen scheinbaren Fehler verwandeln.
+
+
+## Update v32 – Frontend-Abbruch nach erfolgreicher Anmeldung behoben
+- Der neue v31-Datenbanktransport bleibt unverändert aktiv.
+- Fehlerursache des Screenshots behoben: Beim Entfernen des alten
+  `registrationstatus`-Pollings war versehentlich ein zu großer Codebereich
+  entfernt worden.
+- Wiederhergestellt wurden:
+  - `renderDoneRegistration`
+  - Bestätigungs-Countdown
+  - PDF-Erzeugung und PDF-Download
+  - „Weiter“ auf der Code-Seite
+  - „Zahlungsweg ändern“ nach der Anmeldung
+  - „Meine Anmeldung“ / gespeicherte Anmeldung
+- Der alte Cache-/JSONP-Transport wurde NICHT wiederhergestellt.
+- Cache-Busting auf `?v=32`, damit Browser sicher die korrigierte JS-Datei laden.
