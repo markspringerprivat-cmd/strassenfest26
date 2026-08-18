@@ -125,131 +125,16 @@
     };
   }
 
-  function pollResult(requestId, deadline) {
-    return new Promise((resolve, reject) => {
-      if (Date.now() >= deadline) {
-        reject(new Error(
-          "Die Anfrage wurde möglicherweise gespeichert, aber die Bestätigung konnte nicht geladen werden. Bitte nicht mehrfach absenden."
-        ));
-        return;
-      }
-
-      const callbackName =
-        `__contact_${requestId.replace(/[^a-z0-9_]/gi, "_")}_${Date.now()}`;
-      const script = document.createElement("script");
-      let settled = false;
-      let attemptTimer = null;
-
-      const cleanup = () => {
-        if (attemptTimer) {
-          window.clearTimeout(attemptTimer);
-          attemptTimer = null;
-        }
-
-        script.remove();
-
-        try {
-          delete window[callbackName];
-        } catch {
-          window[callbackName] = undefined;
-        }
-      };
-
-      const retry = (delay = 420) => {
-        if (settled) return;
-        settled = true;
-        cleanup();
-
-        if (Date.now() >= deadline) {
-          reject(new Error(
-            "Die Anfrage wurde möglicherweise gespeichert, aber die Bestätigung konnte nicht geladen werden. Bitte nicht mehrfach absenden."
-          ));
-          return;
-        }
-
-        window.setTimeout(() => {
-          pollResult(requestId, deadline).then(resolve, reject);
-        }, delay);
-      };
-
-      window[callbackName] = (message) => {
-        if (settled) return;
-        settled = true;
-        cleanup();
-
-        if (!message || message.pending) {
-          window.setTimeout(() => {
-            pollResult(requestId, deadline).then(resolve, reject);
-          }, 350);
-          return;
-        }
-
-        const result = message.result;
-
-        if (result?.ok) {
-          resolve(result);
-        } else {
-          const error = new Error(
-            result?.message || "Die Anfrage konnte nicht gespeichert werden."
-          );
-          error.code = result?.error || "";
-          reject(error);
-        }
-      };
-
-      const url = new URL(API_ENDPOINT);
-      url.searchParams.set("action", "poll");
-      url.searchParams.set("requestId", requestId);
-      url.searchParams.set("prefix", callbackName);
-      url.searchParams.set("_", String(Date.now()));
-
-      script.src = url.toString();
-      script.async = true;
-      script.onerror = () => retry(520);
-
-      script.onload = () => {
-        if (!settled) retry(380);
-      };
-
-      attemptTimer = window.setTimeout(() => retry(300), 4000);
-
-      document.head.appendChild(script);
-    });
-  }
-
-  async function apiRequest(action, data) {
-    const requestId = secureId("contact-request");
-    const deadline = Date.now() + 22000;
-
-    const confirmationPromise = pollResult(requestId, deadline);
-
-    const postFailurePromise = fetch(API_ENDPOINT, {
-      method: "POST",
-      mode: "no-cors",
-      credentials: "omit",
-      redirect: "follow",
-      headers: {
-        "Content-Type": "text/plain;charset=UTF-8"
-      },
-      body: JSON.stringify({
-        requestId,
-        action,
-        ...data
-      })
-    }).then(
-      () => new Promise(() => {}),
-      (error) => {
-        console.error("Kontakt-POST fehlgeschlagen:", error);
-        throw new Error(
-          "Die Datenbank konnte nicht erreicht werden. Bitte prüfe deine Internetverbindung."
-        );
+  function apiRequest(action, data) {
+    return window.StrassenfestApi.request(
+      API_ENDPOINT,
+      action,
+      data,
+      {
+        prefix: "contact",
+        timeoutMs: 30000
       }
     );
-
-    return Promise.race([
-      confirmationPromise,
-      postFailurePromise
-    ]);
   }
 
   form.addEventListener("input", (event) => {

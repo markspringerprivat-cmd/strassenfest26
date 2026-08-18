@@ -99,145 +99,16 @@
   const cancelExpenseModal = document.getElementById("cancelExpenseModal");
   const saveExpenseModal = document.getElementById("saveExpenseModal");
 
-  function secureRequestId(prefix = "sf") {
-    const bytes = new Uint8Array(18);
-    crypto.getRandomValues(bytes);
-    const random = Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("");
-    return `${prefix}-${Date.now()}-${random}`;
-  }
-
-  function pollApiResult(requestId, deadline) {
-    return new Promise((resolve, reject) => {
-      if (Date.now() >= deadline) {
-        reject(new Error(
-          "Die Verbindung zur Datenbank hat zu lange gebraucht. Bitte versuche es erneut."
-        ));
-        return;
-      }
-
-      const callbackName =
-        `__sfApi_${requestId.replace(/[^a-z0-9_]/gi, "_")}_${Date.now()}`;
-
-      const script = document.createElement("script");
-      let settled = false;
-      let attemptTimer = null;
-
-      const cleanup = () => {
-        if (attemptTimer) {
-          window.clearTimeout(attemptTimer);
-          attemptTimer = null;
-        }
-
-        script.remove();
-
-        try {
-          delete window[callbackName];
-        } catch {
-          window[callbackName] = undefined;
-        }
-      };
-
-      const retry = (delay) => {
-        if (settled) return;
-        settled = true;
-        cleanup();
-
-        if (Date.now() >= deadline) {
-          reject(new Error(
-            "Die Datenbank konnte nicht erreicht werden. Bitte versuche es erneut."
-          ));
-          return;
-        }
-
-        window.setTimeout(() => {
-          pollApiResult(requestId, deadline).then(resolve, reject);
-        }, delay);
-      };
-
-      window[callbackName] = (message) => {
-        if (settled) return;
-        settled = true;
-        cleanup();
-
-        if (!message || message.pending) {
-          window.setTimeout(() => {
-            pollApiResult(requestId, deadline).then(resolve, reject);
-          }, 280);
-          return;
-        }
-
-        const result = message.result;
-
-        if (result && result.ok) {
-          resolve(result);
-          return;
-        }
-
-        const error = new Error(
-          result?.message || "Die Anfrage an die Datenbank ist fehlgeschlagen."
-        );
-        error.code = result?.error || "";
-        reject(error);
-      };
-
-      const url = new URL(API_ENDPOINT);
-      url.searchParams.set("action", "poll");
-      url.searchParams.set("requestId", requestId);
-      url.searchParams.set("prefix", callbackName);
-      url.searchParams.set("_", String(Date.now()));
-
-      script.src = url.toString();
-      script.async = true;
-      script.onerror = () => retry(450);
-
-      script.onload = () => {
-        if (!settled) retry(300);
-      };
-
-      attemptTimer = window.setTimeout(() => retry(250), 3500);
-      document.head.appendChild(script);
-    });
-  }
-
-  async function apiRequest(action, data = {}) {
-    if (!API_ENDPOINT) {
-      throw new Error("Die Datenbank ist noch nicht verbunden.");
-    }
-
-    const requestId = secureRequestId("admin");
-    const deadline = Date.now() + 22000;
-
-    const payload = {
-      requestId,
+  function apiRequest(action, data = {}, options = {}) {
+    return window.StrassenfestApi.request(
+      API_ENDPOINT,
       action,
-      ...data
-    };
-
-    const confirmationPromise = pollApiResult(requestId, deadline);
-
-    const postFailurePromise = fetch(API_ENDPOINT, {
-      method: "POST",
-      mode: "no-cors",
-      credentials: "omit",
-      redirect: "follow",
-      headers: {
-        "Content-Type": "text/plain;charset=UTF-8"
-      },
-      body: JSON.stringify(payload)
-    }).then(
-      () => new Promise(() => {}),
-      (error) => {
-        console.error("POST an Apps Script fehlgeschlagen:", error);
-        throw new Error(
-          "Die Datenbank konnte nicht erreicht werden. Bitte prüfe deine Internetverbindung."
-        );
+      data,
+      {
+        prefix: "admin",
+        timeoutMs: options.timeoutMs || 30000
       }
     );
-
-    return Promise.race([
-      confirmationPromise,
-      postFailurePromise
-    ]);
   }
 
   function formatMoney(value) {

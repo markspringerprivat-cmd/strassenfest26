@@ -406,3 +406,19 @@ zum Timeout geführt haben konnten.
 - Falls selbst beide Bestätigungswege ausnahmsweise scheitern, darf derselbe
   Absenden-Button erneut verwendet werden. Durch die unveränderte submissionId
   wird dabei keine doppelte Anmeldung angelegt.
+
+
+## Update v31 – Datenbankanbindung neu aufgebaut
+- Die fehleranfällige Kombination aus `fetch(no-cors)`, `CacheService` und
+  anschließendem JSONP-Polling wird von der aktuellen Website nicht mehr verwendet.
+- Alle Seiten verwenden jetzt einen gemeinsamen `api-client.js`.
+- Requests werden per normalem HTML-POST in ein unsichtbares iframe gesendet.
+- Apps Script antwortet in diesem iframe direkt per `window.parent.postMessage`.
+- Die eigentliche Serverantwort wird dadurch ohne CORS-Lesen und ohne
+  zwischengeschalteten Ergebnis-Cache an die Website zurückgegeben.
+- Anmeldung, Zahlungsstatus, bestehende Anmeldung, Zahlungsweg ändern,
+  Kontaktformular und sämtliche Admin-Funktionen benutzen denselben Transport.
+- Der alte Polling-Endpunkt bleibt serverseitig vorübergehend nur als
+  Kompatibilität für eventuell noch gecachte ältere Website-Versionen erhalten.
+- Ein Fehler im Legacy-Cache kann eine erfolgreiche Datenbankaktion nicht mehr
+  in einen scheinbaren Fehler verwandeln.
