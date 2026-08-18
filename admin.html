@@ -44,6 +44,12 @@
         <button type="button" class="tab-button" data-tab="tickets">
           Tickets <span class="tab-count" id="ticketTabCount">0</span>
         </button>
+        <button type="button" class="tab-button" data-tab="receipts">
+          Kassenbons <span class="tab-count" id="receiptTabCount">0</span>
+        </button>
+        <button type="button" class="tab-button" data-tab="report">
+          Abschlussbericht
+        </button>
       </nav>
 
       <section class="tab-panel active" data-panel="overview">
@@ -278,6 +284,133 @@
           <div class="ticket-list" id="ticketList" aria-live="polite"></div>
         </section>
       </section>
+
+      <section class="tab-panel" data-panel="receipts">
+        <div class="metric-grid receipt-admin-metrics">
+          <article class="metric-card">
+            <span>Kassenbons</span>
+            <strong id="metricReceipts">0</strong>
+          </article>
+          <article class="metric-card">
+            <span>Ungeprüft</span>
+            <strong id="metricReceiptsOpen">0</strong>
+          </article>
+          <article class="metric-card metric-positive">
+            <span>Geprüfte Summe</span>
+            <strong id="metricReceiptsReviewed">0,00 €</strong>
+          </article>
+          <article class="metric-card">
+            <span>Noch zu erstatten</span>
+            <strong id="metricReceiptsReimbursementOpen">0,00 €</strong>
+          </article>
+        </div>
+
+        <section class="admin-card">
+          <div class="card-heading">
+            <div>
+              <p class="eyebrow">Nachgereichte Belege</p>
+              <h2>Kassenbons</h2>
+            </div>
+            <div class="save-indicator" id="receiptSaveStatus" aria-live="polite">Aktuell</div>
+          </div>
+
+          <div class="toolbar ticket-toolbar">
+            <label>
+              <span>Status</span>
+              <select id="receiptFilter">
+                <option value="all">Alle</option>
+                <option value="open">Ungeprüft</option>
+                <option value="reviewed">Geprüft</option>
+                <option value="reimbursed">Erstattet</option>
+                <option value="unreimbursed">Noch nicht erstattet</option>
+              </select>
+            </label>
+
+            <label>
+              <span>Sortieren</span>
+              <select id="receiptSort">
+                <option value="newest">Neueste zuerst</option>
+                <option value="oldest">Älteste zuerst</option>
+                <option value="amount-desc">Betrag absteigend</option>
+                <option value="name">Name A–Z</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="result-line">
+            <span id="receiptResultCount">0 Kassenbons</span>
+            <button id="refreshReceipts" class="text-button" type="button">Neu laden</button>
+          </div>
+
+          <div class="receipt-admin-list" id="receiptList" aria-live="polite"></div>
+        </section>
+      </section>
+
+      <section class="tab-panel" data-panel="report">
+        <section class="admin-card report-admin-card">
+          <div class="card-heading">
+            <div>
+              <p class="eyebrow">Nach dem Straßenfest</p>
+              <h2>Abschlussbericht</h2>
+            </div>
+            <div class="save-indicator" id="reportStatus" aria-live="polite">Aktuell</div>
+          </div>
+
+          <p class="card-intro">
+            Der Abschlussbericht fasst Anmeldungen, Einnahmen, die Einkaufsliste
+            sowie nachgereichte und geprüfte Kassenbons zusammen.
+          </p>
+
+          <div class="report-summary-grid">
+            <article class="report-summary-card">
+              <span>Anmeldungen</span>
+              <strong id="reportRegistrations">0</strong>
+            </article>
+            <article class="report-summary-card">
+              <span>Personen</span>
+              <strong id="reportPeople">0</strong>
+            </article>
+            <article class="report-summary-card">
+              <span>Eingenommen</span>
+              <strong id="reportPaid">0,00 €</strong>
+            </article>
+            <article class="report-summary-card">
+              <span>Noch offen</span>
+              <strong id="reportOpen">0,00 €</strong>
+            </article>
+            <article class="report-summary-card">
+              <span>Einkauf vor Fest</span>
+              <strong id="reportExpenses">0,00 €</strong>
+            </article>
+            <article class="report-summary-card">
+              <span>Geprüfte Kassenbons</span>
+              <strong id="reportReviewedReceipts">0,00 €</strong>
+            </article>
+            <article class="report-summary-card">
+              <span>Noch zu erstatten</span>
+              <strong id="reportReimbursementOpen">0,00 €</strong>
+            </article>
+            <article class="report-summary-card report-summary-highlight">
+              <span>Finalisierte Gesamtkosten</span>
+              <strong id="reportFinalCosts">0,00 €</strong>
+            </article>
+            <article class="report-summary-card report-summary-highlight">
+              <span>Aktueller Kassenstand</span>
+              <strong id="reportCashBalance">0,00 €</strong>
+            </article>
+          </div>
+
+          <div class="report-breakdown" id="reportBreakdown"></div>
+
+          <button class="primary-button report-pdf-button"
+                  id="generateReportPdf"
+                  type="button">
+            Abschlussbericht als PDF herunterladen
+          </button>
+
+          <p class="status-line" id="reportPdfProgress" aria-live="polite"></p>
+        </section>
+      </section>
     </section>
   </main>
 
@@ -343,6 +476,94 @@
   </div>
 
   <div class="admin-modal hidden"
+       id="receiptModal"
+       role="dialog"
+       aria-modal="true"
+       aria-labelledby="receiptModalTitle">
+    <div class="admin-modal-backdrop" data-close-receipt-modal></div>
+    <section class="admin-modal-card receipt-modal-card">
+      <p class="eyebrow">Kassenbon</p>
+      <h2 id="receiptModalTitle">Kassenbon prüfen</h2>
+
+      <div class="receipt-modal-meta">
+        <div>
+          <span>Anmeldecode</span>
+          <strong id="receiptModalCode">–</strong>
+        </div>
+        <div>
+          <span>Hauptanmeldung</span>
+          <strong id="receiptModalName">–</strong>
+        </div>
+      </div>
+
+      <div class="receipt-image-shell">
+        <div class="receipt-image-loading" id="receiptImageLoading">
+          <span class="server-spinner" aria-hidden="true"></span>
+          <span>Kassenbon wird geladen …</span>
+        </div>
+        <img id="receiptModalImage"
+             class="hidden"
+             alt="Hochgeladener Kassenbon" />
+      </div>
+
+      <label class="admin-field">
+        <span>Geschäft</span>
+        <input id="receiptModalMerchant"
+               type="text"
+               maxlength="100" />
+      </label>
+
+      <label class="admin-field">
+        <span>Kaufdatum</span>
+        <input id="receiptModalDate"
+               type="date" />
+      </label>
+
+      <label class="admin-field">
+        <span>Gesamtbetrag in Euro</span>
+        <input id="receiptModalAmount"
+               type="text"
+               inputmode="decimal" />
+      </label>
+
+      <label class="receipt-admin-check">
+        <input id="receiptModalReviewed" type="checkbox" />
+        <span>Von mir geprüft</span>
+      </label>
+
+      <label class="receipt-admin-check">
+        <input id="receiptModalReimbursed" type="checkbox" />
+        <span>Betrag wurde erstattet</span>
+      </label>
+
+      <details class="receipt-ocr-details admin-receipt-ocr">
+        <summary>OCR-Text anzeigen</summary>
+        <pre id="receiptModalOcrText"></pre>
+      </details>
+
+      <p class="status-line error" id="receiptModalError" role="alert"></p>
+
+      <div class="admin-modal-actions">
+        <button class="danger-button"
+                id="deleteReceiptButton"
+                type="button">
+          Löschen
+        </button>
+        <button class="ghost-button"
+                id="cancelReceiptModal"
+                type="button">
+          Abbrechen
+        </button>
+        <button class="primary-button modal-primary-button"
+                id="saveReceiptButton"
+                type="button">
+          Speichern
+        </button>
+      </div>
+    </section>
+  </div>
+
+  <div class="admin-modal hidden"
        id="primaryDeleteModal"
        role="dialog"
        aria-modal="true"
@@ -370,7 +591,8 @@
   <div id="apiTransportHost" class="api-transport-host" aria-hidden="true"></div>
   <div class="toast hidden" id="adminToast" role="status" aria-live="polite"></div>
 
-  <script src="api-client.js?v=32" defer></script>
-  <script src="admin.js?v=32" defer></script>
+  <script src="api-client.js?v=33" defer></script>
+  <script src="admin-report.js?v=33" defer></script>
+  <script src="admin.js?v=33" defer></script>
 </body>
 </html>

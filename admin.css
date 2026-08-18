@@ -1699,3 +1699,246 @@ textarea,
     padding: 16px;
   }
 }
+
+
+/* ================================================================
+   v33 – Kassenbons und Abschlussbericht
+   ================================================================ */
+
+.tab-bar {
+  flex-wrap: wrap;
+}
+
+.receipt-admin-list {
+  display: grid;
+  gap: 7px;
+}
+
+.receipt-admin-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 9px;
+  align-items: center;
+  padding: 9px 10px;
+  border: 1px solid rgba(255,255,255,.075);
+  border-radius: 12px;
+  background: rgba(255,255,255,.025);
+}
+
+.receipt-admin-main {
+  display: grid;
+  gap: 3px;
+  min-width: 0;
+}
+
+.receipt-admin-main strong {
+  overflow: hidden;
+  color: rgba(255,255,255,.94);
+  font-size: .71rem;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.receipt-admin-main small {
+  color: var(--muted);
+  font-size: .59rem;
+  line-height: 1.3;
+}
+
+.receipt-admin-side {
+  display: grid;
+  gap: 4px;
+  justify-items: end;
+}
+
+.receipt-admin-side strong {
+  color: var(--gold-light);
+  font-size: .74rem;
+}
+
+.receipt-status-pill {
+  display: inline-flex;
+  align-items: center;
+  min-height: 20px;
+  padding: 2px 7px;
+  border: 1px solid rgba(255,255,255,.10);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: .53rem;
+  font-weight: 780;
+}
+
+.receipt-status-pill.reviewed {
+  border-color: rgba(145, 231, 181, .28);
+  color: #baf2cf;
+}
+
+.receipt-status-pill.reimbursed {
+  border-color: rgba(255, 214, 103, .30);
+  color: var(--gold-light);
+}
+
+.receipt-open-button {
+  min-height: 31px;
+  padding: 5px 9px;
+  border: 1px solid rgba(255,255,255,.11);
+  border-radius: 9px;
+  background: rgba(255,255,255,.035);
+  color: #fff;
+  font-size: .58rem;
+  font-weight: 780;
+}
+
+.receipt-modal-card {
+  max-height: min(91dvh, 760px);
+  overflow-y: auto;
+}
+
+.receipt-modal-meta {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 7px;
+  margin: 10px 0;
+}
+
+.receipt-modal-meta > div {
+  display: grid;
+  gap: 2px;
+  padding: 8px 9px;
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 10px;
+  background: rgba(255,255,255,.025);
+}
+
+.receipt-modal-meta span {
+  color: var(--muted);
+  font-size: .54rem;
+}
+
+.receipt-modal-meta strong {
+  color: rgba(255,255,255,.93);
+  font-size: .64rem;
+}
+
+.receipt-image-shell {
+  display: grid;
+  place-items: center;
+  min-height: 150px;
+  max-height: 340px;
+  margin-bottom: 10px;
+  overflow: auto;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 12px;
+  background: rgba(0,0,0,.18);
+}
+
+.receipt-image-shell img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.receipt-image-loading {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  color: var(--muted);
+  font-size: .62rem;
+}
+
+.receipt-admin-check {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 8px;
+  align-items: center;
+  min-height: 34px;
+  color: rgba(255,255,255,.82);
+  font-size: .64rem;
+}
+
+.receipt-admin-check input {
+  width: 17px;
+  height: 17px;
+  accent-color: #ffc950;
+}
+
+.admin-receipt-ocr pre {
+  max-height: 150px;
+}
+
+.report-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 7px;
+  margin: 12px 0;
+}
+
+.report-summary-card {
+  display: grid;
+  gap: 4px;
+  min-height: 66px;
+  padding: 9px;
+  border: 1px solid rgba(255,255,255,.075);
+  border-radius: 11px;
+  background: rgba(255,255,255,.025);
+}
+
+.report-summary-card span {
+  color: var(--muted);
+  font-size: .55rem;
+  line-height: 1.25;
+}
+
+.report-summary-card strong {
+  align-self: end;
+  color: rgba(255,255,255,.93);
+  font-size: .78rem;
+}
+
+.report-summary-highlight {
+  border-color: rgba(255, 207, 86, .20);
+  background: rgba(255, 196, 55, .045);
+}
+
+.report-summary-highlight strong {
+  color: var(--gold-light);
+}
+
+.report-breakdown {
+  display: grid;
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.report-breakdown-card {
+  padding: 10px;
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 11px;
+  background: rgba(255,255,255,.02);
+}
+
+.report-breakdown-card h3 {
+  margin: 0 0 6px;
+  font-size: .70rem;
+}
+
+.report-breakdown-card p {
+  margin: 0;
+  color: var(--muted);
+  font-size: .60rem;
+  line-height: 1.45;
+}
+
+.report-pdf-button {
+  width: 100%;
+}
+
+@media (max-width: 720px) {
+  .report-summary-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .receipt-modal-meta {
+    grid-template-columns: 1fr;
+  }
+}

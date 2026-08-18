@@ -20,9 +20,13 @@
     paymentMethod: null,
     totalCost: 0,
     savedRegistration: null,
-    paymentChangeOrigin: "home",
+    paymentChangeOrigin: "payments-home",
     paymentChangeMethod: null,
     paymentChangeMode: null,
+    receiptRegistration: null,
+    receiptImageDataUrl: "",
+    receiptOcrText: "",
+    receiptSubmissionId: null,
     submissionId: null,
     submitting: false
   };
@@ -90,8 +94,11 @@
 
   const homeNewRegistration = document.getElementById("homeNewRegistration");
   const homeExistingRegistration = document.getElementById("homeExistingRegistration");
-  const homePaymentStatus = document.getElementById("homePaymentStatus");
-  const homeChangePayment = document.getElementById("homeChangePayment");
+  const homePayments = document.getElementById("homePayments");
+  const paymentsStatusButton = document.getElementById("paymentsStatusButton");
+  const paymentsChangeButton = document.getElementById("paymentsChangeButton");
+  const paymentsReceiptButton = document.getElementById("paymentsReceiptButton");
+  const paymentsHomeBack = document.getElementById("paymentsHomeBack");
 
   const changePaymentLookupCode = document.getElementById("changePaymentLookupCode");
   const changePaymentLookupError = document.getElementById("changePaymentLookupError");
@@ -123,6 +130,32 @@
   const paymentStatusRemaining = document.getElementById("paymentStatusRemaining");
   const paymentStatusCheckAgain = document.getElementById("paymentStatusCheckAgain");
   const paymentStatusHome = document.getElementById("paymentStatusHome");
+
+  const receiptLookupCode = document.getElementById("receiptLookupCode");
+  const receiptLookupError = document.getElementById("receiptLookupError");
+  const receiptLookupBack = document.getElementById("receiptLookupBack");
+  const receiptLookupSubmit = document.getElementById("receiptLookupSubmit");
+  const receiptRegistrationCode = document.getElementById("receiptRegistrationCode");
+  const receiptRegistrationName = document.getElementById("receiptRegistrationName");
+  const receiptFileInput = document.getElementById("receiptFileInput");
+  const receiptPreviewCard = document.getElementById("receiptPreviewCard");
+  const receiptPreviewImage = document.getElementById("receiptPreviewImage");
+  const receiptProcessing = document.getElementById("receiptProcessing");
+  const receiptProcessingLabel = document.getElementById("receiptProcessingLabel");
+  const receiptProgressBar = document.getElementById("receiptProgressBar");
+  const receiptReview = document.getElementById("receiptReview");
+  const receiptMerchant = document.getElementById("receiptMerchant");
+  const receiptPurchaseDate = document.getElementById("receiptPurchaseDate");
+  const receiptAmount = document.getElementById("receiptAmount");
+  const receiptUserConfirmed = document.getElementById("receiptUserConfirmed");
+  const receiptOcrTextPreview = document.getElementById("receiptOcrTextPreview");
+  const receiptUploadError = document.getElementById("receiptUploadError");
+  const receiptUploadBack = document.getElementById("receiptUploadBack");
+  const receiptSubmitButton = document.getElementById("receiptSubmitButton");
+  const receiptDoneId = document.getElementById("receiptDoneId");
+  const receiptAnotherButton = document.getElementById("receiptAnotherButton");
+  const receiptDonePayments = document.getElementById("receiptDonePayments");
+
   const introBack = document.getElementById("introBack");
   const introStart = document.getElementById("introStart");
 
@@ -970,6 +1003,10 @@
 
     const progressHidden = [
       "home",
+      "payments-home",
+      "receipt-lookup",
+      "receipt-upload",
+      "receipt-done",
       "intro",
       "existing",
       "existing-view",
@@ -1707,7 +1744,15 @@
     setStep("payment-view");
   }
 
-  homePaymentStatus.addEventListener("click", () => {
+  homePayments.addEventListener("click", () => {
+    setStep("payments-home");
+  });
+
+  paymentsHomeBack.addEventListener("click", () => {
+    setStep("home");
+  });
+
+  paymentsStatusButton.addEventListener("click", () => {
     const saved = getSavedRegistrationIdentity();
 
     if (saved) {
@@ -1720,7 +1765,7 @@
 
   paymentStatusBack.addEventListener("click", () => {
     paymentStatusError.textContent = "";
-    setStep("home");
+    setStep("payments-home");
   });
 
   async function checkPaymentStatus() {
@@ -1766,10 +1811,10 @@
 
   paymentStatusHome.addEventListener("click", () => {
     paymentStatusError.textContent = "";
-    setStep("home");
+    setStep("payments-home");
   });
 
-  homeChangePayment.addEventListener("click", () => {
+  paymentsChangeButton.addEventListener("click", () => {
     const saved = getSavedRegistrationIdentity();
 
     if (saved) {
@@ -1777,13 +1822,13 @@
     }
 
     changePaymentLookupError.textContent = "";
-    state.paymentChangeOrigin = "home";
+    state.paymentChangeOrigin = "payments-home";
     setStep("payment-change-lookup");
   });
 
   changePaymentLookupBack.addEventListener("click", () => {
     changePaymentLookupError.textContent = "";
-    setStep("home");
+    setStep("payments-home");
   });
 
   async function lookupRegistrationForPaymentChange() {
@@ -1960,6 +2005,301 @@
     } finally {
       setButtonBusy(changePaymentSave, false);
     }
+  });
+
+  function resetReceiptForm({ keepRegistration = false } = {}) {
+    if (!keepRegistration) {
+      state.receiptRegistration = null;
+    }
+
+    state.receiptImageDataUrl = "";
+    state.receiptOcrText = "";
+    state.receiptSubmissionId = null;
+
+    receiptFileInput.value = "";
+    receiptPreviewImage.removeAttribute("src");
+    receiptPreviewCard.classList.add("hidden");
+    receiptProcessing.classList.add("hidden");
+    receiptReview.classList.add("hidden");
+    receiptMerchant.value = "";
+    receiptPurchaseDate.value = "";
+    receiptAmount.value = "";
+    receiptUserConfirmed.checked = false;
+    receiptOcrTextPreview.textContent = "";
+    receiptUploadError.textContent = "";
+    receiptSubmitButton.disabled = true;
+    receiptProgressBar.style.width = "0%";
+  }
+
+  function receiptMainName(registration) {
+    const first = Array.isArray(registration?.people)
+      ? registration.people[0]
+      : null;
+
+    return first
+      ? `${first.firstName || ""} ${first.lastName || ""}`.trim()
+      : "–";
+  }
+
+  function parseReceiptAmount(value) {
+    const normalized = String(value || "")
+      .trim()
+      .replace(/\s/g, "")
+      .replace(/\./g, "")
+      .replace(",", ".");
+
+    const amount = Number(normalized);
+    return Number.isFinite(amount) ? amount : NaN;
+  }
+
+  function updateReceiptSubmitState() {
+    const amount = parseReceiptAmount(receiptAmount.value);
+
+    receiptSubmitButton.disabled = !(
+      state.receiptRegistration?.accessCode &&
+      state.receiptImageDataUrl &&
+      receiptMerchant.value.trim() &&
+      Number.isFinite(amount) &&
+      amount > 0 &&
+      receiptUserConfirmed.checked
+    );
+  }
+
+  function setReceiptProgress(progress, label) {
+    receiptProcessing.classList.remove("hidden");
+    receiptProcessingLabel.textContent = label || "Kassenbon wird verarbeitet …";
+    receiptProgressBar.style.width =
+      `${Math.round(Math.max(0, Math.min(1, Number(progress || 0))) * 100)}%`;
+  }
+
+  paymentsReceiptButton.addEventListener("click", () => {
+    const saved = getSavedRegistrationIdentity();
+
+    if (saved) {
+      receiptLookupCode.value = saved.code || "";
+    }
+
+    receiptLookupError.textContent = "";
+    resetReceiptForm();
+    setStep("receipt-lookup");
+  });
+
+  receiptLookupBack.addEventListener("click", () => {
+    receiptLookupError.textContent = "";
+    setStep("payments-home");
+  });
+
+  async function lookupReceiptRegistration() {
+    const code = receiptLookupCode.value.trim();
+
+    if (!code) {
+      receiptLookupError.textContent = "Bitte deinen Anmeldecode eingeben.";
+      return;
+    }
+
+    setButtonBusy(receiptLookupSubmit, true, "Wird geladen …");
+    receiptLookupError.textContent = "";
+
+    try {
+      const registration = await loadRegistration(code, "");
+      state.receiptRegistration = registration;
+      saveRegistrationIdentity(registration);
+
+      receiptRegistrationCode.textContent = registration.accessCode || "–";
+      receiptRegistrationName.textContent = receiptMainName(registration);
+
+      resetReceiptForm({ keepRegistration: true });
+      setStep("receipt-upload");
+    } catch (error) {
+      receiptLookupError.textContent = friendlyLookupError(error);
+    } finally {
+      setButtonBusy(receiptLookupSubmit, false);
+    }
+  }
+
+  receiptLookupSubmit.addEventListener("click", () => {
+    void lookupReceiptRegistration();
+  });
+
+  receiptLookupCode.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    void lookupReceiptRegistration();
+  });
+
+  receiptUploadBack.addEventListener("click", () => {
+    resetReceiptForm({ keepRegistration: true });
+    setStep("receipt-lookup");
+  });
+
+  receiptFileInput.addEventListener("change", async () => {
+    const file = receiptFileInput.files?.[0];
+
+    if (!file) return;
+
+    receiptUploadError.textContent = "";
+    receiptReview.classList.add("hidden");
+    receiptSubmitButton.disabled = true;
+
+    try {
+      const prepared = await window.ReceiptOcr.prepareImage(
+        file,
+        (progress) => {
+          setReceiptProgress(
+            progress.progress * 0.18,
+            progress.label
+          );
+        }
+      );
+
+      state.receiptImageDataUrl = prepared.dataUrl;
+      receiptPreviewImage.src = prepared.dataUrl;
+      receiptPreviewCard.classList.remove("hidden");
+
+      setReceiptProgress(0.2, "Automatische Texterkennung startet …");
+
+      try {
+        const recognized = await window.ReceiptOcr.recognize(
+          prepared.dataUrl,
+          (progress) => {
+            setReceiptProgress(
+              0.2 + progress.progress * 0.78,
+              progress.label
+            );
+          }
+        );
+
+        state.receiptOcrText = recognized.text || "";
+        receiptOcrTextPreview.textContent =
+          state.receiptOcrText || "Kein Text erkannt.";
+
+        const fields = recognized.fields || {};
+
+        receiptMerchant.value = fields.merchant || "";
+        receiptPurchaseDate.value = fields.purchaseDate || "";
+        receiptAmount.value = Number.isFinite(fields.amount)
+          ? Number(fields.amount).toFixed(2).replace(".", ",")
+          : "";
+
+        setReceiptProgress(1, "Texterkennung abgeschlossen");
+      } catch (ocrError) {
+        state.receiptOcrText = "";
+        receiptOcrTextPreview.textContent =
+          "Die automatische Texterkennung war nicht verfügbar.";
+
+        receiptUploadError.textContent =
+          `${ocrError.message} Bitte Geschäft, Datum und Betrag manuell eintragen.`;
+      }
+
+      receiptProcessing.classList.add("hidden");
+      receiptReview.classList.remove("hidden");
+      updateReceiptSubmitState();
+
+    } catch (error) {
+      receiptProcessing.classList.add("hidden");
+      receiptUploadError.textContent = error.message;
+    }
+  });
+
+  [
+    receiptMerchant,
+    receiptPurchaseDate,
+    receiptAmount,
+    receiptUserConfirmed
+  ].forEach((element) => {
+    element.addEventListener("input", updateReceiptSubmitState);
+    element.addEventListener("change", updateReceiptSubmitState);
+  });
+
+  receiptSubmitButton.addEventListener("click", async () => {
+    const registration = state.receiptRegistration;
+    const amount = parseReceiptAmount(receiptAmount.value);
+
+    if (
+      !registration?.accessCode ||
+      !state.receiptImageDataUrl
+    ) {
+      receiptUploadError.textContent =
+        "Bitte zuerst einen Kassenbon auswählen.";
+      return;
+    }
+
+    if (!receiptMerchant.value.trim()) {
+      receiptUploadError.textContent =
+        "Bitte das Geschäft eintragen.";
+      return;
+    }
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+      receiptUploadError.textContent =
+        "Bitte einen gültigen Gesamtbetrag eintragen.";
+      return;
+    }
+
+    if (!receiptUserConfirmed.checked) {
+      receiptUploadError.textContent =
+        "Bitte bestätige, dass du die erkannten Daten geprüft hast.";
+      return;
+    }
+
+    if (!state.receiptSubmissionId) {
+      state.receiptSubmissionId =
+        window.StrassenfestApi.createRequestId("receipt");
+    }
+
+    setButtonBusy(
+      receiptSubmitButton,
+      true,
+      "Wird eingereicht …"
+    );
+    receiptUploadError.textContent = "";
+
+    try {
+      const result = await apiRequest(
+        "submitReceipt",
+        {
+          receipt: {
+            id: state.receiptSubmissionId,
+            code: registration.accessCode,
+            merchant: receiptMerchant.value.trim(),
+            purchaseDate: receiptPurchaseDate.value || "",
+            amount,
+            ocrText: state.receiptOcrText,
+            imageDataUrl: state.receiptImageDataUrl
+          }
+        },
+        { timeoutMs: 60000 }
+      );
+
+      receiptDoneId.textContent = result.receipt?.id || "–";
+      state.receiptSubmissionId = null;
+      setStep("receipt-done");
+
+    } catch (error) {
+      receiptUploadError.textContent = error.message;
+    } finally {
+      setButtonBusy(receiptSubmitButton, false);
+      updateReceiptSubmitState();
+    }
+  });
+
+  receiptAnotherButton.addEventListener("click", () => {
+    const registration = state.receiptRegistration;
+
+    resetReceiptForm({ keepRegistration: true });
+
+    if (registration) {
+      receiptRegistrationCode.textContent = registration.accessCode || "–";
+      receiptRegistrationName.textContent = receiptMainName(registration);
+      setStep("receipt-upload");
+    } else {
+      setStep("receipt-lookup");
+    }
+  });
+
+  receiptDonePayments.addEventListener("click", () => {
+    resetReceiptForm();
+    setStep("payments-home");
   });
 
   homeExistingRegistration.addEventListener("click", () => {
@@ -2546,7 +2886,7 @@
     state.paymentMethod = null;
     state.totalCost = 0;
     state.savedRegistration = null;
-    state.paymentChangeOrigin = "home";
+    state.paymentChangeOrigin = "payments-home";
     state.paymentChangeMethod = null;
     state.paymentChangeMode = null;
     state.submissionId = null;

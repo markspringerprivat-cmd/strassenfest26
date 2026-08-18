@@ -438,3 +438,25 @@ zum Timeout geführt haben konnten.
   - „Meine Anmeldung“ / gespeicherte Anmeldung
 - Der alte Cache-/JSONP-Transport wurde NICHT wiederhergestellt.
 - Cache-Busting auf `?v=32`, damit Browser sicher die korrigierte JS-Datei laden.
+
+
+## Update v33 – Zahlungen, Kassenbons und Abschlussbericht
+- Startseite zeigt einen gemeinsamen Punkt „Zahlungen“.
+- Darunter:
+  - Zahlungsstatus
+  - Zahlungsweg ändern
+  - Kassenbon einreichen
+- Kassenbon-Einreichung:
+  Anmeldecode → Foto/Kamera → automatische OCR → Nutzer prüft Geschäft,
+  Kaufdatum und Gesamtbetrag → Einsenden.
+- Das Foto wird vor dem Upload im Browser verkleinert und als JPEG komprimiert.
+- OCR läuft mit Tesseract.js direkt im Browser.
+- Kassenbonbilder werden privat über Apps Script in Google Drive gespeichert.
+- Admin:
+  neuer Reiter „Kassenbons“ mit Bildvorschau, OCR-Daten, Korrektur,
+  „geprüft“ und „erstattet“.
+- Die Kassenbons werden NICHT in die bestehende Einkaufsliste übernommen.
+- Neuer Reiter „Abschlussbericht“:
+  Anmeldungen, Einnahmen, offene Beiträge, Einkaufsliste, geprüfte Kassenbons,
+  Erstattungen, finalisierte Kosten und aktueller Kassenstand.
+- PDF-Export enthält zusätzlich die Kassenbon-Bilder als Anlagen.

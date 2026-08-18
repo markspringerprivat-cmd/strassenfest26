@@ -9,6 +9,8 @@
     people: [],
     expenses: [],
     tickets: [],
+    receipts: [],
+    activeReceiptId: "",
     summary: {
       peopleCount: 0,
       due: 0,
@@ -79,6 +81,49 @@
   const ticketList = document.getElementById("ticketList");
   const refreshTickets = document.getElementById("refreshTickets");
   const ticketSaveStatus = document.getElementById("ticketSaveStatus");
+
+  const receiptTabCount = document.getElementById("receiptTabCount");
+  const metricReceipts = document.getElementById("metricReceipts");
+  const metricReceiptsOpen = document.getElementById("metricReceiptsOpen");
+  const metricReceiptsReviewed = document.getElementById("metricReceiptsReviewed");
+  const metricReceiptsReimbursementOpen = document.getElementById("metricReceiptsReimbursementOpen");
+  const receiptFilter = document.getElementById("receiptFilter");
+  const receiptSort = document.getElementById("receiptSort");
+  const receiptResultCount = document.getElementById("receiptResultCount");
+  const receiptList = document.getElementById("receiptList");
+  const refreshReceipts = document.getElementById("refreshReceipts");
+  const receiptSaveStatus = document.getElementById("receiptSaveStatus");
+
+  const reportStatus = document.getElementById("reportStatus");
+  const reportRegistrations = document.getElementById("reportRegistrations");
+  const reportPeople = document.getElementById("reportPeople");
+  const reportPaid = document.getElementById("reportPaid");
+  const reportOpen = document.getElementById("reportOpen");
+  const reportExpenses = document.getElementById("reportExpenses");
+  const reportReviewedReceipts = document.getElementById("reportReviewedReceipts");
+  const reportReimbursementOpen = document.getElementById("reportReimbursementOpen");
+  const reportFinalCosts = document.getElementById("reportFinalCosts");
+  const reportCashBalance = document.getElementById("reportCashBalance");
+  const reportBreakdown = document.getElementById("reportBreakdown");
+  const generateReportPdf = document.getElementById("generateReportPdf");
+  const reportPdfProgress = document.getElementById("reportPdfProgress");
+
+  const receiptModal = document.getElementById("receiptModal");
+  const receiptModalTitle = document.getElementById("receiptModalTitle");
+  const receiptModalCode = document.getElementById("receiptModalCode");
+  const receiptModalName = document.getElementById("receiptModalName");
+  const receiptImageLoading = document.getElementById("receiptImageLoading");
+  const receiptModalImage = document.getElementById("receiptModalImage");
+  const receiptModalMerchant = document.getElementById("receiptModalMerchant");
+  const receiptModalDate = document.getElementById("receiptModalDate");
+  const receiptModalAmount = document.getElementById("receiptModalAmount");
+  const receiptModalReviewed = document.getElementById("receiptModalReviewed");
+  const receiptModalReimbursed = document.getElementById("receiptModalReimbursed");
+  const receiptModalOcrText = document.getElementById("receiptModalOcrText");
+  const receiptModalError = document.getElementById("receiptModalError");
+  const deleteReceiptButton = document.getElementById("deleteReceiptButton");
+  const cancelReceiptModal = document.getElementById("cancelReceiptModal");
+  const saveReceiptButton = document.getElementById("saveReceiptButton");
 
   const primaryDeleteModal = document.getElementById("primaryDeleteModal");
   const primaryDeleteTitle = document.getElementById("primaryDeleteTitle");
@@ -254,6 +299,10 @@
     metricOpen.textContent = formatMoney(open);
 
     updateShoppingTotals();
+
+    if (typeof renderFinalReport === "function") {
+      renderFinalReport();
+    }
   }
 
   function updateShoppingTotals() {
@@ -894,6 +943,10 @@
       expenseList.innerHTML = `
         <div class="empty-state">Noch keine Einkaufsposten vorhanden.</div>`;
       updateShoppingTotals();
+
+      if (typeof renderFinalReport === "function") {
+        renderFinalReport();
+      }
       return;
     }
 
@@ -932,6 +985,10 @@
     }).join("");
 
     updateShoppingTotals();
+
+    if (typeof renderFinalReport === "function") {
+      renderFinalReport();
+    }
   }
 
   function parseExpenseAmount(value) {
@@ -1322,6 +1379,448 @@
     }
   }
 
+  function receiptTotal(receipts) {
+    return receipts.reduce(
+      (sum, receipt) => sum + Math.max(0, Number(receipt.amount || 0)),
+      0
+    );
+  }
+
+  function updateReceiptMetrics() {
+    const open = state.receipts.filter((receipt) => !receipt.reviewed);
+    const reviewed = state.receipts.filter((receipt) => receipt.reviewed);
+    const reimbursed = state.receipts.filter((receipt) => receipt.reimbursed);
+
+    const reviewedTotal = receiptTotal(reviewed);
+    const reimbursedTotal = receiptTotal(reimbursed);
+    const reimbursementOpen = Math.max(0, reviewedTotal - reimbursedTotal);
+
+    receiptTabCount.textContent = String(open.length);
+    metricReceipts.textContent = String(state.receipts.length);
+    metricReceiptsOpen.textContent = String(open.length);
+    metricReceiptsReviewed.textContent = formatMoney(reviewedTotal);
+    metricReceiptsReimbursementOpen.textContent = formatMoney(reimbursementOpen);
+  }
+
+  function filteredReceipts() {
+    const filter = receiptFilter.value;
+    const sort = receiptSort.value;
+
+    const rows = state.receipts.filter((receipt) => {
+      if (filter === "open") return !receipt.reviewed;
+      if (filter === "reviewed") return receipt.reviewed;
+      if (filter === "reimbursed") return receipt.reimbursed;
+      if (filter === "unreimbursed") {
+        return receipt.reviewed && !receipt.reimbursed;
+      }
+      return true;
+    });
+
+    rows.sort((a, b) => {
+      if (sort === "oldest") {
+        return new Date(a.submittedAt).getTime() -
+          new Date(b.submittedAt).getTime();
+      }
+
+      if (sort === "amount-desc") {
+        return Number(b.amount || 0) - Number(a.amount || 0);
+      }
+
+      if (sort === "name") {
+        return String(a.primaryName || "").localeCompare(
+          String(b.primaryName || ""),
+          "de-DE"
+        );
+      }
+
+      return new Date(b.submittedAt).getTime() -
+        new Date(a.submittedAt).getTime();
+    });
+
+    return rows;
+  }
+
+  function renderReceipts() {
+    updateReceiptMetrics();
+
+    const rows = filteredReceipts();
+
+    receiptResultCount.textContent =
+      `${rows.length} ${rows.length === 1 ? "Kassenbon" : "Kassenbons"}`;
+
+    if (!rows.length) {
+      receiptList.innerHTML =
+        '<div class="empty-state">Keine passenden Kassenbons vorhanden.</div>';
+      renderFinalReport();
+      return;
+    }
+
+    receiptList.innerHTML = rows.map((receipt) => {
+      const statusClass = receipt.reimbursed
+        ? "reimbursed"
+        : receipt.reviewed
+          ? "reviewed"
+          : "";
+
+      const statusText = receipt.reimbursed
+        ? "Erstattet"
+        : receipt.reviewed
+          ? "Geprüft"
+          : "Ungeprüft";
+
+      return `
+        <article class="receipt-admin-row" data-receipt-id="${escapeAttr(receipt.id)}">
+          <div class="receipt-admin-main">
+            <strong>${escapeHtml(receipt.primaryName || "Ohne Name")} · ${escapeHtml(receipt.merchant || "Geschäft unbekannt")}</strong>
+            <small>
+              ${escapeHtml(receipt.accessCode || "")}
+              · ${receipt.purchaseDate ? new Date(`${receipt.purchaseDate}T12:00:00`).toLocaleDateString("de-DE") : "Datum unbekannt"}
+              · eingereicht ${new Date(receipt.submittedAt).toLocaleDateString("de-DE")}
+            </small>
+          </div>
+          <div class="receipt-admin-side">
+            <strong>${formatMoney(receipt.amount)}</strong>
+            <span class="receipt-status-pill ${statusClass}">${statusText}</span>
+            <button class="receipt-open-button" type="button">Ansehen</button>
+          </div>
+        </article>`;
+    }).join("");
+
+    renderFinalReport();
+  }
+
+  function closeReceiptModal() {
+    state.activeReceiptId = "";
+    receiptModal.classList.add("hidden");
+    receiptModalImage.classList.add("hidden");
+    receiptModalImage.removeAttribute("src");
+    receiptModalError.textContent = "";
+  }
+
+  async function openReceiptModal(receipt) {
+    state.activeReceiptId = receipt.id;
+
+    receiptModalTitle.textContent =
+      receipt.merchant || "Kassenbon prüfen";
+    receiptModalCode.textContent = receipt.accessCode || "–";
+    receiptModalName.textContent = receipt.primaryName || "–";
+    receiptModalMerchant.value = receipt.merchant || "";
+    receiptModalDate.value = receipt.purchaseDate || "";
+    receiptModalAmount.value = Number(receipt.amount || 0)
+      .toFixed(2)
+      .replace(".", ",");
+    receiptModalReviewed.checked = Boolean(receipt.reviewed);
+    receiptModalReimbursed.checked = Boolean(receipt.reimbursed);
+    receiptModalOcrText.textContent =
+      receipt.ocrText || "Kein OCR-Text gespeichert.";
+    receiptModalError.textContent = "";
+    receiptImageLoading.classList.remove("hidden");
+    receiptModalImage.classList.add("hidden");
+    receiptModal.classList.remove("hidden");
+
+    try {
+      const result = await apiRequest("adminReceiptImage", {
+        token: state.token,
+        receiptId: receipt.id
+      }, { timeoutMs: 45000 });
+
+      receiptModalImage.src = result.imageDataUrl || "";
+      receiptModalImage.classList.remove("hidden");
+    } catch (error) {
+      if (!handleApiError(error)) {
+        receiptModalError.textContent =
+          `Bild konnte nicht geladen werden: ${error.message}`;
+      }
+    } finally {
+      receiptImageLoading.classList.add("hidden");
+    }
+  }
+
+  receiptList.addEventListener("click", (event) => {
+    const button = event.target.closest(".receipt-open-button");
+    if (!button) return;
+
+    const row = button.closest(".receipt-admin-row");
+    const receipt = state.receipts.find(
+      (item) => item.id === row?.dataset.receiptId
+    );
+
+    if (receipt) {
+      void openReceiptModal(receipt);
+    }
+  });
+
+  cancelReceiptModal.addEventListener("click", closeReceiptModal);
+
+  receiptModal.addEventListener("click", (event) => {
+    if (event.target.matches("[data-close-receipt-modal]")) {
+      closeReceiptModal();
+    }
+  });
+
+  function parseAdminReceiptAmount(value) {
+    const normalized = String(value || "")
+      .trim()
+      .replace(/\s/g, "")
+      .replace(/\./g, "")
+      .replace(",", ".");
+
+    const amount = Number(normalized);
+    return Number.isFinite(amount) ? amount : NaN;
+  }
+
+  receiptModalReimbursed.addEventListener("change", () => {
+    if (receiptModalReimbursed.checked) {
+      receiptModalReviewed.checked = true;
+    }
+  });
+
+  receiptModalReviewed.addEventListener("change", () => {
+    if (!receiptModalReviewed.checked) {
+      receiptModalReimbursed.checked = false;
+    }
+  });
+
+  saveReceiptButton.addEventListener("click", async () => {
+    const receipt = state.receipts.find(
+      (item) => item.id === state.activeReceiptId
+    );
+
+    if (!receipt) return;
+
+    const amount = parseAdminReceiptAmount(receiptModalAmount.value);
+
+    if (!receiptModalMerchant.value.trim()) {
+      receiptModalError.textContent = "Bitte das Geschäft eintragen.";
+      return;
+    }
+
+    if (!Number.isFinite(amount) || amount <= 0) {
+      receiptModalError.textContent = "Bitte einen gültigen Betrag eintragen.";
+      return;
+    }
+
+    saveReceiptButton.disabled = true;
+    receiptModalError.textContent = "";
+    setSaveStatus(receiptSaveStatus, "Speichert …", "saving");
+
+    try {
+      const result = await apiRequest("adminUpdateReceipt", {
+        token: state.token,
+        receipt: {
+          id: receipt.id,
+          merchant: receiptModalMerchant.value.trim(),
+          purchaseDate: receiptModalDate.value || "",
+          amount,
+          reviewed: receiptModalReviewed.checked,
+          reimbursed: receiptModalReimbursed.checked
+        }
+      });
+
+      const index = state.receipts.findIndex(
+        (item) => item.id === result.receipt.id
+      );
+
+      if (index >= 0) {
+        state.receipts[index] = {
+          ...state.receipts[index],
+          ...result.receipt
+        };
+      }
+
+      closeReceiptModal();
+      renderReceipts();
+      setSaveStatus(receiptSaveStatus, "Aktuell");
+      showToast("Kassenbon gespeichert.");
+
+    } catch (error) {
+      if (!handleApiError(error)) {
+        receiptModalError.textContent = error.message;
+        setSaveStatus(receiptSaveStatus, "Fehler", "error");
+      }
+    } finally {
+      saveReceiptButton.disabled = false;
+    }
+  });
+
+  deleteReceiptButton.addEventListener("click", async () => {
+    const receipt = state.receipts.find(
+      (item) => item.id === state.activeReceiptId
+    );
+
+    if (!receipt) return;
+
+    if (!window.confirm(
+      `Kassenbon von ${receipt.primaryName || "dieser Anmeldung"} wirklich löschen?`
+    )) {
+      return;
+    }
+
+    deleteReceiptButton.disabled = true;
+    setSaveStatus(receiptSaveStatus, "Löscht …", "saving");
+
+    try {
+      await apiRequest("adminDeleteReceipt", {
+        token: state.token,
+        receiptId: receipt.id
+      });
+
+      state.receipts = state.receipts.filter(
+        (item) => item.id !== receipt.id
+      );
+
+      closeReceiptModal();
+      renderReceipts();
+      setSaveStatus(receiptSaveStatus, "Aktuell");
+      showToast("Kassenbon gelöscht.");
+    } catch (error) {
+      if (!handleApiError(error)) {
+        receiptModalError.textContent = error.message;
+        setSaveStatus(receiptSaveStatus, "Fehler", "error");
+      }
+    } finally {
+      deleteReceiptButton.disabled = false;
+    }
+  });
+
+  receiptFilter.addEventListener("change", renderReceipts);
+  receiptSort.addEventListener("change", renderReceipts);
+  refreshReceipts.addEventListener("click", () => void loadReceipts());
+
+  function finalReportData() {
+    const registrations = groupRegistrations().map((group) => ({
+      accessCode: group.accessCode,
+      primaryName:
+        `${group.primary?.firstName || ""} ${group.primary?.lastName || ""}`.trim(),
+      peopleCount: group.people.length,
+      due: group.due,
+      paid: group.paidAmount,
+      paymentMethod: paymentMethodLabel(group.paymentMethod)
+    }));
+
+    const expenseTotal = state.expenses.reduce(
+      (sum, expense) => sum + Math.max(0, Number(expense.amount || 0)),
+      0
+    );
+
+    const receiptTotalValue = receiptTotal(state.receipts);
+    const reviewedReceipts = state.receipts.filter(
+      (receipt) => receipt.reviewed
+    );
+    const reimbursedReceipts = state.receipts.filter(
+      (receipt) => receipt.reimbursed
+    );
+
+    const reviewedReceiptTotal = receiptTotal(reviewedReceipts);
+    const reimbursedTotal = receiptTotal(reimbursedReceipts);
+    const reimbursementOpen = Math.max(
+      0,
+      reviewedReceiptTotal - reimbursedTotal
+    );
+
+    return {
+      registrationCount: registrations.length,
+      peopleCount: state.summary.peopleCount,
+      due: state.summary.due,
+      paid: state.summary.paid,
+      open: state.summary.open,
+      expenseTotal,
+      receiptTotal: receiptTotalValue,
+      reviewedReceiptTotal,
+      reimbursedTotal,
+      reimbursementOpen,
+      finalizedCostTotal: expenseTotal + reviewedReceiptTotal,
+      cashBalance: state.summary.paid - expenseTotal - reimbursedTotal,
+      registrations,
+      expenses: [...state.expenses],
+      receipts: [...state.receipts]
+    };
+  }
+
+  function renderFinalReport() {
+    const report = finalReportData();
+
+    reportRegistrations.textContent = String(report.registrationCount);
+    reportPeople.textContent = String(report.peopleCount);
+    reportPaid.textContent = formatMoney(report.paid);
+    reportOpen.textContent = formatMoney(report.open);
+    reportExpenses.textContent = formatMoney(report.expenseTotal);
+    reportReviewedReceipts.textContent = formatMoney(report.reviewedReceiptTotal);
+    reportReimbursementOpen.textContent = formatMoney(report.reimbursementOpen);
+    reportFinalCosts.textContent = formatMoney(report.finalizedCostTotal);
+    reportCashBalance.textContent = formatMoney(report.cashBalance);
+
+    const unreviewedCount = report.receipts.filter(
+      (receipt) => !receipt.reviewed
+    ).length;
+
+    reportBreakdown.innerHTML = `
+      <article class="report-breakdown-card">
+        <h3>Einnahmen</h3>
+        <p>
+          Soll: ${formatMoney(report.due)} · bezahlt: ${formatMoney(report.paid)}
+          · offen: ${formatMoney(report.open)}
+        </p>
+      </article>
+
+      <article class="report-breakdown-card">
+        <h3>Kosten</h3>
+        <p>
+          Einkauf vor Fest: ${formatMoney(report.expenseTotal)} ·
+          geprüfte nachgereichte Kassenbons: ${formatMoney(report.reviewedReceiptTotal)} ·
+          ${unreviewedCount} ungeprüfte Kassenbons
+        </p>
+      </article>
+
+      <article class="report-breakdown-card">
+        <h3>Erstattungen</h3>
+        <p>
+          Bereits erstattet: ${formatMoney(report.reimbursedTotal)} ·
+          noch zu erstatten: ${formatMoney(report.reimbursementOpen)}
+        </p>
+      </article>`;
+  }
+
+  generateReportPdf.addEventListener("click", async () => {
+    if (generateReportPdf.disabled) return;
+
+    const report = finalReportData();
+
+    generateReportPdf.disabled = true;
+    reportPdfProgress.textContent = "PDF wird vorbereitet …";
+    setSaveStatus(reportStatus, "Erstellt PDF …", "saving");
+
+    try {
+      await window.AdminFinalReport.generate(
+        report,
+        async (receiptId) => {
+          const result = await apiRequest(
+            "adminReceiptImage",
+            {
+              token: state.token,
+              receiptId
+            },
+            { timeoutMs: 45000 }
+          );
+
+          return result.imageDataUrl || "";
+        },
+        (progress) => {
+          reportPdfProgress.textContent = progress.label || "";
+        }
+      );
+
+      reportPdfProgress.textContent = "PDF wurde erstellt.";
+      setSaveStatus(reportStatus, "Aktuell");
+
+    } catch (error) {
+      reportPdfProgress.textContent = error.message;
+      setSaveStatus(reportStatus, "Fehler", "error");
+    } finally {
+      generateReportPdf.disabled = false;
+    }
+  });
+
   async function loadOverview() {
     setSaveStatus(overviewSaveStatus, "Lädt …", "saving");
 
@@ -1357,9 +1856,32 @@
     }
   }
 
+  async function loadReceipts() {
+    setSaveStatus(receiptSaveStatus, "Lädt …", "saving");
+
+    try {
+      const result = await apiRequest("adminReceipts", { token: state.token });
+      state.receipts = Array.isArray(result.receipts) ? result.receipts : [];
+      renderReceipts();
+      setSaveStatus(receiptSaveStatus, "Aktuell");
+    } catch (error) {
+      if (!handleApiError(error)) {
+        setSaveStatus(receiptSaveStatus, "Fehler", "error");
+        showToast(error.message);
+      }
+      throw error;
+    }
+  }
+
   async function loadAll() {
     try {
-      await Promise.all([loadOverview(), loadExpenses(), loadTickets()]);
+      await Promise.all([
+        loadOverview(),
+        loadExpenses(),
+        loadTickets(),
+        loadReceipts()
+      ]);
+      renderFinalReport();
     } catch {}
   }
 

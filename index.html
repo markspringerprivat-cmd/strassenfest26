@@ -76,23 +76,12 @@
               </button>
 
               <button class="landing-choice"
-                      id="homePaymentStatus"
+                      id="homePayments"
                       type="button">
                 <span class="landing-choice-icon" aria-hidden="true">€</span>
                 <span>
-                  <strong>Zahlungsstatus</strong>
-                  <small>Prüfen, ob deine Zahlung bereits als beglichen eingetragen ist</small>
-                </span>
-                <span class="landing-choice-chevron" aria-hidden="true">›</span>
-              </button>
-
-              <button class="landing-choice"
-                      id="homeChangePayment"
-                      type="button">
-                <span class="landing-choice-icon" aria-hidden="true">↔</span>
-                <span>
-                  <strong>Zahlungsweg ändern</strong>
-                  <small>Gespeicherten Zahlungsweg mit deinem Anmeldecode nachträglich ändern</small>
+                  <strong>Zahlungen</strong>
+                  <small>Zahlungsstatus · Zahlungsweg ändern · Kassenbon einreichen</small>
                 </span>
                 <span class="landing-choice-chevron" aria-hidden="true">›</span>
               </button>
@@ -140,6 +129,61 @@
                   <span>Anmeldung starten</span>
                 </button>
               </div>
+            </div>
+          </section>
+
+          <section class="step payments-home-step" data-step="payments-home">
+            <div class="step-heading hero-heading">
+              <div class="heading-icon" aria-hidden="true">€</div>
+              <div>
+                <p class="eyebrow">Zahlungen</p>
+                <h2>Was möchtest du machen?</h2>
+                <p>
+                  Hier kannst du deinen Zahlungsstatus prüfen, den hinterlegten
+                  Zahlungsweg ändern oder einen Kassenbon zur Erstattung einreichen.
+                </p>
+              </div>
+            </div>
+
+            <div class="landing-choice-list payments-choice-list">
+              <button class="landing-choice"
+                      id="paymentsStatusButton"
+                      type="button">
+                <span class="landing-choice-icon" aria-hidden="true">✓</span>
+                <span>
+                  <strong>Zahlungsstatus</strong>
+                  <small>Prüfen, ob dein Beitrag bereits als beglichen erfasst wurde</small>
+                </span>
+                <span class="landing-choice-chevron" aria-hidden="true">›</span>
+              </button>
+
+              <button class="landing-choice"
+                      id="paymentsChangeButton"
+                      type="button">
+                <span class="landing-choice-icon" aria-hidden="true">↔</span>
+                <span>
+                  <strong>Zahlungsweg ändern</strong>
+                  <small>PayPal, Briefkasten oder persönliche Abholung nachträglich ändern</small>
+                </span>
+                <span class="landing-choice-chevron" aria-hidden="true">›</span>
+              </button>
+
+              <button class="landing-choice"
+                      id="paymentsReceiptButton"
+                      type="button">
+                <span class="landing-choice-icon" aria-hidden="true">▤</span>
+                <span>
+                  <strong>Kassenbon einreichen</strong>
+                  <small>Kassenbon fotografieren oder hochladen und zur Erstattung übermitteln</small>
+                </span>
+                <span class="landing-choice-chevron" aria-hidden="true">›</span>
+              </button>
+            </div>
+
+            <div class="step-actions">
+              <button class="secondary-button"
+                      id="paymentsHomeBack"
+                      type="button">Zurück</button>
             </div>
           </section>
 
@@ -217,7 +261,7 @@
               <button class="secondary-button"
                       id="paymentStatusHome"
                       type="button">
-                Zur Startseite
+                Zur Zahlungsübersicht
               </button>
             </div>
           </section>
@@ -379,6 +423,204 @@
                         id="changePaymentSave"
                         type="button">
                   Zahlungsweg speichern
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <section class="step receipt-lookup-step" data-step="receipt-lookup">
+            <div class="step-heading hero-heading">
+              <div class="heading-icon" aria-hidden="true">▤</div>
+              <div>
+                <p class="eyebrow">Kassenbon einreichen</p>
+                <h2>Anmeldung zuordnen</h2>
+                <p>
+                  Gib zuerst deinen persönlichen Anmeldecode ein. Dadurch kann
+                  der Kassenbon später eindeutig der richtigen Person zugeordnet werden.
+                </p>
+              </div>
+            </div>
+
+            <div class="front-lookup-form" role="form">
+              <label class="field">
+                <span>Anmeldecode</span>
+                <input id="receiptLookupCode"
+                       type="text"
+                       autocomplete="off"
+                       autocapitalize="characters"
+                       spellcheck="false"
+                       placeholder="z. B. HIL26-ABCD-EFGH" />
+              </label>
+
+              <p class="field-error"
+                 id="receiptLookupError"
+                 role="alert"></p>
+
+              <div class="step-actions">
+                <div class="button-row">
+                  <button class="secondary-button"
+                          id="receiptLookupBack"
+                          type="button">Zurück</button>
+                  <button class="primary-button"
+                          id="receiptLookupSubmit"
+                          type="button">
+                    Weiter
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="step receipt-upload-step" data-step="receipt-upload">
+            <div class="step-heading hero-heading">
+              <div class="heading-icon" aria-hidden="true">▤</div>
+              <div>
+                <p class="eyebrow">Kassenbon einreichen</p>
+                <h2>Kassenbon fotografieren</h2>
+                <p>
+                  Lade ein vorhandenes Foto hoch oder fotografiere den Kassenbon
+                  direkt mit deinem Smartphone.
+                </p>
+              </div>
+            </div>
+
+            <div class="receipt-registration-card">
+              <div>
+                <span>Anmeldecode</span>
+                <strong id="receiptRegistrationCode">–</strong>
+              </div>
+              <div>
+                <span>Zuordnung</span>
+                <strong id="receiptRegistrationName">–</strong>
+              </div>
+            </div>
+
+            <label class="receipt-file-button" for="receiptFileInput">
+              <span class="receipt-camera-icon" aria-hidden="true">▣</span>
+              <span>
+                <strong>Foto aufnehmen oder auswählen</strong>
+                <small>Foto aufnehmen oder JPG/PNG aus der Mediathek auswählen</small>
+              </span>
+            </label>
+
+            <input id="receiptFileInput"
+                   class="visually-hidden-file"
+                   type="file"
+                   accept="image/*"
+                   capture="environment" />
+
+            <div class="receipt-preview-card hidden"
+                 id="receiptPreviewCard">
+              <img id="receiptPreviewImage"
+                   alt="Vorschau des ausgewählten Kassenbons" />
+            </div>
+
+            <div class="receipt-processing hidden"
+                 id="receiptProcessing"
+                 aria-live="polite">
+              <span class="server-spinner receipt-spinner" aria-hidden="true"></span>
+              <div>
+                <strong id="receiptProcessingLabel">Kassenbon wird vorbereitet …</strong>
+                <div class="receipt-progress-track">
+                  <span id="receiptProgressBar"></span>
+                </div>
+              </div>
+            </div>
+
+            <div class="receipt-review hidden"
+                 id="receiptReview">
+              <div class="receipt-review-heading">
+                <p class="eyebrow">Automatisch erkannt</p>
+                <h3>Daten überprüfen</h3>
+                <p>
+                  Bitte kontrolliere die erkannten Angaben und korrigiere sie,
+                  bevor du den Kassenbon abschickst.
+                </p>
+              </div>
+
+              <label class="field">
+                <span>Geschäft *</span>
+                <input id="receiptMerchant"
+                       type="text"
+                       maxlength="100"
+                       autocomplete="organization"
+                       placeholder="z. B. REWE" />
+              </label>
+
+              <label class="field">
+                <span>Kaufdatum</span>
+                <input id="receiptPurchaseDate"
+                       type="date" />
+              </label>
+
+              <label class="field">
+                <span>Gesamtbetrag *</span>
+                <div class="receipt-amount-wrap">
+                  <input id="receiptAmount"
+                         type="text"
+                         inputmode="decimal"
+                         autocomplete="off"
+                         placeholder="0,00" />
+                  <span>€</span>
+                </div>
+              </label>
+
+              <label class="receipt-confirm-check">
+                <input id="receiptUserConfirmed"
+                       type="checkbox" />
+                <span>Ich habe die erkannten Angaben geprüft und gegebenenfalls korrigiert.</span>
+              </label>
+
+              <details class="receipt-ocr-details">
+                <summary>Erkannten OCR-Text anzeigen</summary>
+                <pre id="receiptOcrTextPreview"></pre>
+              </details>
+            </div>
+
+            <p class="field-error"
+               id="receiptUploadError"
+               role="alert"></p>
+
+            <div class="step-actions">
+              <div class="button-row">
+                <button class="secondary-button"
+                        id="receiptUploadBack"
+                        type="button">Zurück</button>
+                <button class="primary-button"
+                        id="receiptSubmitButton"
+                        type="button"
+                        disabled>
+                  Kassenbon einsenden
+                </button>
+              </div>
+            </div>
+          </section>
+
+          <section class="step receipt-done-step" data-step="receipt-done">
+            <div class="completion-card receipt-completion-card">
+              <div class="completion-check" aria-hidden="true">✓</div>
+              <p class="eyebrow">Kassenbon eingereicht</p>
+              <h2>Vielen Dank!</h2>
+              <p>
+                Der Kassenbon wurde gespeichert und kann jetzt im Admin-Bereich
+                geprüft werden.
+              </p>
+
+              <div class="access-code-card">
+                <span class="summary-label">Kassenbon-ID</span>
+                <strong class="access-code" id="receiptDoneId">–</strong>
+              </div>
+
+              <div class="existing-view-actions">
+                <button class="primary-button"
+                        id="receiptAnotherButton"
+                        type="button">
+                  Weiteren Kassenbon einreichen
+                </button>
+                <button class="secondary-button"
+                        id="receiptDonePayments"
+                        type="button">
+                  Zur Zahlungsübersicht
                 </button>
               </div>
             </div>
@@ -949,7 +1191,8 @@
     </section>
   </div>
 
-  <script src="api-client.js?v=32" defer></script>
-  <script src="script.js?v=32" defer></script>
+  <script src="api-client.js?v=33" defer></script>
+  <script src="receipt-ocr.js?v=33" defer></script>
+  <script src="script.js?v=33" defer></script>
 </body>
 </html>

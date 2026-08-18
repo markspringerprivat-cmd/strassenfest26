@@ -2211,3 +2211,241 @@ body.keyboard-open .step[data-step="1"] #peopleContinue {
     padding-block: 6px;
   }
 }
+
+
+/* ================================================================
+   v33 – Zahlungsübersicht und Kassenbon-Einreichung
+   ================================================================ */
+
+.payments-choice-list {
+  margin-top: 4px;
+}
+
+.receipt-registration-card {
+  display: grid;
+  gap: 6px;
+  margin-bottom: 11px;
+  padding: 10px 11px;
+  border: 1px solid rgba(255, 211, 104, .22);
+  border-radius: 13px;
+  background: rgba(255, 202, 68, .04);
+}
+
+.receipt-registration-card > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.receipt-registration-card span {
+  color: var(--muted);
+  font-size: .60rem;
+  font-weight: 760;
+}
+
+.receipt-registration-card strong {
+  color: rgba(255,255,255,.94);
+  font-size: .69rem;
+  text-align: right;
+}
+
+.receipt-file-button {
+  display: grid;
+  grid-template-columns: 42px minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+  min-height: 64px;
+  padding: 10px 12px;
+  border: 1px dashed rgba(255, 211, 104, .42);
+  border-radius: 14px;
+  background: rgba(255, 196, 59, .055);
+  cursor: pointer;
+}
+
+.receipt-file-button:active {
+  transform: scale(.992);
+}
+
+.receipt-camera-icon {
+  display: grid;
+  place-items: center;
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+  background: rgba(255, 201, 64, .09);
+  color: var(--gold-light);
+  font-size: 1.05rem;
+}
+
+.receipt-file-button > span:last-child {
+  display: grid;
+  gap: 2px;
+}
+
+.receipt-file-button strong {
+  color: rgba(255,255,255,.96);
+  font-size: .75rem;
+}
+
+.receipt-file-button small {
+  color: var(--muted);
+  font-size: .60rem;
+}
+
+.visually-hidden-file {
+  position: fixed !important;
+  width: 1px !important;
+  height: 1px !important;
+  opacity: 0 !important;
+  pointer-events: none !important;
+}
+
+.receipt-preview-card {
+  display: grid;
+  place-items: center;
+  max-height: 185px;
+  margin-top: 9px;
+  padding: 7px;
+  overflow: hidden;
+  border: 1px solid rgba(255,255,255,.08);
+  border-radius: 13px;
+  background: rgba(0,0,0,.13);
+}
+
+.receipt-preview-card img {
+  display: block;
+  max-width: 100%;
+  max-height: 170px;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.receipt-processing {
+  display: grid;
+  grid-template-columns: 28px minmax(0, 1fr);
+  gap: 9px;
+  align-items: center;
+  margin-top: 9px;
+  padding: 10px;
+  border: 1px solid rgba(198, 169, 255, .18);
+  border-radius: 12px;
+  background: rgba(48, 39, 111, .27);
+}
+
+.receipt-processing > div {
+  display: grid;
+  gap: 5px;
+}
+
+.receipt-processing strong {
+  color: rgba(255,255,255,.91);
+  font-size: .65rem;
+}
+
+.receipt-progress-track {
+  height: 5px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: rgba(255,255,255,.09);
+}
+
+.receipt-progress-track span {
+  display: block;
+  width: 0;
+  height: 100%;
+  border-radius: inherit;
+  background: linear-gradient(90deg, #ffd35b, #ffae37);
+  transition: width 180ms ease;
+}
+
+.receipt-review {
+  display: grid;
+  gap: 9px;
+  margin-top: 10px;
+  padding: 11px;
+  border: 1px solid rgba(255,255,255,.09);
+  border-radius: 14px;
+  background: rgba(255,255,255,.025);
+}
+
+.receipt-review-heading h3 {
+  margin: 1px 0 3px;
+  font-size: .84rem;
+}
+
+.receipt-review-heading p:last-child {
+  margin: 0;
+  color: var(--muted);
+  font-size: .61rem;
+  line-height: 1.35;
+}
+
+.receipt-amount-wrap {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) 26px;
+  align-items: center;
+}
+
+.receipt-amount-wrap span {
+  justify-self: center;
+  color: var(--gold-light);
+  font-weight: 800;
+}
+
+.receipt-confirm-check {
+  display: grid;
+  grid-template-columns: 18px minmax(0, 1fr);
+  gap: 8px;
+  align-items: start;
+  color: rgba(255,255,255,.80);
+  font-size: .61rem;
+  line-height: 1.35;
+}
+
+.receipt-confirm-check input {
+  width: 17px;
+  height: 17px;
+  margin: 0;
+  accent-color: #ffc74f;
+}
+
+.receipt-ocr-details {
+  border-top: 1px solid rgba(255,255,255,.07);
+  padding-top: 7px;
+}
+
+.receipt-ocr-details summary {
+  cursor: pointer;
+  color: var(--muted);
+  font-size: .60rem;
+}
+
+.receipt-ocr-details pre {
+  max-height: 120px;
+  overflow: auto;
+  white-space: pre-wrap;
+  color: rgba(255,255,255,.66);
+  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
+  font-size: .56rem;
+  line-height: 1.35;
+}
+
+.receipt-completion-card {
+  text-align: center;
+}
+
+@media (max-height: 760px) {
+  .receipt-preview-card {
+    max-height: 130px;
+  }
+
+  .receipt-preview-card img {
+    max-height: 116px;
+  }
+
+  .receipt-review {
+    gap: 7px;
+    padding: 9px;
+  }
+}
