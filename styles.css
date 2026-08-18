@@ -2086,3 +2086,128 @@ body.keyboard-open .step[data-step="1"] #peopleContinue {
     margin-bottom: 7px;
   }
 }
+
+
+/* ================================================================
+   v29 – Bezahlung nach Anmeldung + Zahlungsweg ändern
+   ================================================================ */
+
+.post-registration-payment-card {
+  display: grid;
+  gap: 9px;
+  margin-top: 11px;
+  padding: 12px;
+  border: 1px solid rgba(255, 207, 94, .28);
+  border-radius: 15px;
+  background:
+    linear-gradient(135deg, rgba(255, 197, 60, .065), rgba(55, 42, 128, .18));
+}
+
+.post-payment-heading,
+.post-payment-amount {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.post-payment-heading span,
+.post-payment-amount span {
+  color: var(--muted);
+  font-size: .61rem;
+  font-weight: 760;
+}
+
+.post-payment-heading strong {
+  color: rgba(255,255,255,.95);
+  font-size: .73rem;
+  text-align: right;
+}
+
+.post-payment-amount strong {
+  color: var(--gold-light);
+  font-size: .94rem;
+  text-align: right;
+}
+
+.post-paypal-area {
+  display: grid;
+  gap: 8px;
+  padding-top: 3px;
+}
+
+.post-paypal-area.hidden {
+  display: none !important;
+}
+
+.post-paypal-area p,
+.post-paypal-area small,
+.post-payment-change-note {
+  margin: 0;
+  color: var(--muted);
+  font-size: .62rem;
+  line-height: 1.4;
+}
+
+.payment-change-button {
+  width: 100%;
+  min-height: 38px;
+}
+
+.payment-change-button.hidden {
+  display: none !important;
+}
+
+.confirmation-payment-card {
+  margin-bottom: 10px;
+}
+
+.payment-change-summary {
+  display: grid;
+  gap: 7px;
+  margin-bottom: 11px;
+}
+
+.payment-change-summary > div {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 8px 10px;
+  border: 1px solid rgba(255,255,255,.07);
+  border-radius: 11px;
+  background: rgba(255,255,255,.025);
+}
+
+.payment-change-summary span {
+  color: var(--muted);
+  font-size: .60rem;
+  font-weight: 760;
+}
+
+.payment-change-summary strong {
+  color: rgba(255,255,255,.94);
+  font-size: .70rem;
+  text-align: right;
+}
+
+.payment-change-step .payment-detail-panel {
+  margin-bottom: 8px;
+}
+
+@media (max-height: 760px) {
+  .post-registration-payment-card {
+    gap: 7px;
+    margin-top: 8px;
+    padding: 10px;
+  }
+
+  .payment-change-summary {
+    gap: 5px;
+    margin-bottom: 8px;
+  }
+
+  .payment-change-summary > div {
+    padding-block: 6px;
+  }
+}

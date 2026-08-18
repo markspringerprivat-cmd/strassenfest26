@@ -85,6 +85,17 @@
                 </span>
                 <span class="landing-choice-chevron" aria-hidden="true">›</span>
               </button>
+
+              <button class="landing-choice"
+                      id="homeChangePayment"
+                      type="button">
+                <span class="landing-choice-icon" aria-hidden="true">↔</span>
+                <span>
+                  <strong>Zahlungsweg ändern</strong>
+                  <small>Gespeicherten Zahlungsweg mit deinem Anmeldecode nachträglich ändern</small>
+                </span>
+                <span class="landing-choice-chevron" aria-hidden="true">›</span>
+              </button>
             </div>
           </section>
 
@@ -211,6 +222,168 @@
             </div>
           </section>
 
+          <section class="step payment-change-lookup-step"
+                   data-step="payment-change-lookup">
+            <div class="step-heading hero-heading">
+              <div class="heading-icon" aria-hidden="true">↔</div>
+              <div>
+                <p class="eyebrow">Zahlungsweg ändern</p>
+                <h2>Anmeldung aufrufen</h2>
+                <p>
+                  Gib deinen persönlichen Anmeldecode ein, um den gespeicherten
+                  Zahlungsweg nachträglich zu ändern.
+                </p>
+              </div>
+            </div>
+
+            <div class="front-lookup-form" role="form">
+              <label class="field">
+                <span>Anmeldecode</span>
+                <input id="changePaymentLookupCode"
+                       type="text"
+                       autocomplete="off"
+                       autocapitalize="characters"
+                       spellcheck="false"
+                       placeholder="z. B. HIL26-ABCD-EFGH" />
+              </label>
+
+              <p class="field-error"
+                 id="changePaymentLookupError"
+                 role="alert"></p>
+
+              <div class="step-actions">
+                <div class="button-row">
+                  <button class="secondary-button"
+                          id="changePaymentLookupBack"
+                          type="button">Zurück</button>
+                  <button class="primary-button"
+                          id="changePaymentLookupSubmit"
+                          type="button">
+                    Zahlungsweg anzeigen
+                  </button>
+                </div>
+              </div>
+            </div>
+          </section>
+
+          <section class="step payment-change-step"
+                   data-step="payment-change">
+            <div class="step-heading hero-heading">
+              <div class="heading-icon" aria-hidden="true">↔</div>
+              <div>
+                <p class="eyebrow">Zahlungsweg ändern</p>
+                <h2>Neue Zahlungsart auswählen</h2>
+                <p>
+                  Die Anmeldung selbst bleibt unverändert. Es wird nur der
+                  hinterlegte Zahlungsweg angepasst.
+                </p>
+              </div>
+            </div>
+
+            <div class="payment-change-summary">
+              <div>
+                <span>Anmeldecode</span>
+                <strong id="changePaymentCode">–</strong>
+              </div>
+              <div>
+                <span>Gesamtbetrag</span>
+                <strong id="changePaymentAmount">–</strong>
+              </div>
+              <div>
+                <span>Aktuell</span>
+                <strong id="changePaymentCurrent">–</strong>
+              </div>
+            </div>
+
+            <div id="changePaymentChoices">
+              <div class="section-label">Wie möchtest du bezahlen?</div>
+
+              <div class="payment-choice-grid payment-mode-grid">
+                <button type="button"
+                        class="payment-choice change-payment-mode-choice"
+                        data-change-payment-mode="digital">
+                  <span class="payment-choice-title">Digital per PayPal</span>
+                  <span class="payment-choice-text">
+                    Nach dem Speichern kannst du den Beitrag direkt über den
+                    PayPal-Pool begleichen.
+                  </span>
+                </button>
+
+                <button type="button"
+                        class="payment-choice change-payment-mode-choice"
+                        data-change-payment-mode="cash">
+                  <span class="payment-choice-title">Bar bezahlen</span>
+                  <span class="payment-choice-text">
+                    Barzahlung per Briefkasten oder persönlicher Abholung.
+                  </span>
+                </button>
+              </div>
+
+              <div class="payment-detail-panel hidden"
+                   id="changePaypalPanel">
+                <div class="payment-detail-heading">
+                  <strong>Digital per PayPal</strong>
+                  <span>
+                    Nach dem Speichern erscheint der PayPal-Link wieder in
+                    deiner Anmeldungsübersicht.
+                  </span>
+                </div>
+              </div>
+
+              <div class="payment-detail-panel hidden"
+                   id="changeCashPanel">
+                <div class="section-label payment-subsection-label">
+                  Wie möchtest du bar bezahlen?
+                </div>
+
+                <div class="payment-choice-grid">
+                  <button type="button"
+                          class="payment-choice change-cash-payment-choice"
+                          data-change-payment="briefkasten">
+                    <span class="payment-choice-title">In den Briefkasten</span>
+                    <span class="payment-choice-text">
+                      Betrag im Umschlag mit Namen in den Briefkasten
+                      <strong>Nassauische Straße 1, Springer</strong> einwerfen.
+                    </span>
+                  </button>
+
+                  <button type="button"
+                          class="payment-choice change-cash-payment-choice"
+                          data-change-payment="abholung">
+                    <span class="payment-choice-title">Persönliche Abholung</span>
+                    <span class="payment-choice-text">
+                      Am <strong>30. August ab 18 Uhr</strong> kommt jemand
+                      persönlich vorbei, um das Geld abzuholen.
+                    </span>
+                  </button>
+                </div>
+              </div>
+
+              <p class="field-error"
+                 id="changePaymentError"
+                 role="alert"></p>
+            </div>
+
+            <div class="no-payment-note hidden"
+                 id="changePaymentNotRequired">
+              Für diese Anmeldung fällt kein Kostenbeitrag an. Ein Zahlungsweg
+              muss deshalb nicht geändert werden.
+            </div>
+
+            <div class="step-actions">
+              <div class="button-row">
+                <button class="secondary-button"
+                        id="changePaymentBack"
+                        type="button">Zurück</button>
+                <button class="primary-button"
+                        id="changePaymentSave"
+                        type="button">
+                  Zahlungsweg speichern
+                </button>
+              </div>
+            </div>
+          </section>
+
           <section class="step existing-registration-step" data-step="existing">
             <div class="step-heading hero-heading">
               <div class="heading-icon" aria-hidden="true">⌁</div>
@@ -273,6 +446,45 @@
 
             <div class="existing-view-details"
                  id="frontExistingDetails"></div>
+
+            <div class="post-registration-payment-card"
+                 id="frontExistingPaymentCard">
+              <div class="post-payment-heading">
+                <span>Zahlungsweg</span>
+                <strong id="frontExistingPaymentMethod">–</strong>
+              </div>
+
+              <div class="post-payment-amount">
+                <span>Beitrag</span>
+                <strong id="frontExistingPaymentAmount">–</strong>
+              </div>
+
+              <div class="post-paypal-area hidden"
+                   id="frontExistingPaypalArea">
+                <p>
+                  Du kannst den Beitrag jetzt über den PayPal-Pool begleichen.
+                  Bitte verwende nach Möglichkeit den Namen aus deiner Anmeldung.
+                </p>
+
+                <a class="paypal-pool-button"
+                   href="https://www.paypal.com/pool/9rTjSFbk46?sr=wccr"
+                   target="_blank"
+                   rel="noopener noreferrer">
+                  Zum PayPal-Pool
+                </a>
+
+                <small>
+                  Nach der Zahlung kannst du zu dieser Seite zurückkehren.
+                  Der Zahlungsstatus wird nach Prüfung im Admin-Bereich aktualisiert.
+                </small>
+              </div>
+
+              <button class="secondary-button payment-change-button"
+                      id="frontExistingChangePayment"
+                      type="button">
+                Zahlungsweg ändern
+              </button>
+            </div>
 
             <div class="existing-view-actions">
               <button class="primary-button"
@@ -509,22 +721,17 @@
                 <div class="payment-detail-heading">
                   <strong>Digitale Zahlung über PayPal</strong>
                   <span>
-                    Die Zahlung erfolgt über unseren PayPal-Pool. Bitte verwende
-                    nach Möglichkeit den Namen aus deiner Anmeldung, damit die
-                    Zahlung leichter zugeordnet werden kann.
+                    Der Bezahlvorgang findet erst <strong>nach dem Absenden der
+                    Anmeldung</strong> statt. Nach erfolgreicher Speicherung
+                    erhältst du deinen Anmeldecode und direkt darunter den Link
+                    zum PayPal-Pool.
                   </span>
                 </div>
 
-                <a class="paypal-pool-button"
-                   href="https://www.paypal.com/pool/9rTjSFbk46?sr=wccr"
-                   target="_blank"
-                   rel="noopener noreferrer">
-                  Zum PayPal-Pool
-                </a>
-
                 <small class="payment-detail-note">
-                  Der Zahlungsstatus auf dieser Webseite wird aktualisiert,
-                  sobald die Zahlung im Admin-Bereich als bezahlt bestätigt wurde.
+                  Deine Anmeldung wird also zuerst vollständig gespeichert.
+                  Anschließend kannst du den festgelegten Beitrag über PayPal
+                  begleichen.
                 </small>
               </div>
 
@@ -624,6 +831,50 @@
             <div class="access-code-card access-code-focus">
               <span class="summary-label">Persönlicher Anmeldecode</span>
               <strong class="access-code" id="accessCode">–</strong>
+            </div>
+
+            <div class="post-registration-payment-card confirmation-payment-card"
+                 id="confirmationPaymentCard">
+              <div class="post-payment-heading">
+                <span>Gewählter Zahlungsweg</span>
+                <strong id="confirmationPaymentMethod">–</strong>
+              </div>
+
+              <div class="post-payment-amount">
+                <span>Zu zahlender Beitrag</span>
+                <strong id="confirmationPaymentAmount">–</strong>
+              </div>
+
+              <div class="post-paypal-area hidden"
+                   id="confirmationPaypalArea">
+                <p>
+                  Deine Anmeldung ist gespeichert. Du kannst den Beitrag jetzt
+                  über den PayPal-Pool begleichen.
+                </p>
+
+                <a class="paypal-pool-button"
+                   href="https://www.paypal.com/pool/9rTjSFbk46?sr=wccr"
+                   target="_blank"
+                   rel="noopener noreferrer">
+                  Jetzt mit PayPal bezahlen
+                </a>
+
+                <small>
+                  Nach der Zahlung kannst du zu dieser Seite zurückkehren.
+                  Der Zahlungsstatus wird nach Prüfung im Admin-Bereich aktualisiert.
+                </small>
+              </div>
+
+              <p class="post-payment-change-note">
+                Falls der gewählte Zahlungsweg nicht funktioniert, kannst du ihn
+                auch nachträglich ändern.
+              </p>
+
+              <button class="secondary-button payment-change-button"
+                      id="changePaymentAfterSubmitButton"
+                      type="button">
+                Zahlungsweg ändern
+              </button>
             </div>
 
             <button class="primary-button pdf-download-button" id="downloadPdfButton" type="button">

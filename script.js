@@ -20,6 +20,9 @@
     paymentMethod: null,
     totalCost: 0,
     savedRegistration: null,
+    paymentChangeOrigin: "home",
+    paymentChangeMethod: null,
+    paymentChangeMode: null,
     submissionId: null,
     submitting: false
   };
@@ -74,6 +77,10 @@
   const myRegistrationButton = document.getElementById("myRegistrationButton");
   const myRegistrationHint = document.getElementById("myRegistrationHint");
   const accessCode = document.getElementById("accessCode");
+  const confirmationPaymentMethod = document.getElementById("confirmationPaymentMethod");
+  const confirmationPaymentAmount = document.getElementById("confirmationPaymentAmount");
+  const confirmationPaypalArea = document.getElementById("confirmationPaypalArea");
+  const changePaymentAfterSubmitButton = document.getElementById("changePaymentAfterSubmitButton");
   const downloadPdfButton = document.getElementById("downloadPdfButton");
   const codeContinueButton = document.getElementById("codeContinueButton");
   const codeCountdownHint = document.getElementById("codeCountdownHint");
@@ -84,6 +91,25 @@
   const homeNewRegistration = document.getElementById("homeNewRegistration");
   const homeExistingRegistration = document.getElementById("homeExistingRegistration");
   const homePaymentStatus = document.getElementById("homePaymentStatus");
+  const homeChangePayment = document.getElementById("homeChangePayment");
+
+  const changePaymentLookupCode = document.getElementById("changePaymentLookupCode");
+  const changePaymentLookupError = document.getElementById("changePaymentLookupError");
+  const changePaymentLookupBack = document.getElementById("changePaymentLookupBack");
+  const changePaymentLookupSubmit = document.getElementById("changePaymentLookupSubmit");
+
+  const changePaymentCode = document.getElementById("changePaymentCode");
+  const changePaymentAmount = document.getElementById("changePaymentAmount");
+  const changePaymentCurrent = document.getElementById("changePaymentCurrent");
+  const changePaymentChoices = document.getElementById("changePaymentChoices");
+  const changePaymentNotRequired = document.getElementById("changePaymentNotRequired");
+  const changePaymentModeButtons = [...document.querySelectorAll(".change-payment-mode-choice")];
+  const changeCashPaymentButtons = [...document.querySelectorAll(".change-cash-payment-choice")];
+  const changePaypalPanel = document.getElementById("changePaypalPanel");
+  const changeCashPanel = document.getElementById("changeCashPanel");
+  const changePaymentError = document.getElementById("changePaymentError");
+  const changePaymentBack = document.getElementById("changePaymentBack");
+  const changePaymentSave = document.getElementById("changePaymentSave");
 
   const paymentStatusForm = document.getElementById("paymentStatusForm");
   const paymentStatusCode = document.getElementById("paymentStatusCode");
@@ -108,6 +134,10 @@
 
   const frontExistingCode = document.getElementById("frontExistingCode");
   const frontExistingDetails = document.getElementById("frontExistingDetails");
+  const frontExistingPaymentMethod = document.getElementById("frontExistingPaymentMethod");
+  const frontExistingPaymentAmount = document.getElementById("frontExistingPaymentAmount");
+  const frontExistingPaypalArea = document.getElementById("frontExistingPaypalArea");
+  const frontExistingChangePayment = document.getElementById("frontExistingChangePayment");
   const frontExistingPdf = document.getElementById("frontExistingPdf");
   const frontExistingOther = document.getElementById("frontExistingOther");
   const frontExistingHome = document.getElementById("frontExistingHome");
@@ -395,6 +425,105 @@
       return "Persönliche Abholung am 30. August ab 18 Uhr.";
     }
     return "Keine Zahlung erforderlich.";
+  }
+
+  function shortPaymentMethodLabel(method) {
+    if (method === "paypal") return "PayPal";
+    if (method === "briefkasten") return "Bar – Briefkasten";
+    if (method === "abholung") return "Bar – persönliche Abholung";
+    return "Keine Zahlung erforderlich";
+  }
+
+  function renderPostRegistrationPayment(registration, target) {
+    const method = registration?.payment?.method || "none";
+    const total = Number(registration?.payment?.total || 0);
+
+    target.method.textContent = shortPaymentMethodLabel(method);
+    target.amount.textContent = formatMoney(total);
+    target.paypal.classList.toggle(
+      "hidden",
+      method !== "paypal" || total <= 0
+    );
+
+    if (target.changeButton) {
+      target.changeButton.classList.toggle("hidden", total <= 0);
+    }
+  }
+
+  function resetChangePaymentSelection() {
+    state.paymentChangeMethod = null;
+    state.paymentChangeMode = null;
+
+    changePaymentModeButtons.forEach((button) => {
+      button.classList.remove("selected");
+    });
+
+    changeCashPaymentButtons.forEach((button) => {
+      button.classList.remove("selected");
+    });
+
+    changePaypalPanel.classList.add("hidden");
+    changeCashPanel.classList.add("hidden");
+    changePaymentError.textContent = "";
+  }
+
+  function preselectChangePaymentMethod(method) {
+    resetChangePaymentSelection();
+
+    if (method === "paypal") {
+      state.paymentChangeMode = "digital";
+      state.paymentChangeMethod = "paypal";
+
+      changePaymentModeButtons.forEach((button) => {
+        button.classList.toggle(
+          "selected",
+          button.dataset.changePaymentMode === "digital"
+        );
+      });
+
+      changePaypalPanel.classList.remove("hidden");
+      return;
+    }
+
+    if (method === "briefkasten" || method === "abholung") {
+      state.paymentChangeMode = "cash";
+      state.paymentChangeMethod = method;
+
+      changePaymentModeButtons.forEach((button) => {
+        button.classList.toggle(
+          "selected",
+          button.dataset.changePaymentMode === "cash"
+        );
+      });
+
+      changeCashPaymentButtons.forEach((button) => {
+        button.classList.toggle(
+          "selected",
+          button.dataset.changePayment === method
+        );
+      });
+
+      changeCashPanel.classList.remove("hidden");
+    }
+  }
+
+  function openPaymentChange(registration, origin = "home") {
+    state.savedRegistration = registration;
+    state.paymentChangeOrigin = origin;
+
+    const total = Number(registration?.payment?.total || 0);
+    const method = registration?.payment?.method || "none";
+
+    changePaymentCode.textContent = registration?.accessCode || "–";
+    changePaymentAmount.textContent = formatMoney(total);
+    changePaymentCurrent.textContent = shortPaymentMethodLabel(method);
+
+    changePaymentChoices.classList.toggle("hidden", total <= 0);
+    changePaymentNotRequired.classList.toggle("hidden", total > 0);
+    changePaymentSave.classList.toggle("hidden", total <= 0);
+
+    preselectChangePaymentMethod(method);
+    setStep("payment-change");
   }
 
   async function loadRegistration(code, lastName) {
@@ -980,6 +1109,8 @@
       "existing-view",
       "payment",
       "payment-view",
+      "payment-change-lookup",
+      "payment-change",
       "code",
       "done"
     ].includes(state.step);
@@ -1660,6 +1791,14 @@
     state.savedRegistration = registration;
     frontExistingCode.textContent = registration.accessCode || "–";
     frontExistingDetails.innerHTML = registrationDetailsHtml(registration);
+
+    renderPostRegistrationPayment(registration, {
+      method: frontExistingPaymentMethod,
+      amount: frontExistingPaymentAmount,
+      paypal: frontExistingPaypalArea,
+      changeButton: frontExistingChangePayment
+    });
+
     setStep("existing-view");
   }
 
@@ -1764,6 +1903,199 @@
     setStep("home");
   });
 
+  homeChangePayment.addEventListener("click", () => {
+    const saved = getSavedRegistrationIdentity();
+
+    if (saved) {
+      changePaymentLookupCode.value = saved.code || "";
+    }
+
+    changePaymentLookupError.textContent = "";
+    state.paymentChangeOrigin = "home";
+    setStep("payment-change-lookup");
+  });
+
+  changePaymentLookupBack.addEventListener("click", () => {
+    changePaymentLookupError.textContent = "";
+    setStep("home");
+  });
+
+  async function lookupRegistrationForPaymentChange() {
+    const code = changePaymentLookupCode.value.trim();
+
+    if (!code) {
+      changePaymentLookupError.textContent =
+        "Bitte deinen Anmeldecode eingeben.";
+      return;
+    }
+
+    setButtonBusy(
+      changePaymentLookupSubmit,
+      true,
+      "Wird geladen …"
+    );
+
+    changePaymentLookupError.textContent = "";
+
+    try {
+      const registration = await loadRegistration(code, "");
+      saveRegistrationIdentity(registration);
+      openPaymentChange(registration, "home");
+    } catch (error) {
+      changePaymentLookupError.textContent = friendlyLookupError(error);
+    } finally {
+      setButtonBusy(changePaymentLookupSubmit, false);
+    }
+  }
+
+  changePaymentLookupSubmit.addEventListener("click", () => {
+    void lookupRegistrationForPaymentChange();
+  });
+
+  changePaymentLookupCode.addEventListener("keydown", (event) => {
+    if (event.key !== "Enter") return;
+    event.preventDefault();
+    void lookupRegistrationForPaymentChange();
+  });
+
+  changePaymentModeButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      const mode = button.dataset.changePaymentMode;
+
+      state.paymentChangeMode = mode;
+      changePaymentError.textContent = "";
+
+      changePaymentModeButtons.forEach((item) => {
+        item.classList.toggle("selected", item === button);
+      });
+
+      if (mode === "digital") {
+        state.paymentChangeMethod = "paypal";
+
+        changeCashPaymentButtons.forEach((item) => {
+          item.classList.remove("selected");
+        });
+
+        changeCashPanel.classList.add("hidden");
+        changePaypalPanel.classList.remove("hidden");
+        return;
+      }
+
+      state.paymentChangeMethod = null;
+      changePaypalPanel.classList.add("hidden");
+      changeCashPanel.classList.remove("hidden");
+    });
+  });
+
+  changeCashPaymentButtons.forEach((button) => {
+    button.addEventListener("click", () => {
+      state.paymentChangeMode = "cash";
+      state.paymentChangeMethod = button.dataset.changePayment;
+      changePaymentError.textContent = "";
+
+      changePaymentModeButtons.forEach((item) => {
+        item.classList.toggle(
+          "selected",
+          item.dataset.changePaymentMode === "cash"
+        );
+      });
+
+      changeCashPaymentButtons.forEach((item) => {
+        item.classList.toggle("selected", item === button);
+      });
+
+      changePaypalPanel.classList.add("hidden");
+      changeCashPanel.classList.remove("hidden");
+    });
+  });
+
+  function returnFromPaymentChange() {
+    if (state.paymentChangeOrigin === "code") {
+      if (state.savedRegistration) {
+        renderDoneRegistration(state.savedRegistration);
+      }
+      setStep("code");
+      return;
+    }
+
+    if (state.paymentChangeOrigin === "existing-view") {
+      if (state.savedRegistration) {
+        showExistingRegistration(state.savedRegistration);
+      } else {
+        setStep("existing");
+      }
+      return;
+    }
+
+    setStep("payment-change-lookup");
+  }
+
+  changePaymentBack.addEventListener("click", () => {
+    returnFromPaymentChange();
+  });
+
+  changePaymentSave.addEventListener("click", async () => {
+    const registration = state.savedRegistration;
+    const total = Number(registration?.payment?.total || 0);
+
+    if (!registration?.accessCode || total <= 0) {
+      returnFromPaymentChange();
+      return;
+    }
+
+    if (!state.paymentChangeMode) {
+      changePaymentError.textContent =
+        "Bitte auswählen, ob du digital oder bar bezahlen möchtest.";
+      return;
+    }
+
+    if (
+      state.paymentChangeMode === "cash" &&
+      !state.paymentChangeMethod
+    ) {
+      changePaymentError.textContent =
+        "Bitte auswählen, wie du bar bezahlen möchtest.";
+      return;
+    }
+
+    setButtonBusy(
+      changePaymentSave,
+      true,
+      "Wird gespeichert …"
+    );
+
+    changePaymentError.textContent = "";
+
+    try {
+      const result = await apiRequest("updatePaymentMethod", {
+        code: registration.accessCode,
+        paymentMethod: state.paymentChangeMethod
+      });
+
+      if (!result.registration) {
+        throw new Error(
+          "Der Zahlungsweg konnte nicht aktualisiert werden."
+        );
+      }
+
+      state.savedRegistration = result.registration;
+      saveRegistrationIdentity(result.registration);
+
+      if (state.paymentChangeOrigin === "code") {
+        renderDoneRegistration(result.registration);
+        setStep("code");
+      } else {
+        showExistingRegistration(result.registration);
+      }
+    } catch (error) {
+      changePaymentError.textContent =
+        error.message ||
+        "Der Zahlungsweg konnte nicht gespeichert werden.";
+    } finally {
+      setButtonBusy(changePaymentSave, false);
+    }
+  });
+
   homeExistingRegistration.addEventListener("click", () => {
     const saved = getSavedRegistrationIdentity();
 
@@ -1810,6 +2142,11 @@
     if (event.key !== "Enter") return;
     event.preventDefault();
     void lookupExistingRegistration();
+  });
+
+  frontExistingChangePayment.addEventListener("click", () => {
+    if (!state.savedRegistration) return;
+    openPaymentChange(state.savedRegistration, "existing-view");
   });
 
   frontExistingPdf.addEventListener("click", async () => {
@@ -2035,6 +2372,13 @@
 
   function renderDoneRegistration(registration) {
     accessCode.textContent = registration.accessCode || "–";
+
+    renderPostRegistrationPayment(registration, {
+      method: confirmationPaymentMethod,
+      amount: confirmationPaymentAmount,
+      paypal: confirmationPaypalArea,
+      changeButton: changePaymentAfterSubmitButton
+    });
   }
 
   function stopConfirmationCountdown() {
@@ -2077,6 +2421,11 @@
     setStep("done");
   });
 
+
+  changePaymentAfterSubmitButton.addEventListener("click", () => {
+    if (!state.savedRegistration) return;
+    openPaymentChange(state.savedRegistration, "code");
+  });
 
   downloadPdfButton.addEventListener("click", async () => {
     if (!state.savedRegistration || downloadPdfButton.disabled) return;
@@ -2462,6 +2811,9 @@
     state.paymentMethod = null;
     state.totalCost = 0;
     state.savedRegistration = null;
+    state.paymentChangeOrigin = "home";
+    state.paymentChangeMethod = null;
+    state.paymentChangeMode = null;
     state.submissionId = null;
     state.submitting = false;
     form.reset();

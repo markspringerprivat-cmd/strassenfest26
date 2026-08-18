@@ -378,3 +378,16 @@ zum Timeout geführt haben konnten.
   bestehender Anmeldung und Admin korrekt angezeigt.
 - Der Zahlungsstatus wird weiterhin manuell über den Admin-Bereich bestätigt;
   PayPal markiert eine Anmeldung nicht automatisch als bezahlt.
+
+
+## Update v29
+- PayPal-Bezahlung findet erst nach erfolgreicher Anmeldung statt.
+- Im Zahlungsschritt wird PayPal nur ausgewählt; der Pool-Link erscheint dort noch nicht.
+- Nach erfolgreicher Speicherung werden Anmeldecode, Zahlungsweg und Beitrag angezeigt.
+- Bei PayPal erscheint dort der Button „Jetzt mit PayPal bezahlen“.
+- Derselbe PayPal-Zugang erscheint auch beim späteren Aufruf einer bestehenden Anmeldung.
+- Nach der Anmeldung und in der bestehenden Anmeldung gibt es „Zahlungsweg ändern“.
+- Auf der Startseite gibt es zusätzlich „Zahlungsweg ändern“:
+  Anmeldecode → aktuellen Zahlungsweg laden → neuen Zahlungsweg auswählen → speichern.
+- Apps Script v14 ändert nur den Zahlungsweg, nicht den Bezahlstatus.
+- PayPal-Pool: https://www.paypal.com/pool/9rTjSFbk46?sr=wccr
