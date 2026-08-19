@@ -1862,10 +1862,6 @@ textarea,
   accent-color: #ffc950;
 }
 
-.admin-receipt-ocr pre {
-  max-height: 150px;
-}
-
 .report-summary-grid {
   display: grid;
   grid-template-columns: repeat(3, minmax(0, 1fr));
@@ -1940,5 +1936,93 @@ textarea,
 
   .receipt-modal-meta {
     grid-template-columns: 1fr;
+  }
+}
+
+
+/* v36 – Kassenbons nach Nutzer gruppiert */
+.receipt-user-group {
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 14px;
+  background: rgba(255,255,255,.025);
+  overflow: hidden;
+}
+
+.receipt-user-group + .receipt-user-group {
+  margin-top: 10px;
+}
+
+.receipt-user-group-heading {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 11px 12px;
+  background: rgba(255,255,255,.045);
+}
+
+.receipt-user-group-heading > div:first-child {
+  display: grid;
+  gap: 2px;
+}
+
+.receipt-user-subtotals {
+  display: grid;
+  gap: 2px;
+  text-align: right;
+}
+
+.receipt-user-subtotals span {
+  font-weight: 800;
+}
+
+.receipt-user-items {
+  display: grid;
+}
+
+.receipt-user-items .receipt-admin-row {
+  border: 0;
+  border-radius: 0;
+  border-top: 1px solid rgba(255,255,255,.075);
+}
+
+.receipt-entry-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 7px;
+}
+
+.receipt-inline-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: .72rem;
+}
+
+.receipt-edit-button,
+.receipt-delete-row-button {
+  border: 1px solid rgba(255,255,255,.14);
+  border-radius: 9px;
+  background: rgba(255,255,255,.055);
+  color: inherit;
+  padding: 7px 9px;
+  font: inherit;
+  font-size: .7rem;
+  cursor: pointer;
+}
+
+.receipt-delete-row-button {
+  border-color: rgba(255,130,130,.24);
+}
+
+@media (max-width: 620px) {
+  .receipt-user-group-heading {
+    align-items: flex-start;
+  }
+
+  .receipt-entry-actions {
+    justify-content: flex-start;
   }
 }

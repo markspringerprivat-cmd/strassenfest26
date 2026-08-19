@@ -136,11 +136,10 @@
     line("Als bezahlt erfasst", money(report.paid));
     line("Noch offen", money(report.open));
     line("Einkauf vor dem Fest", money(report.expenseTotal));
-    line("Kassenbons eingereicht", money(report.receiptTotal));
-    line("Davon geprueft", money(report.reviewedReceiptTotal));
+    line("Kassenbons gesamt", money(report.receiptTotal));
     line("Davon erstattet", money(report.reimbursedTotal));
-    line("Noch zu erstatten", money(report.reimbursementOpen));
-    line("Finalisierte Gesamtkosten", money(report.finalizedCostTotal));
+    line("Kassenbons noch offen", money(report.reimbursementOpen));
+    line("Gesamtkosten", money(report.finalizedCostTotal));
     line("Aktueller Kassenstand", money(report.cashBalance));
 
     y += 4;
@@ -188,10 +187,8 @@
     } else {
       report.receipts.forEach((receipt, index) => {
         paragraph(
-          `${index + 1}. ${receipt.primaryName} | ${receipt.merchant || "Geschaeft unbekannt"} | ` +
-          `${date(receipt.purchaseDate)} | ${money(receipt.amount)} | ` +
-          `${receipt.reviewed ? "geprueft" : "ungeprueft"} | ` +
-          `${receipt.reimbursed ? "erstattet" : "nicht erstattet"}`
+          `${index + 1}. ${receipt.primaryName} | ${money(receipt.amount)} | ` +
+          `${receipt.reimbursed ? "erstattet" : "noch offen"}`
         );
       });
     }
@@ -219,8 +216,7 @@
 
       paragraph(
         `${receipt.primaryName} | ${receipt.accessCode} | ` +
-        `${receipt.merchant || "Geschaeft unbekannt"} | ${date(receipt.purchaseDate)} | ` +
-        `${money(receipt.amount)} | ${receipt.reviewed ? "geprueft" : "ungeprueft"}`
+        `${money(receipt.amount)} | ${receipt.reimbursed ? "erstattet" : "noch offen"}`
       );
 
       if (!imageData) {

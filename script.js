@@ -25,7 +25,6 @@
     paymentChangeMode: null,
     receiptRegistration: null,
     receiptImageDataUrl: "",
-    receiptOcrText: "",
     receiptSubmissionId: null,
     submissionId: null,
     submitting: false
@@ -140,19 +139,9 @@
   const receiptFileInput = document.getElementById("receiptFileInput");
   const receiptPreviewCard = document.getElementById("receiptPreviewCard");
   const receiptPreviewImage = document.getElementById("receiptPreviewImage");
-  const receiptProcessing = document.getElementById("receiptProcessing");
-  const receiptProcessingLabel = document.getElementById("receiptProcessingLabel");
-  const receiptProgressBar = document.getElementById("receiptProgressBar");
-  const receiptReview = document.getElementById("receiptReview");
-  const receiptMerchant = document.getElementById("receiptMerchant");
-  const receiptPurchaseDate = document.getElementById("receiptPurchaseDate");
+  const receiptReplaceFileButton = document.getElementById("receiptReplaceFileButton");
   const receiptAmount = document.getElementById("receiptAmount");
-  const receiptMerchantInsight = document.getElementById("receiptMerchantInsight");
-  const receiptDateInsight = document.getElementById("receiptDateInsight");
-  const receiptAmountInsight = document.getElementById("receiptAmountInsight");
-  const receiptLogicSummary = document.getElementById("receiptLogicSummary");
-  const receiptUserConfirmed = document.getElementById("receiptUserConfirmed");
-  const receiptOcrTextPreview = document.getElementById("receiptOcrTextPreview");
+  const receiptFestivalOnlyConfirmed = document.getElementById("receiptFestivalOnlyConfirmed");
   const receiptUploadError = document.getElementById("receiptUploadError");
   const receiptUploadBack = document.getElementById("receiptUploadBack");
   const receiptSubmitButton = document.getElementById("receiptSubmitButton");
@@ -2017,27 +2006,15 @@
     }
 
     state.receiptImageDataUrl = "";
-    state.receiptOcrText = "";
     state.receiptSubmissionId = null;
 
     receiptFileInput.value = "";
     receiptPreviewImage.removeAttribute("src");
     receiptPreviewCard.classList.add("hidden");
-    receiptProcessing.classList.add("hidden");
-    receiptReview.classList.add("hidden");
-    receiptMerchant.value = "";
-    receiptPurchaseDate.value = "";
     receiptAmount.value = "";
-    receiptMerchantInsight.textContent = "";
-    receiptDateInsight.textContent = "";
-    receiptAmountInsight.textContent = "";
-    receiptLogicSummary.textContent = "";
-    receiptLogicSummary.className = "receipt-logic-summary hidden";
-    receiptUserConfirmed.checked = false;
-    receiptOcrTextPreview.textContent = "";
+    receiptFestivalOnlyConfirmed.checked = false;
     receiptUploadError.textContent = "";
     receiptSubmitButton.disabled = true;
-    receiptProgressBar.style.width = "0%";
   }
 
   function receiptMainName(registration) {
@@ -2051,11 +2028,17 @@
   }
 
   function parseReceiptAmount(value) {
-    const normalized = String(value || "")
+    const raw = String(value || "")
       .trim()
-      .replace(/\s/g, "")
-      .replace(/\./g, "")
-      .replace(",", ".");
+      .replace(/\s/g, "");
+
+    let normalized = raw;
+
+    if (raw.includes(",") && raw.includes(".")) {
+      normalized = raw.replace(/\./g, "").replace(",", ".");
+    } else if (raw.includes(",")) {
+      normalized = raw.replace(",", ".");
+    }
 
     const amount = Number(normalized);
     return Number.isFinite(amount) ? amount : NaN;
@@ -2067,18 +2050,94 @@
     receiptSubmitButton.disabled = !(
       state.receiptRegistration?.accessCode &&
       state.receiptImageDataUrl &&
-      receiptMerchant.value.trim() &&
       Number.isFinite(amount) &&
       amount > 0 &&
-      receiptUserConfirmed.checked
+      receiptFestivalOnlyConfirmed.checked
     );
   }
 
-  function setReceiptProgress(progress, label) {
-    receiptProcessing.classList.remove("hidden");
-    receiptProcessingLabel.textContent = label || "Kassenbon wird verarbeitet …";
-    receiptProgressBar.style.width =
-      `${Math.round(Math.max(0, Math.min(1, Number(progress || 0))) * 100)}%`;
+  function readReceiptFile(file) {
+    return new Promise((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(String(reader.result || ""));
+      reader.onerror = () => reject(
+        new Error("Das Foto konnte nicht gelesen werden.")
+      );
+      reader.readAsDataURL(file);
+    });
+  }
+
+  function loadReceiptImage(dataUrl) {
+    return new Promise((resolve, reject) => {
+      const image = new Image();
+      image.onload = () => resolve(image);
+      image.onerror = () => reject(
+        new Error("Das Foto konnte nicht verarbeitet werden.")
+      );
+      image.src = dataUrl;
+    });
+  }
+
+  async function prepareReceiptImage(file) {
+    if (!file || !String(file.type || "").startsWith("image/")) {
+      throw new Error(
+        "Bitte ein Foto oder eine Bilddatei des Kassenbons auswählen."
+      );
+    }
+
+    const originalUrl = await readReceiptFile(file);
+    const image = await loadReceiptImage(originalUrl);
+
+    const maxSide = 2400;
+    const sourceWidth = image.naturalWidth || image.width;
+    const sourceHeight = image.naturalHeight || image.height;
+    const scale = Math.min(
+      1,
+      maxSide / Math.max(sourceWidth, sourceHeight)
+    );
+
+    let width = Math.max(1, Math.round(sourceWidth * scale));
+    let height = Math.max(1, Math.round(sourceHeight * scale));
+    let quality = 0.86;
+    let dataUrl = "";
+
+    for (let attempt = 0; attempt < 6; attempt += 1) {
+      const canvas = document.createElement("canvas");
+      canvas.width = width;
+      canvas.height = height;
+
+      const ctx = canvas.getContext("2d", { alpha: false });
+      ctx.fillStyle = "#ffffff";
+      ctx.fillRect(0, 0, width, height);
+      ctx.drawImage(image, 0, 0, width, height);
+
+      dataUrl = canvas.toDataURL("image/jpeg", quality);
+
+      const payload = dataUrl.split(",")[1] || "";
+      const bytes = Math.ceil(payload.length * 0.75);
+
+      if (bytes <= 900000) {
+        break;
+      }
+
+      quality = Math.max(0.58, quality - 0.07);
+
+      if (attempt >= 2) {
+        width = Math.max(900, Math.round(width * 0.86));
+        height = Math.max(900, Math.round(height * 0.86));
+      }
+    }
+
+    const payload = dataUrl.split(",")[1] || "";
+    const bytes = Math.ceil(payload.length * 0.75);
+
+    if (bytes > 1300000) {
+      throw new Error(
+        "Das Foto ist trotz Komprimierung noch zu groß. Bitte den Kassenbon etwas näher fotografieren."
+      );
+    }
+
+    return dataUrl;
   }
 
   paymentsReceiptButton.addEventListener("click", () => {
@@ -2102,7 +2161,8 @@
     const code = receiptLookupCode.value.trim();
 
     if (!code) {
-      receiptLookupError.textContent = "Bitte deinen Anmeldecode eingeben.";
+      receiptLookupError.textContent =
+        "Bitte deinen Anmeldecode eingeben.";
       return;
     }
 
@@ -2114,8 +2174,10 @@
       state.receiptRegistration = registration;
       saveRegistrationIdentity(registration);
 
-      receiptRegistrationCode.textContent = registration.accessCode || "–";
-      receiptRegistrationName.textContent = receiptMainName(registration);
+      receiptRegistrationCode.textContent =
+        registration.accessCode || "–";
+      receiptRegistrationName.textContent =
+        receiptMainName(registration);
 
       resetReceiptForm({ keepRegistration: true });
       setStep("receipt-upload");
@@ -2141,166 +2203,41 @@
     setStep("receipt-lookup");
   });
 
-  function receiptConfidenceText(level) {
-    if (level === "high") return "Hohe Sicherheit";
-    if (level === "medium") return "Mittlere Sicherheit";
-    return "Unsicher";
-  }
-
-  function applyReceiptInsight(element, level, text) {
-    element.textContent =
-      text
-        ? `${receiptConfidenceText(level)} · ${text}`
-        : "";
-
-    element.dataset.confidence = level || "low";
-  }
-
-  function renderReceiptLogic(fields) {
-    const confidence = fields?.confidence || {};
-    const insights = fields?.insights || {};
-
-    applyReceiptInsight(
-      receiptMerchantInsight,
-      confidence.merchant,
-      insights.merchant
-    );
-
-    applyReceiptInsight(
-      receiptDateInsight,
-      confidence.purchaseDate,
-      insights.purchaseDate
-    );
-
-    applyReceiptInsight(
-      receiptAmountInsight,
-      confidence.amount,
-      insights.amount
-    );
-
-    const levels = [
-      confidence.merchant,
-      confidence.purchaseDate,
-      confidence.amount
-    ];
-
-    const hasLow = levels.includes("low");
-    const amountHigh = confidence.amount === "high";
-
-    receiptLogicSummary.classList.remove("hidden");
-
-    if (amountHigh && !hasLow) {
-      receiptLogicSummary.className =
-        "receipt-logic-summary confidence-high";
-      receiptLogicSummary.textContent =
-        "Die wichtigsten Angaben konnten logisch gegengeprüft werden. Bitte trotzdem kurz mit dem Originalbon vergleichen.";
-      return;
-    }
-
-    if (amountHigh) {
-      receiptLogicSummary.className =
-        "receipt-logic-summary confidence-medium";
-      receiptLogicSummary.textContent =
-        "Der Gesamtbetrag ist sehr plausibel. Einzelne andere Angaben konnten jedoch nicht sicher erkannt werden und sollten manuell geprüft werden.";
-      return;
-    }
-
-    receiptLogicSummary.className =
-      hasLow
-        ? "receipt-logic-summary confidence-low"
-        : "receipt-logic-summary confidence-medium";
-
-    receiptLogicSummary.textContent =
-      hasLow
-        ? "Mindestens eine Angabe ist unsicher. Bitte die vorausgefüllten Felder sorgfältig mit dem Kassenbon vergleichen."
-        : "Die Angaben wirken plausibel, konnten aber nicht vollständig unabhängig gegengeprüft werden.";
-  }
-
   receiptFileInput.addEventListener("change", async () => {
     const file = receiptFileInput.files?.[0];
 
-    if (!file) return;
+    if (!file) {
+      state.receiptImageDataUrl = "";
+      receiptPreviewImage.removeAttribute("src");
+      receiptPreviewCard.classList.add("hidden");
+      updateReceiptSubmitState();
+      return;
+    }
 
     receiptUploadError.textContent = "";
-    receiptReview.classList.add("hidden");
     receiptSubmitButton.disabled = true;
 
     try {
-      const prepared = await window.ReceiptOcr.prepareImage(
-        file,
-        (progress) => {
-          setReceiptProgress(
-            progress.progress * 0.18,
-            progress.label
-          );
-        }
-      );
-
-      state.receiptImageDataUrl = prepared.dataUrl;
-      receiptPreviewImage.src = prepared.dataUrl;
+      const dataUrl = await prepareReceiptImage(file);
+      state.receiptImageDataUrl = dataUrl;
+      receiptPreviewImage.src = dataUrl;
       receiptPreviewCard.classList.remove("hidden");
-
-      setReceiptProgress(0.2, "Automatische Texterkennung startet …");
-
-      try {
-        const recognized = await window.ReceiptOcr.recognize(
-          prepared.ocrDataUrl || prepared.dataUrl,
-          (progress) => {
-            setReceiptProgress(
-              0.2 + progress.progress * 0.78,
-              progress.label
-            );
-          }
-        );
-
-        state.receiptOcrText = recognized.text || "";
-        receiptOcrTextPreview.textContent =
-          state.receiptOcrText || "Kein Text erkannt.";
-
-        const fields = recognized.fields || {};
-
-        receiptMerchant.value = fields.merchant || "";
-        receiptPurchaseDate.value = fields.purchaseDate || "";
-        receiptAmount.value = Number.isFinite(fields.amount)
-          ? Number(fields.amount).toFixed(2).replace(".", ",")
-          : "";
-
-        renderReceiptLogic(fields);
-
-        setReceiptProgress(1, "Texterkennung abgeschlossen");
-      } catch (ocrError) {
-        state.receiptOcrText = "";
-        receiptOcrTextPreview.textContent =
-          "Die automatische Texterkennung war nicht verfügbar.";
-
-        receiptLogicSummary.className =
-          "receipt-logic-summary confidence-low";
-        receiptLogicSummary.textContent =
-          "Die automatische Auswertung war nicht verfügbar. Bitte alle Angaben manuell mit dem Kassenbon abgleichen.";
-        receiptMerchantInsight.textContent = "";
-        receiptDateInsight.textContent = "";
-        receiptAmountInsight.textContent = "";
-
-        receiptUploadError.textContent =
-          `${ocrError.message} Bitte Geschäft, Datum und Betrag manuell eintragen.`;
-      }
-
-      receiptProcessing.classList.add("hidden");
-      receiptReview.classList.remove("hidden");
-      updateReceiptSubmitState();
-
     } catch (error) {
-      receiptProcessing.classList.add("hidden");
+      state.receiptImageDataUrl = "";
+      receiptFileInput.value = "";
+      receiptPreviewImage.removeAttribute("src");
+      receiptPreviewCard.classList.add("hidden");
       receiptUploadError.textContent = error.message;
     }
+
+    updateReceiptSubmitState();
   });
 
-  [
-    receiptMerchant,
-    receiptPurchaseDate,
-    receiptAmount,
-    receiptUserConfirmed
-  ].forEach((element) => {
+  receiptReplaceFileButton.addEventListener("click", () => {
+    receiptFileInput.click();
+  });
+
+  [receiptAmount, receiptFestivalOnlyConfirmed].forEach((element) => {
     element.addEventListener("input", updateReceiptSubmitState);
     element.addEventListener("change", updateReceiptSubmitState);
   });
@@ -2309,30 +2246,21 @@
     const registration = state.receiptRegistration;
     const amount = parseReceiptAmount(receiptAmount.value);
 
-    if (
-      !registration?.accessCode ||
-      !state.receiptImageDataUrl
-    ) {
+    if (!registration?.accessCode || !state.receiptImageDataUrl) {
       receiptUploadError.textContent =
         "Bitte zuerst einen Kassenbon auswählen.";
       return;
     }
 
-    if (!receiptMerchant.value.trim()) {
-      receiptUploadError.textContent =
-        "Bitte das Geschäft eintragen.";
-      return;
-    }
-
     if (!Number.isFinite(amount) || amount <= 0) {
       receiptUploadError.textContent =
-        "Bitte einen gültigen Gesamtbetrag eintragen.";
+        "Bitte einen gültigen Gesamtpreis eintragen.";
       return;
     }
 
-    if (!receiptUserConfirmed.checked) {
+    if (!receiptFestivalOnlyConfirmed.checked) {
       receiptUploadError.textContent =
-        "Bitte bestätige, dass du die erkannten Daten geprüft hast.";
+        "Bitte bestätige, dass der angegebene Preis nur die für das Straßenfest aufgewendeten Bezüge enthält.";
       return;
     }
 
@@ -2341,11 +2269,7 @@
         window.StrassenfestApi.createRequestId("receipt");
     }
 
-    setButtonBusy(
-      receiptSubmitButton,
-      true,
-      "Wird eingereicht …"
-    );
+    setButtonBusy(receiptSubmitButton, true, "Wird eingereicht …");
     receiptUploadError.textContent = "";
 
     try {
@@ -2355,10 +2279,8 @@
           receipt: {
             id: state.receiptSubmissionId,
             code: registration.accessCode,
-            merchant: receiptMerchant.value.trim(),
-            purchaseDate: receiptPurchaseDate.value || "",
             amount,
-            ocrText: state.receiptOcrText,
+            festivalOnlyConfirmed: true,
             imageDataUrl: state.receiptImageDataUrl
           }
         },
@@ -2368,7 +2290,6 @@
       receiptDoneId.textContent = result.receipt?.id || "–";
       state.receiptSubmissionId = null;
       setStep("receipt-done");
-
     } catch (error) {
       receiptUploadError.textContent = error.message;
     } finally {
@@ -2383,8 +2304,10 @@
     resetReceiptForm({ keepRegistration: true });
 
     if (registration) {
-      receiptRegistrationCode.textContent = registration.accessCode || "–";
-      receiptRegistrationName.textContent = receiptMainName(registration);
+      receiptRegistrationCode.textContent =
+        registration.accessCode || "–";
+      receiptRegistrationName.textContent =
+        receiptMainName(registration);
       setStep("receipt-upload");
     } else {
       setStep("receipt-lookup");

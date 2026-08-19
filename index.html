@@ -476,10 +476,10 @@
               <div class="heading-icon" aria-hidden="true">▤</div>
               <div>
                 <p class="eyebrow">Kassenbon einreichen</p>
-                <h2>Kassenbon fotografieren</h2>
+                <h2>Kassenbon hochladen</h2>
                 <p>
-                  Lade ein vorhandenes Foto hoch oder fotografiere den Kassenbon
-                  direkt mit deinem Smartphone.
+                  Lade ein Foto des Kassenbons hoch und trage den Betrag ein,
+                  der tatsächlich für das Straßenfest aufgewendet wurde.
                 </p>
               </div>
             </div>
@@ -498,7 +498,7 @@
             <label class="receipt-file-button" for="receiptFileInput">
               <span class="receipt-camera-icon" aria-hidden="true">▣</span>
               <span>
-                <strong>Foto aufnehmen oder auswählen</strong>
+                <strong>Kassenbon fotografieren oder auswählen *</strong>
                 <small>Foto aufnehmen oder JPG/PNG aus der Mediathek auswählen</small>
               </span>
             </label>
@@ -513,52 +513,16 @@
                  id="receiptPreviewCard">
               <img id="receiptPreviewImage"
                    alt="Vorschau des ausgewählten Kassenbons" />
+              <button class="text-button receipt-replace-button"
+                      id="receiptReplaceFileButton"
+                      type="button">
+                Anderes Foto wählen
+              </button>
             </div>
 
-            <div class="receipt-processing hidden"
-                 id="receiptProcessing"
-                 aria-live="polite">
-              <span class="server-spinner receipt-spinner" aria-hidden="true"></span>
-              <div>
-                <strong id="receiptProcessingLabel">Kassenbon wird vorbereitet …</strong>
-                <div class="receipt-progress-track">
-                  <span id="receiptProgressBar"></span>
-                </div>
-              </div>
-            </div>
-
-            <div class="receipt-review hidden"
-                 id="receiptReview">
-              <div class="receipt-review-heading">
-                <p class="eyebrow">Automatisch erkannt</p>
-                <h3>Daten überprüfen</h3>
-                <p>
-                  Bitte kontrolliere die erkannten Angaben und korrigiere sie,
-                  bevor du den Kassenbon abschickst.
-                </p>
-              </div>
-
+            <div class="receipt-simple-fields">
               <label class="field">
-                <span>Geschäft *</span>
-                <input id="receiptMerchant"
-                       type="text"
-                       maxlength="100"
-                       autocomplete="organization"
-                       placeholder="z. B. REWE" />
-                <small class="receipt-field-insight"
-                       id="receiptMerchantInsight"></small>
-              </label>
-
-              <label class="field">
-                <span>Kaufdatum</span>
-                <input id="receiptPurchaseDate"
-                       type="date" />
-                <small class="receipt-field-insight"
-                       id="receiptDateInsight"></small>
-              </label>
-
-              <label class="field">
-                <span>Gesamtbetrag *</span>
+                <span>Gesamtpreis für das Straßenfest *</span>
                 <div class="receipt-amount-wrap">
                   <input id="receiptAmount"
                          type="text"
@@ -567,24 +531,16 @@
                          placeholder="0,00" />
                   <span>€</span>
                 </div>
-                <small class="receipt-field-insight"
-                       id="receiptAmountInsight"></small>
               </label>
-
-              <div class="receipt-logic-summary hidden"
-                   id="receiptLogicSummary"
-                   aria-live="polite"></div>
 
               <label class="receipt-confirm-check">
-                <input id="receiptUserConfirmed"
+                <input id="receiptFestivalOnlyConfirmed"
                        type="checkbox" />
-                <span>Ich habe die erkannten Angaben geprüft und gegebenenfalls korrigiert.</span>
+                <span>
+                  Ich bestätige, dass der angegebene Preis nur die für das
+                  Straßenfest aufgewendeten Bezüge enthält.
+                </span>
               </label>
-
-              <details class="receipt-ocr-details">
-                <summary>Erkannten OCR-Text anzeigen</summary>
-                <pre id="receiptOcrTextPreview"></pre>
-              </details>
             </div>
 
             <p class="field-error"
@@ -1201,8 +1157,7 @@
     </section>
   </div>
 
-  <script src="api-client.js?v=34" defer></script>
-  <script src="receipt-ocr.js?v=34" defer></script>
-  <script src="script.js?v=34" defer></script>
+  <script src="api-client.js?v=36" defer></script>
+<script src="script.js?v=36" defer></script>
 </body>
 </html>

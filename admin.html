@@ -288,20 +288,16 @@
       <section class="tab-panel" data-panel="receipts">
         <div class="metric-grid receipt-admin-metrics">
           <article class="metric-card">
-            <span>Kassenbons</span>
-            <strong id="metricReceipts">0</strong>
-          </article>
-          <article class="metric-card">
-            <span>Ungeprüft</span>
-            <strong id="metricReceiptsOpen">0</strong>
+            <span>Gesamtsumme</span>
+            <strong id="metricReceiptsTotal">0,00 €</strong>
           </article>
           <article class="metric-card metric-positive">
-            <span>Geprüfte Summe</span>
-            <strong id="metricReceiptsReviewed">0,00 €</strong>
+            <span>Erstattet</span>
+            <strong id="metricReceiptsReimbursed">0,00 €</strong>
           </article>
           <article class="metric-card">
-            <span>Noch zu erstatten</span>
-            <strong id="metricReceiptsReimbursementOpen">0,00 €</strong>
+            <span>Noch offen</span>
+            <strong id="metricReceiptsOpen">0,00 €</strong>
           </article>
         </div>
 
@@ -319,10 +315,8 @@
               <span>Status</span>
               <select id="receiptFilter">
                 <option value="all">Alle</option>
-                <option value="open">Ungeprüft</option>
-                <option value="reviewed">Geprüft</option>
+                <option value="open">Noch offen</option>
                 <option value="reimbursed">Erstattet</option>
-                <option value="unreimbursed">Noch nicht erstattet</option>
               </select>
             </label>
 
@@ -339,7 +333,9 @@
 
           <div class="result-line">
             <span id="receiptResultCount">0 Kassenbons</span>
-            <button id="refreshReceipts" class="text-button" type="button">Neu laden</button>
+            <div class="receipt-admin-tools">
+              <button id="refreshReceipts" class="text-button" type="button">Neu laden</button>
+            </div>
           </div>
 
           <div class="receipt-admin-list" id="receiptList" aria-live="polite"></div>
@@ -358,7 +354,7 @@
 
           <p class="card-intro">
             Der Abschlussbericht fasst Anmeldungen, Einnahmen, die Einkaufsliste
-            sowie nachgereichte und geprüfte Kassenbons zusammen.
+            sowie nachgereichte Kassenbons zusammen.
           </p>
 
           <div class="report-summary-grid">
@@ -383,7 +379,7 @@
               <strong id="reportExpenses">0,00 €</strong>
             </article>
             <article class="report-summary-card">
-              <span>Geprüfte Kassenbons</span>
+              <span>Kassenbons gesamt</span>
               <strong id="reportReviewedReceipts">0,00 €</strong>
             </article>
             <article class="report-summary-card">
@@ -391,7 +387,7 @@
               <strong id="reportReimbursementOpen">0,00 €</strong>
             </article>
             <article class="report-summary-card report-summary-highlight">
-              <span>Finalisierte Gesamtkosten</span>
+              <span>Gesamtkosten</span>
               <strong id="reportFinalCosts">0,00 €</strong>
             </article>
             <article class="report-summary-card report-summary-highlight">
@@ -483,7 +479,7 @@
     <div class="admin-modal-backdrop" data-close-receipt-modal></div>
     <section class="admin-modal-card receipt-modal-card">
       <p class="eyebrow">Kassenbon</p>
-      <h2 id="receiptModalTitle">Kassenbon prüfen</h2>
+      <h2 id="receiptModalTitle">Kassenbon bearbeiten</h2>
 
       <div class="receipt-modal-meta">
         <div>
@@ -491,74 +487,56 @@
           <strong id="receiptModalCode">–</strong>
         </div>
         <div>
-          <span>Hauptanmeldung</span>
+          <span>Nutzer</span>
           <strong id="receiptModalName">–</strong>
         </div>
       </div>
 
-      <div class="receipt-image-shell">
-        <div class="receipt-image-loading" id="receiptImageLoading">
-          <span class="server-spinner" aria-hidden="true"></span>
-          <span>Kassenbon wird geladen …</span>
+      <div class="receipt-image-frame">
+        <div id="receiptImageLoading" class="receipt-image-loading">
+          Bild wird geladen …
         </div>
         <img id="receiptModalImage"
              class="hidden"
-             alt="Hochgeladener Kassenbon" />
+             alt="Kassenbon" />
       </div>
 
-      <label class="admin-field">
-        <span>Geschäft</span>
-        <input id="receiptModalMerchant"
-               type="text"
-               maxlength="100" />
+      <label class="field">
+        <span>Gesamtpreis für das Straßenfest *</span>
+        <div class="receipt-modal-amount">
+          <input id="receiptModalAmount"
+                 type="text"
+                 inputmode="decimal"
+                 autocomplete="off" />
+          <span>€</span>
+        </div>
       </label>
 
-      <label class="admin-field">
-        <span>Kaufdatum</span>
-        <input id="receiptModalDate"
-               type="date" />
-      </label>
-
-      <label class="admin-field">
-        <span>Gesamtbetrag in Euro</span>
-        <input id="receiptModalAmount"
-               type="text"
-               inputmode="decimal" />
-      </label>
-
-      <label class="receipt-admin-check">
-        <input id="receiptModalReviewed" type="checkbox" />
-        <span>Von mir geprüft</span>
-      </label>
-
-      <label class="receipt-admin-check">
+      <label class="check-row">
         <input id="receiptModalReimbursed" type="checkbox" />
-        <span>Betrag wurde erstattet</span>
+        <span>Erstattet</span>
       </label>
-
-      <details class="receipt-ocr-details admin-receipt-ocr">
-        <summary>OCR-Text anzeigen</summary>
-        <pre id="receiptModalOcrText"></pre>
-      </details>
 
       <p class="status-line error" id="receiptModalError" role="alert"></p>
 
-      <div class="admin-modal-actions">
-        <button class="danger-button"
-                id="deleteReceiptButton"
+      <div class="modal-actions split-modal-actions">
+        <button id="deleteReceiptButton"
+                class="danger-button"
                 type="button">
           Löschen
         </button>
-        <button class="ghost-button"
-                id="cancelReceiptModal"
-                type="button">
-          Abbrechen
-        </button>
-        <button class="primary-button modal-primary-button"
-                id="saveReceiptButton"
-                type="button">
-          Speichern
-        </button>
+        <div>
+          <button id="cancelReceiptModal"
+                  class="secondary-button"
+                  type="button">
+            Abbrechen
+          </button>
+          <button id="saveReceiptButton"
+                  class="primary-button"
+                  type="button">
+            Speichern
+          </button>
+        </div>
       </div>
     </section>
   </div>
@@ -591,8 +569,8 @@
   <div id="apiTransportHost" class="api-transport-host" aria-hidden="true"></div>
   <div class="toast hidden" id="adminToast" role="status" aria-live="polite"></div>
 
-  <script src="api-client.js?v=33" defer></script>
-  <script src="admin-report.js?v=33" defer></script>
-  <script src="admin.js?v=33" defer></script>
+  <script src="api-client.js?v=36" defer></script>
+  <script src="admin-report.js?v=36" defer></script>
+  <script src="admin.js?v=36" defer></script>
 </body>
 </html>

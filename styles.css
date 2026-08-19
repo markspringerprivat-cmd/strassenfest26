@@ -2410,27 +2410,6 @@ body.keyboard-open .step[data-step="1"] #peopleContinue {
   accent-color: #ffc74f;
 }
 
-.receipt-ocr-details {
-  border-top: 1px solid rgba(255,255,255,.07);
-  padding-top: 7px;
-}
-
-.receipt-ocr-details summary {
-  cursor: pointer;
-  color: var(--muted);
-  font-size: .60rem;
-}
-
-.receipt-ocr-details pre {
-  max-height: 120px;
-  overflow: auto;
-  white-space: pre-wrap;
-  color: rgba(255,255,255,.66);
-  font-family: ui-monospace, SFMono-Regular, Consolas, monospace;
-  font-size: .56rem;
-  line-height: 1.35;
-}
-
 .receipt-completion-card {
   text-align: center;
 }
@@ -2499,4 +2478,22 @@ body.keyboard-open .step[data-step="1"] #peopleContinue {
   border-color: rgba(255, 143, 143, .23);
   background: rgba(220, 83, 83, .055);
   color: rgba(255, 199, 199, .92);
+}
+
+
+/* v36 – vereinfachter Kassenbon-Upload ohne OCR */
+.receipt-simple-fields {
+  display: grid;
+  gap: 10px;
+  margin-top: 10px;
+}
+
+.receipt-replace-button {
+  margin-top: 7px;
+}
+
+.receipt-preview-card img {
+  display: block;
+  max-height: 230px;
+  object-fit: contain;
 }

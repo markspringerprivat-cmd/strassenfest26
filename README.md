@@ -480,3 +480,22 @@ zum Timeout geführt haben konnten.
   Hohe/Mittlere Sicherheit oder Unsicher sowie eine kurze Begründung.
 - Unsichere Händlerangaben werden lieber leer gelassen als mit offensichtlich
   falschem Text vorausgefüllt.
+
+
+## Update v35 – adaptive Receipt-OCR
+- Zwei OCR-Lesegänge mit unterschiedlichen Layoutannahmen werden zusammengeführt.
+- Übereinstimmende Ergebnisse erhalten höhere Sicherheit.
+- Admin-geprüfte Händlerkorrekturen werden aggregiert als Lernprofil für spätere Bons verwendet.
+- Roh-OCR, Prognose, Nutzerkorrektur und Admin-Endwert werden im neuen Blatt `kassenbon_training` archiviert.
+- Export als CSV ermöglicht später echtes Fine-Tuning mit eigenen Belegen.
+- Keine externe OCR-API und keine laufenden Kosten.
+
+
+## Update v36 / Apps Script v19 – Kassenbons ohne OCR
+- OCR vollständig aus der öffentlichen Website entfernt.
+- Nur noch Foto, Gesamtpreis und Pflichtbestätigung.
+- Kassenbons werden automatisch der Anmeldung / dem Hauptnutzer zugeordnet.
+- Admin-Kassenbons sind nach Nutzer gruppiert und zeigen pro Nutzer eine Teilsumme.
+- Oben: Gesamtsumme, bereits erstattet und noch offen.
+- Jeder Eintrag: Erstattet-Haken, Bearbeiten und Löschen.
+- Bestehende Kassenbons bleiben erhalten.
