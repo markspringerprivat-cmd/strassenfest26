@@ -370,7 +370,7 @@ zum Timeout geführt haben konnten.
   - Digital per PayPal
   - Bar bezahlen
 - Bei PayPal erscheint ein kurzer Hinweis und der direkte Pool-Link:
-  https://www.paypal.com/pool/9rTjSFbk46?sr=wccr
+  https://www.paypal.com/pool/9sjOoDB6jh?sr=wccr
 - Bei Barzahlung erscheinen erst danach die zwei bisherigen Optionen:
   - Briefkasten
   - persönliche Abholung
@@ -390,7 +390,7 @@ zum Timeout geführt haben konnten.
 - Auf der Startseite gibt es zusätzlich „Zahlungsweg ändern“:
   Anmeldecode → aktuellen Zahlungsweg laden → neuen Zahlungsweg auswählen → speichern.
 - Apps Script v14 ändert nur den Zahlungsweg, nicht den Bezahlstatus.
-- PayPal-Pool: https://www.paypal.com/pool/9rTjSFbk46?sr=wccr
+- PayPal-Pool: https://www.paypal.com/pool/9sjOoDB6jh?sr=wccr
 
 
 ## Update v30 – Bestätigung nach dem Absenden repariert
@@ -499,3 +499,28 @@ zum Timeout geführt haben konnten.
 - Oben: Gesamtsumme, bereits erstattet und noch offen.
 - Jeder Eintrag: Erstattet-Haken, Bearbeiten und Löschen.
 - Bestehende Kassenbons bleiben erhalten.
+
+
+## Update v37 / Apps Script v20
+- Admin-Kassenbonzeilen für Mobilgeräte neu aufgebaut; Buttons überlappen nicht mehr.
+- Jeder Bon besitzt eigene Schaltflächen Foto, Bearbeiten und Löschen.
+- Foto wird groß und scrollbar im Admin-Dialog angezeigt.
+- Bei der Einreichung ist Überweisung oder PayPal als Rückerstattungsweg Pflicht.
+- Überweisung verlangt Kontoinhaber und IBAN; PayPal verlangt E-Mail oder Benutzername.
+- Die konkreten Erstattungsdaten werden beim Setzen von „Erstattet“ serverseitig automatisch gelöscht.
+
+
+## Update v38 – Flyerinformationen, Zahlungsfrist und PayPal
+- Neuer PayPal-Pool: https://www.paypal.com/pool/9sjOoDB6jh?sr=wccr
+- Zahlungsfrist an den relevanten Zahlungsstellen: 06.09.2026, 23:59 Uhr.
+- Informationsseite vollständig mit Datum, Uhrzeit, Ort, Preisen, Speisen/Getränken,
+  Straßensperrung, Zufahrten, fehlender Wendemöglichkeit, Rettungswegen,
+  Beschilderung/Ordnern und Freigabe nach Veranstaltungsende aktualisiert.
+
+
+## Update v39 – PayPal-Gastzahlung
+- Bei allen relevanten PayPal-Zahlungsstellen wird darauf hingewiesen, dass
+  für Beiträge zum PayPal-Pool kein PayPal-Konto erforderlich ist.
+- Hinweis auf die Gastzahlung ergänzt.
+- Falls PayPal im Ablauf zusätzlich die Kontoerstellung anbietet, wird erklärt,
+  dass diese Option nicht ausgewählt werden soll, wenn nur als Gast gezahlt wird.

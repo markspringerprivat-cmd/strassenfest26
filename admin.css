@@ -2026,3 +2026,154 @@ textarea,
     justify-content: flex-start;
   }
 }
+
+
+/* ================================================================
+   v37 – sauberes mobiles Kassenbon-Layout
+   ================================================================ */
+
+.receipt-user-group {
+  overflow: visible;
+}
+
+.receipt-user-group-heading {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
+}
+
+.receipt-user-subtotals {
+  min-width: 0;
+}
+
+.receipt-user-items .receipt-admin-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr);
+  gap: 10px;
+  align-items: stretch;
+  padding: 11px 12px;
+}
+
+.receipt-admin-main strong {
+  overflow: visible;
+  white-space: normal;
+  text-overflow: clip;
+  font-size: .74rem;
+}
+
+.receipt-entry-actions {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) repeat(3, minmax(72px, auto));
+  gap: 7px;
+  width: 100%;
+  align-items: center;
+}
+
+.receipt-inline-check {
+  display: flex;
+  align-items: center;
+  gap: 7px;
+  min-width: 0;
+  min-height: 38px;
+  padding: 6px 8px;
+  border: 1px solid rgba(255,255,255,.11);
+  border-radius: 9px;
+  background: rgba(255,255,255,.025);
+  white-space: nowrap;
+}
+
+.receipt-inline-check input {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 auto;
+}
+
+.receipt-photo-button,
+.receipt-edit-button,
+.receipt-delete-row-button {
+  width: 100%;
+  min-width: 0;
+  min-height: 38px;
+  padding: 7px 8px;
+  white-space: nowrap;
+}
+
+.receipt-photo-button {
+  border: 1px solid rgba(255, 215, 101, .24);
+  border-radius: 9px;
+  background: rgba(255, 215, 101, .065);
+  color: inherit;
+  font: inherit;
+  font-size: .7rem;
+  cursor: pointer;
+}
+
+.receipt-image-frame {
+  min-height: 180px;
+  max-height: 56vh;
+  overflow: auto;
+}
+
+.receipt-image-frame img {
+  display: block;
+  width: 100%;
+  height: auto;
+  max-height: none;
+  object-fit: contain;
+  border-radius: 8px;
+}
+
+.receipt-payout-admin-card {
+  display: grid;
+  gap: 4px;
+  padding: 10px;
+  border: 1px solid rgba(255,255,255,.1);
+  border-radius: 11px;
+  background: rgba(255,255,255,.025);
+}
+
+.receipt-payout-admin-label {
+  color: var(--muted);
+  font-size: .6rem;
+}
+
+.receipt-payout-admin-details {
+  overflow-wrap: anywhere;
+  font-size: .72rem;
+  line-height: 1.4;
+}
+
+.receipt-payout-admin-card small {
+  color: var(--muted);
+  font-size: .57rem;
+  line-height: 1.35;
+}
+
+@media (max-width: 620px) {
+  .receipt-user-group-heading {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 5px;
+  }
+
+  .receipt-user-subtotals {
+    text-align: left;
+  }
+
+  .receipt-entry-actions {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .receipt-inline-check {
+    grid-column: 1 / -1;
+  }
+}
+
+@media (max-width: 390px) {
+  .receipt-entry-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .receipt-inline-check {
+    grid-column: auto;
+  }
+}

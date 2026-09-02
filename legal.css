@@ -170,3 +170,36 @@ a { color: var(--gold-light); }
     grid-template-columns: 1fr;
   }
 }
+
+
+/* v38 – Informationen aus dem Flyer */
+.information-highlight {
+  display: grid;
+  gap: 3px;
+  margin-bottom: 15px;
+  padding: 13px 14px;
+  border: 1px solid rgba(255, 211, 98, .35);
+  border-radius: 13px;
+  background: rgba(255, 196, 52, .08);
+}
+
+.information-highlight strong {
+  color: var(--gold-light);
+  font-size: .9rem;
+}
+
+.information-highlight span {
+  color: rgba(255,255,255,.86);
+  font-size: .74rem;
+  line-height: 1.4;
+}
+
+.information-list article.information-important {
+  border-color: rgba(255, 211, 98, .34);
+  background: rgba(255, 196, 52, .065);
+}
+
+.information-list a {
+  color: var(--gold-light);
+  font-weight: 750;
+}

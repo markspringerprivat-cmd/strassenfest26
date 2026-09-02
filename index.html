@@ -142,6 +142,10 @@
                   Hier kannst du deinen Zahlungsstatus prüfen, den hinterlegten
                   Zahlungsweg ändern oder einen Kassenbon zur Erstattung einreichen.
                 </p>
+                <p class="payment-deadline-note">
+                  <strong>Zahlungsfrist:</strong> Bitte den Kostenbeitrag spätestens
+                  bis <strong>06.09.2026 um 23:59 Uhr</strong> bezahlen.
+                </p>
               </div>
             </div>
 
@@ -163,7 +167,7 @@
                 <span class="landing-choice-icon" aria-hidden="true">↔</span>
                 <span>
                   <strong>Zahlungsweg ändern</strong>
-                  <small>PayPal, Briefkasten oder persönliche Abholung nachträglich ändern</small>
+                  <small>PayPal, Briefkasten oder persönliche Abholung ändern · Zahlung bis 06.09.2026, 23:59 Uhr</small>
                 </span>
                 <span class="landing-choice-chevron" aria-hidden="true">›</span>
               </button>
@@ -196,6 +200,8 @@
                 <p>
                   Gib deinen persönlichen Anmeldecode ein. Angezeigt wird nur,
                   ob die Zahlung beglichen ist und welcher Betrag noch offen ist.
+                  Bitte beachte die Zahlungsfrist bis
+                  <strong>06.09.2026, 23:59 Uhr</strong>.
                 </p>
               </div>
             </div>
@@ -319,7 +325,9 @@
                 <h2>Neue Zahlungsart auswählen</h2>
                 <p>
                   Die Anmeldung selbst bleibt unverändert. Es wird nur der
-                  hinterlegte Zahlungsweg angepasst.
+                  hinterlegte Zahlungsweg angepasst. Der Kostenbeitrag muss
+                  spätestens bis <strong>06.09.2026 um 23:59 Uhr</strong>
+                  bezahlt werden.
                 </p>
               </div>
             </div>
@@ -369,7 +377,9 @@
                   <strong>Digital per PayPal</strong>
                   <span>
                     Nach dem Speichern erscheint der PayPal-Link wieder in
-                    deiner Anmeldungsübersicht.
+                    deiner Anmeldungsübersicht. Ein PayPal-Konto ist für die
+                    Einzahlung in den Pool nicht erforderlich; eine Gastzahlung
+                    ist möglich.
                   </span>
                 </div>
               </div>
@@ -388,6 +398,7 @@
                     <span class="payment-choice-text">
                       Betrag im Umschlag mit Namen in den Briefkasten
                       <strong>Nassauische Straße 1, Springer</strong> einwerfen.
+                      Bitte spätestens bis <strong>06.09.2026 um 23:59 Uhr</strong>.
                     </span>
                   </button>
 
@@ -533,6 +544,65 @@
                 </div>
               </label>
 
+              <fieldset class="receipt-payout-fieldset">
+                <legend>Rückerstattung *</legend>
+
+                <div class="receipt-payout-choice">
+                  <label>
+                    <input type="radio"
+                           name="receiptPayoutMethod"
+                           value="bank" />
+                    <span>Überweisung</span>
+                  </label>
+
+                  <label>
+                    <input type="radio"
+                           name="receiptPayoutMethod"
+                           value="paypal" />
+                    <span>PayPal</span>
+                  </label>
+                </div>
+
+                <div class="receipt-payout-fields hidden"
+                     id="receiptBankFields">
+                  <label class="field">
+                    <span>Name des Kontoinhabers *</span>
+                    <input id="receiptBankName"
+                           type="text"
+                           maxlength="120"
+                           autocomplete="name"
+                           placeholder="Vor- und Nachname" />
+                  </label>
+
+                  <label class="field">
+                    <span>IBAN *</span>
+                    <input id="receiptBankIban"
+                           type="text"
+                           maxlength="34"
+                           autocomplete="off"
+                           autocapitalize="characters"
+                           placeholder="DE00 0000 0000 0000 0000 00" />
+                  </label>
+                </div>
+
+                <div class="receipt-payout-fields hidden"
+                     id="receiptPaypalFields">
+                  <label class="field">
+                    <span>PayPal-E-Mail oder PayPal-Benutzername *</span>
+                    <input id="receiptPaypalAccount"
+                           type="text"
+                           maxlength="160"
+                           autocomplete="off"
+                           placeholder="E-Mail oder Benutzername" />
+                  </label>
+                </div>
+
+                <p class="receipt-payout-notice">
+                  Die angegebenen Erstattungsdaten werden nach der
+                  Rückerstattung automatisch gelöscht.
+                </p>
+              </fieldset>
+
               <label class="receipt-confirm-check">
                 <input id="receiptFestivalOnlyConfirmed"
                        type="checkbox" />
@@ -673,16 +743,25 @@
                   Du kannst den Beitrag jetzt über den PayPal-Pool begleichen.
                   Bitte verwende nach Möglichkeit den Namen aus deiner Anmeldung.
                 </p>
+                <p class="payment-deadline-note">
+                  <strong>Kein PayPal-Konto erforderlich:</strong> Du kannst
+                  auch ohne eigenes PayPal-Konto in den Pool einzahlen. PayPal
+                  bietet dafür eine Gastzahlung an. Falls dir beim Bezahlvorgang
+                  zusätzlich die Erstellung eines PayPal-Kontos angeboten wird,
+                  achte darauf, dass diese Option nicht ausgewählt ist, wenn du
+                  nur als Gast zahlen möchtest.
+                </p>
 
                 <a class="paypal-pool-button"
-                   href="https://www.paypal.com/pool/9rTjSFbk46?sr=wccr"
+                   href="https://www.paypal.com/pool/9sjOoDB6jh?sr=wccr"
                    target="_blank"
                    rel="noopener noreferrer">
                   Zum PayPal-Pool
                 </a>
 
                 <small>
-                  Nach der Zahlung kannst du zu dieser Seite zurückkehren.
+                  Bitte spätestens bis <strong>06.09.2026 um 23:59 Uhr</strong>
+                  bezahlen. Nach der Zahlung kannst du zu dieser Seite zurückkehren.
                   Der Zahlungsstatus wird nach Prüfung im Admin-Bereich aktualisiert.
                 </small>
               </div>
@@ -895,7 +974,10 @@
               <div>
                 <p class="eyebrow">Schritt 4 von 5</p>
                 <h2>Zahlung</h2>
-                <p>20 € pro erwachsener Person ab 18 Jahren.</p>
+                <p>
+                  20 € pro erwachsener Person ab 18 Jahren.
+                  <strong>Bitte spätestens bis 06.09.2026 um 23:59 Uhr bezahlen.</strong>
+                </p>
               </div>
             </div>
 
@@ -939,8 +1021,17 @@
                 <small class="payment-detail-note">
                   Deine Anmeldung wird also zuerst vollständig gespeichert.
                   Anschließend kannst du den festgelegten Beitrag über PayPal
-                  begleichen.
+                  begleichen. Bitte spätestens bis
+                  <strong>06.09.2026 um 23:59 Uhr</strong> bezahlen.
                 </small>
+                <p class="payment-deadline-note">
+                  <strong>Kein PayPal-Konto erforderlich:</strong> Du kannst
+                  auch ohne eigenes PayPal-Konto in den Pool einzahlen. PayPal
+                  bietet dafür eine Gastzahlung an. Falls dir beim Bezahlvorgang
+                  zusätzlich die Erstellung eines PayPal-Kontos angeboten wird,
+                  achte darauf, dass diese Option nicht ausgewählt ist, wenn du
+                  nur als Gast zahlen möchtest.
+                </p>
               </div>
 
               <div class="payment-detail-panel hidden"
@@ -957,7 +1048,8 @@
                     <span class="payment-choice-text">
                       Bitte den Betrag in einem Umschlag mit Namen in den
                       Briefkasten <strong>Nassauische Straße 1, Springer</strong>
-                      einwerfen.
+                      einwerfen. Bitte spätestens bis
+                      <strong>06.09.2026 um 23:59 Uhr</strong>.
                     </span>
                   </button>
 
@@ -1059,16 +1151,25 @@
                   Deine Anmeldung ist gespeichert. Du kannst den Beitrag jetzt
                   über den PayPal-Pool begleichen.
                 </p>
+                <p class="payment-deadline-note">
+                  <strong>Kein PayPal-Konto erforderlich:</strong> Du kannst
+                  auch ohne eigenes PayPal-Konto in den Pool einzahlen. PayPal
+                  bietet dafür eine Gastzahlung an. Falls dir beim Bezahlvorgang
+                  zusätzlich die Erstellung eines PayPal-Kontos angeboten wird,
+                  achte darauf, dass diese Option nicht ausgewählt ist, wenn du
+                  nur als Gast zahlen möchtest.
+                </p>
 
                 <a class="paypal-pool-button"
-                   href="https://www.paypal.com/pool/9rTjSFbk46?sr=wccr"
+                   href="https://www.paypal.com/pool/9sjOoDB6jh?sr=wccr"
                    target="_blank"
                    rel="noopener noreferrer">
                   Jetzt mit PayPal bezahlen
                 </a>
 
                 <small>
-                  Nach der Zahlung kannst du zu dieser Seite zurückkehren.
+                  Bitte spätestens bis <strong>06.09.2026 um 23:59 Uhr</strong>
+                  bezahlen. Nach der Zahlung kannst du zu dieser Seite zurückkehren.
                   Der Zahlungsstatus wird nach Prüfung im Admin-Bereich aktualisiert.
                 </small>
               </div>
@@ -1157,7 +1258,7 @@
     </section>
   </div>
 
-  <script src="api-client.js?v=36" defer></script>
-<script src="script.js?v=36" defer></script>
+  <script src="api-client.js?v=39" defer></script>
+  <script src="script.js?v=39" defer></script>
 </body>
 </html>

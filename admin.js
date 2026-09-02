@@ -114,6 +114,9 @@
   const receiptImageLoading = document.getElementById("receiptImageLoading");
   const receiptModalImage = document.getElementById("receiptModalImage");
   const receiptModalAmount = document.getElementById("receiptModalAmount");
+  const receiptModalPayoutMethod = document.getElementById("receiptModalPayoutMethod");
+  const receiptModalPayoutDetails = document.getElementById("receiptModalPayoutDetails");
+  const receiptModalPayoutNotice = document.getElementById("receiptModalPayoutNotice");
   const receiptModalReimbursed = document.getElementById("receiptModalReimbursed");
   const receiptModalError = document.getElementById("receiptModalError");
   const deleteReceiptButton = document.getElementById("deleteReceiptButton");
@@ -1501,6 +1504,10 @@
                 <span>Erstattet</span>
               </label>
 
+              <button class="receipt-photo-button" type="button">
+                Foto
+              </button>
+
               <button class="receipt-edit-button" type="button">
                 Bearbeiten
               </button>
@@ -1550,6 +1557,36 @@
       .toFixed(2)
       .replace(".", ",");
     receiptModalReimbursed.checked = Boolean(receipt.reimbursed);
+
+    if (receipt.reimbursed) {
+      receiptModalPayoutMethod.textContent =
+        receipt.payoutMethod === "paypal"
+          ? "PayPal"
+          : receipt.payoutMethod === "bank"
+            ? "Überweisung"
+            : "–";
+      receiptModalPayoutDetails.textContent =
+        "Erstattungsdaten wurden nach der Rückerstattung gelöscht.";
+      receiptModalPayoutNotice.textContent = "";
+    } else if (receipt.payoutMethod === "bank") {
+      receiptModalPayoutMethod.textContent = "Überweisung";
+      receiptModalPayoutDetails.textContent =
+        `${receipt.payoutName || "–"} · ${receipt.payoutIban || "–"}`;
+      receiptModalPayoutNotice.textContent =
+        "Name und IBAN werden beim Markieren als „Erstattet“ automatisch gelöscht.";
+    } else if (receipt.payoutMethod === "paypal") {
+      receiptModalPayoutMethod.textContent = "PayPal";
+      receiptModalPayoutDetails.textContent =
+        receipt.payoutPaypal || "–";
+      receiptModalPayoutNotice.textContent =
+        "Die PayPal-Angabe wird beim Markieren als „Erstattet“ automatisch gelöscht.";
+    } else {
+      receiptModalPayoutMethod.textContent = "–";
+      receiptModalPayoutDetails.textContent =
+        "Für diesen älteren Eintrag wurden keine Erstattungsdaten hinterlegt.";
+      receiptModalPayoutNotice.textContent = "";
+    }
+
     receiptModalError.textContent = "";
     receiptImageLoading.classList.remove("hidden");
     receiptModalImage.classList.add("hidden");
@@ -1673,6 +1710,11 @@
     );
 
     if (!receipt) return;
+
+    if (event.target.closest(".receipt-photo-button")) {
+      void openReceiptModal(receipt);
+      return;
+    }
 
     if (event.target.closest(".receipt-edit-button")) {
       void openReceiptModal(receipt);

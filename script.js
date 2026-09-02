@@ -142,6 +142,12 @@
   const receiptReplaceFileButton = document.getElementById("receiptReplaceFileButton");
   const receiptAmount = document.getElementById("receiptAmount");
   const receiptFestivalOnlyConfirmed = document.getElementById("receiptFestivalOnlyConfirmed");
+  const receiptPayoutMethodInputs = [...document.querySelectorAll('input[name="receiptPayoutMethod"]')];
+  const receiptBankFields = document.getElementById("receiptBankFields");
+  const receiptPaypalFields = document.getElementById("receiptPaypalFields");
+  const receiptBankName = document.getElementById("receiptBankName");
+  const receiptBankIban = document.getElementById("receiptBankIban");
+  const receiptPaypalAccount = document.getElementById("receiptPaypalAccount");
   const receiptUploadError = document.getElementById("receiptUploadError");
   const receiptUploadBack = document.getElementById("receiptUploadBack");
   const receiptSubmitButton = document.getElementById("receiptSubmitButton");
@@ -2013,6 +2019,14 @@
     receiptPreviewCard.classList.add("hidden");
     receiptAmount.value = "";
     receiptFestivalOnlyConfirmed.checked = false;
+    receiptPayoutMethodInputs.forEach((input) => {
+      input.checked = false;
+    });
+    receiptBankName.value = "";
+    receiptBankIban.value = "";
+    receiptPaypalAccount.value = "";
+    receiptBankFields.classList.add("hidden");
+    receiptPaypalFields.classList.add("hidden");
     receiptUploadError.textContent = "";
     receiptSubmitButton.disabled = true;
   }
@@ -2044,6 +2058,53 @@
     return Number.isFinite(amount) ? amount : NaN;
   }
 
+  function normalizedIban(value) {
+    return String(value || "")
+      .replace(/\s+/g, "")
+      .toUpperCase();
+  }
+
+  function selectedReceiptPayoutMethod() {
+    return receiptPayoutMethodInputs.find(
+      (input) => input.checked
+    )?.value || "";
+  }
+
+  function receiptPayoutIsComplete() {
+    const method = selectedReceiptPayoutMethod();
+
+    if (method === "bank") {
+      return (
+        receiptBankName.value.trim().length >= 2 &&
+        /^[A-Z]{2}\d{2}[A-Z0-9]{11,30}$/.test(
+          normalizedIban(receiptBankIban.value)
+        )
+      );
+    }
+
+    if (method === "paypal") {
+      return receiptPaypalAccount.value.trim().length >= 3;
+    }
+
+    return false;
+  }
+
+  function renderReceiptPayoutFields() {
+    const method = selectedReceiptPayoutMethod();
+
+    receiptBankFields.classList.toggle(
+      "hidden",
+      method !== "bank"
+    );
+
+    receiptPaypalFields.classList.toggle(
+      "hidden",
+      method !== "paypal"
+    );
+
+    updateReceiptSubmitState();
+  }
+
   function updateReceiptSubmitState() {
     const amount = parseReceiptAmount(receiptAmount.value);
 
@@ -2052,6 +2113,7 @@
       state.receiptImageDataUrl &&
       Number.isFinite(amount) &&
       amount > 0 &&
+      receiptPayoutIsComplete() &&
       receiptFestivalOnlyConfirmed.checked
     );
   }
@@ -2237,9 +2299,26 @@
     receiptFileInput.click();
   });
 
-  [receiptAmount, receiptFestivalOnlyConfirmed].forEach((element) => {
+  [
+    receiptAmount,
+    receiptFestivalOnlyConfirmed,
+    receiptBankName,
+    receiptBankIban,
+    receiptPaypalAccount
+  ].forEach((element) => {
     element.addEventListener("input", updateReceiptSubmitState);
     element.addEventListener("change", updateReceiptSubmitState);
+  });
+
+  receiptPayoutMethodInputs.forEach((input) => {
+    input.addEventListener("change", renderReceiptPayoutFields);
+  });
+
+  receiptBankIban.addEventListener("input", () => {
+    const compact = normalizedIban(receiptBankIban.value);
+    receiptBankIban.value = compact
+      .replace(/(.{4})/g, "$1 ")
+      .trim();
   });
 
   receiptSubmitButton.addEventListener("click", async () => {
@@ -2255,6 +2334,18 @@
     if (!Number.isFinite(amount) || amount <= 0) {
       receiptUploadError.textContent =
         "Bitte einen gültigen Gesamtpreis eintragen.";
+      return;
+    }
+
+    const payoutMethod = selectedReceiptPayoutMethod();
+
+    if (!receiptPayoutIsComplete()) {
+      receiptUploadError.textContent =
+        payoutMethod === "bank"
+          ? "Bitte Name des Kontoinhabers und eine vollständige IBAN für die Rückerstattung angeben."
+          : payoutMethod === "paypal"
+            ? "Bitte die PayPal-E-Mail oder den PayPal-Benutzernamen angeben."
+            : "Bitte Überweisung oder PayPal für die Rückerstattung auswählen.";
       return;
     }
 
@@ -2281,6 +2372,19 @@
             code: registration.accessCode,
             amount,
             festivalOnlyConfirmed: true,
+            payoutMethod,
+            payoutName:
+              payoutMethod === "bank"
+                ? receiptBankName.value.trim()
+                : "",
+            payoutIban:
+              payoutMethod === "bank"
+                ? normalizedIban(receiptBankIban.value)
+                : "",
+            payoutPaypal:
+              payoutMethod === "paypal"
+                ? receiptPaypalAccount.value.trim()
+                : "",
             imageDataUrl: state.receiptImageDataUrl
           }
         },
