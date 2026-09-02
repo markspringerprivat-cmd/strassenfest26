@@ -1139,9 +1139,35 @@
     const currentPanel = activeStepPanel;
     const nextPanel = stepPanels.get(nextStep);
 
-    if (!nextPanel || nextPanel === currentPanel) return;
+    if (!nextPanel) return;
+
+    if (nextPanel === currentPanel) {
+      document.body.classList.toggle(
+        "process-mode",
+        nextStep !== "home"
+      );
+      processTopNav.classList.toggle(
+        "hidden",
+        nextStep === "home"
+      );
+      updateProcessNavigation();
+      return;
+    }
 
     state.step = nextStep;
+
+    // v42: Prozessmodus zuerst setzen. So kann der Browser die neue
+    // Vollbild-Geometrie bereits berechnen, bevor das Zielpanel sichtbar wird.
+    document.body.classList.toggle(
+      "process-mode",
+      nextStep !== "home"
+    );
+
+    processTopNav.classList.toggle(
+      "hidden",
+      nextStep === "home"
+    );
+
     resetKeyboardViewForStepChange();
 
     currentPanel?.classList.remove("active");

@@ -542,3 +542,14 @@ zum Timeout geführt haben konnten.
   Hinzufügen weiterer Personen nichts durch neue Eingabefelder.
 - Der „Weiter“-Button bleibt unten im Prozessbereich.
 - Beim ersten Besuch erscheint einmalig der kurze Planungshinweis.
+
+
+## Update v42 – Fix für blauen/leeren Bildschirm
+- Die Vollbildansicht wurde technisch vereinfacht und robuster aufgebaut.
+- Der Wizard selbst ist jetzt der scrollende Vollbild-Container; das Formular
+  wird nicht mehr als verschachtelter Flex-/Overflow-Container erzwungen.
+- Aktive Unterseiten erhalten immer eine explizite Mindesthöhe und können nicht
+  mehr auf 0 Pixel Höhe zusammenfallen.
+- Der Prozessmodus wird bereits zu Beginn des Seitenwechsels gesetzt, bevor
+  Geometrie und Animation berechnet werden.
+- Fallback für Browser ohne `100dvh` auf `100vh`.
