@@ -572,3 +572,15 @@ zum Timeout geführt haben konnten.
   Vorname | Nachname | Alter | Entfernen.
 - Fehlermeldungen erscheinen kompakt direkt im Kasten; der große globale
   Warnhinweis/Scrollsprung wird bei der Personeneingabe nicht mehr verwendet.
+
+
+## Update v45 – automatische Desktop-/Laptop-Optimierung
+- Smartphone bleibt die primäre Basis und wurde nicht durch eine separate Desktop-Codebasis ersetzt.
+- Ab ca. 980 px Breite schaltet die Seite automatisch auf ein Desktop-/Tablet-Querformat-Layout.
+- Startseite: breitere Karte und 2×2-Anordnung der Hauptoptionen.
+- Prozessseiten: bis zu ca. 1120–1180 px Inhaltsbreite statt schmaler Mobilspalte.
+- Anmeldung: Eingabe und Teilnehmerliste werden auf Desktop zweispaltig nebeneinander genutzt.
+- Auswahlfelder, Zahlungsoptionen und Zusammenfassungen nutzen auf Desktop mehrere Spalten.
+- Ablaufübersicht wird horizontal dargestellt.
+- Informations-, Kontakt- und Adminseiten erhalten ebenfalls größere Desktop-Breiten.
+- Mobile Breakpoints und die spezielle Tastaturlogik von v44 bleiben unverändert.

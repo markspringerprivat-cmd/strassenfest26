@@ -3596,3 +3596,305 @@ body.keyboard-returning .step[data-step="1"] .step-actions {
     gap: 6px !important;
   }
 }
+
+
+/* ================================================================
+   v45 – Desktop-/Laptop-Optimierung
+   Mobile bleibt Basis. Ab breiteren Viewports wird die Oberfläche
+   automatisch breiter, ruhiger und teilweise zweispaltig.
+   ================================================================ */
+
+@media (min-width: 980px) {
+  /* ---------- Startseite ---------- */
+  body:not(.process-mode) .registration-stage {
+    width: min(920px, calc(100vw - 80px)) !important;
+    max-width: 920px !important;
+  }
+
+  body:not(.process-mode) .wizard-card {
+    padding: 28px 32px 30px !important;
+    border-radius: 30px !important;
+  }
+
+  body:not(.process-mode) .landing-heading {
+    max-width: 720px;
+    margin-left: auto;
+    margin-right: auto;
+    margin-bottom: 24px;
+  }
+
+  body:not(.process-mode) .landing-heading h1 {
+    font-size: clamp(2.15rem, 3.1vw, 3rem);
+  }
+
+  body:not(.process-mode) .landing-heading > p:last-child {
+    max-width: 680px;
+    font-size: .98rem;
+  }
+
+  body:not(.process-mode) .landing-choice-list {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  body:not(.process-mode) .landing-choice {
+    min-height: 92px;
+    grid-template-columns: 48px minmax(0, 1fr) 22px;
+    gap: 14px;
+    padding: 15px 17px;
+    border-radius: 17px;
+  }
+
+  body:not(.process-mode) .landing-choice-icon {
+    width: 46px;
+    height: 46px;
+    border-radius: 13px;
+    font-size: 1.08rem;
+  }
+
+  body:not(.process-mode) .landing-choice strong {
+    font-size: .95rem;
+  }
+
+  body:not(.process-mode) .landing-choice small {
+    font-size: .76rem;
+    line-height: 1.38;
+  }
+
+  /* ---------- Vollbild-Prozesse ---------- */
+  body.process-mode .process-top-nav,
+  body.process-mode .step.active {
+    width: min(1120px, calc(100vw - 72px)) !important;
+    max-width: 1120px !important;
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  body.process-mode .process-top-nav {
+    grid-template-columns: 170px minmax(220px, 1fr) 170px !important;
+    padding-top: 18px !important;
+    padding-bottom: 14px !important;
+    gap: 14px !important;
+  }
+
+  body.process-mode .process-nav-button {
+    min-height: 50px !important;
+    font-size: .83rem !important;
+    border-radius: 14px !important;
+  }
+
+  body.process-mode .step.active {
+    padding: 36px 44px 38px !important;
+  }
+
+  body.process-mode .step-heading {
+    max-width: 860px;
+    margin-bottom: 26px;
+  }
+
+  body.process-mode .step-heading h1,
+  body.process-mode .step-heading h2,
+  body.process-mode .thank-you h2 {
+    font-size: clamp(2rem, 2.6vw, 2.7rem) !important;
+  }
+
+  body.process-mode .step-heading p:not(.eyebrow),
+  body.process-mode .landing-heading p,
+  body.process-mode .thank-you p {
+    font-size: .98rem !important;
+  }
+
+  body.process-mode .field > span,
+  body.process-mode .section-label {
+    font-size: .79rem !important;
+  }
+
+  body.process-mode .field input,
+  body.process-mode .field select,
+  body.process-mode .field textarea {
+    min-height: 52px !important;
+    font-size: 16px !important;
+  }
+
+  body.process-mode .step-actions {
+    width: min(640px, 100%);
+    margin-left: auto !important;
+    margin-right: auto !important;
+  }
+
+  /* ---------- Anmeldung / Personen ---------- */
+  body.process-mode .people-step {
+    padding-bottom: 30px !important;
+  }
+
+  body.process-mode .people-card {
+    display: grid !important;
+    grid-template-columns: minmax(420px, .95fr) minmax(430px, 1.05fr) !important;
+    grid-template-areas:
+      "head head"
+      "composer listhead"
+      "error listcols"
+      "add list"
+      ". list" !important;
+    column-gap: 28px !important;
+    row-gap: 8px !important;
+    padding: 22px 24px !important;
+  }
+
+  body.process-mode .people-card-heading {
+    grid-area: head;
+    margin-bottom: 8px !important;
+  }
+
+  body.process-mode .person-composer-single-row {
+    grid-area: composer;
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 88px !important;
+    gap: 10px !important;
+  }
+
+  body.process-mode .person-inline-error {
+    grid-area: error;
+    min-height: 22px;
+    margin: 2px 0 0;
+  }
+
+  body.process-mode .people-card .person-composer-add {
+    grid-area: add;
+    align-self: start;
+    min-height: 48px !important;
+    margin-top: 0 !important;
+  }
+
+  body.process-mode .people-list-divider {
+    display: none;
+  }
+
+  body.process-mode .people-list-heading {
+    grid-area: listhead;
+    align-self: end;
+    padding: 0 2px 8px !important;
+  }
+
+  body.process-mode .people-list-columns {
+    grid-area: listcols;
+  }
+
+  body.process-mode .people-added-list {
+    grid-area: list;
+    min-height: 210px !important;
+    max-height: min(42vh, 410px) !important;
+  }
+
+  body.process-mode .people-step-actions {
+    width: min(560px, 100%);
+    margin-top: 24px !important;
+  }
+
+  /* ---------- Auswahl-/Zahlungsseiten ---------- */
+  body.process-mode .bring-choice-grid {
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  body.process-mode .choice-button {
+    min-height: 112px;
+    padding: 18px 20px;
+  }
+
+  body.process-mode .payment-choice-grid,
+  body.process-mode .payment-mode-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  body.process-mode .payment-choice {
+    min-height: 108px;
+    padding: 18px 20px;
+  }
+
+  body.process-mode #contributionSelects {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 16px;
+  }
+
+  body.process-mode .contribution-field textarea {
+    min-height: 180px;
+  }
+
+  body.process-mode .summary-panel {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+  }
+
+  body.process-mode .summary-panel .summary-block:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
+  /* ---------- Ablaufübersicht ---------- */
+  body.process-mode .registration-flow {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 14px;
+    align-items: stretch;
+  }
+
+  body.process-mode .registration-flow .flow-arrow {
+    display: none;
+  }
+
+  body.process-mode .flow-step {
+    min-height: 96px;
+    grid-template-columns: 44px minmax(0, 1fr);
+    padding: 15px 16px;
+  }
+
+  body.process-mode .flow-number {
+    width: 40px;
+    height: 40px;
+    font-size: .82rem;
+  }
+
+  body.process-mode .flow-step strong {
+    font-size: .84rem;
+  }
+
+  /* ---------- Lookup-/Statusseiten ---------- */
+  body.process-mode .front-lookup-form,
+  body.process-mode .payment-status-result,
+  body.process-mode .payment-change-summary,
+  body.process-mode .receipt-registration-card,
+  body.process-mode .receipt-completion-card,
+  body.process-mode .completion-card,
+  body.process-mode .access-code-card {
+    max-width: 760px;
+  }
+
+  body.process-mode .receipt-simple-fields,
+  body.process-mode .receipt-payout-fieldset {
+    max-width: 820px;
+  }
+
+  /* Desktop hover/focus clarity. */
+  body.process-mode .process-nav-button:hover:not(:disabled),
+  body.process-mode .choice-button:hover,
+  body.process-mode .payment-choice:hover,
+  body.process-mode .primary-button:hover,
+  body.process-mode .secondary-button:hover,
+  body:not(.process-mode) .landing-choice:hover {
+    transform: translateY(-1px);
+  }
+}
+
+/* Large desktop: leave generous margins rather than stretching endlessly. */
+@media (min-width: 1500px) {
+  body.process-mode .process-top-nav,
+  body.process-mode .step.active {
+    width: 1180px !important;
+    max-width: 1180px !important;
+  }
+
+  body:not(.process-mode) .registration-stage {
+    width: 980px !important;
+    max-width: 980px !important;
+  }
+}
