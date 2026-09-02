@@ -8,7 +8,7 @@
   <title>Straßenfest in Hilchenbach – Anmeldung</title>
   <meta name="description" content="Anmeldung zum Straßenfest in Hilchenbach" />
   <link rel="preload" as="image" href="assets/strassenfest-hilchenbach.png" />
-  <link rel="stylesheet" href="styles.css?v=45" />
+  <link rel="stylesheet" href="styles.css?v=46" />
 </head>
 <body>
   <div class="app-shell" id="appShell">
@@ -971,17 +971,24 @@
                 <strong>Was ist bisher geplant?</strong>
                 <span>Tippe rechts auf +, um den Bereich zu übernehmen.</span>
               </div>
-              <div class="needs-table-wrap">
-                <table class="needs-table">
-                  <thead>
-                    <tr>
-                      <th>Bereich</th>
-                      <th>Einträge</th>
-                      <th></th>
-                    </tr>
-                  </thead>
-                  <tbody id="needsTableBody"></tbody>
-                </table>
+              <div class="needs-table-shell">
+                <div class="needs-table-wrap" id="needsTableWrap">
+                  <table class="needs-table">
+                    <thead>
+                      <tr>
+                        <th>Bereich</th>
+                        <th>Einträge</th>
+                        <th></th>
+                      </tr>
+                    </thead>
+                    <tbody id="needsTableBody"></tbody>
+                  </table>
+                </div>
+                <div class="needs-scroll-indicator"
+                     id="needsScrollIndicator"
+                     aria-hidden="true">
+                  <div class="needs-scroll-thumb" id="needsScrollThumb"></div>
+                </div>
               </div>
               <p class="needs-note" id="needsNote"></p>
             </section>
@@ -1025,6 +1032,12 @@
                 </select>
               </label>
             </div>
+
+            <p class="alcohol-safety-note hidden" id="alcoholSafetyNote">
+              <strong>Hinweis zu alkoholischen Getränken:</strong>
+              Aus Sicherheitsgründen bitten wir darum, auf Schnaps und andere
+              hochprozentige Spirituosen zu verzichten.
+            </p>
 
             <section class="existing-contributions hidden" id="existingContributions" aria-live="polite">
               <div class="existing-contributions-head">
@@ -1249,6 +1262,7 @@
                 </p>
 
                 <a class="paypal-pool-button"
+                   id="confirmationPaypalLink"
                    href="https://www.paypal.com/pool/9sjOoDB6jh?sr=wccr"
                    target="_blank"
                    rel="noopener noreferrer">
@@ -1346,8 +1360,8 @@
     </section>
   </div>
 
-  <script src="api-client.js?v=45" defer></script>
-  <script src="script.js?v=45" defer></script>
+  <script src="api-client.js?v=46" defer></script>
+  <script src="script.js?v=46" defer></script>
 
   <div class="first-visit-notice hidden"
        id="firstVisitNotice"
@@ -1380,6 +1394,28 @@
               type="button">
         OK
       </button>
+    </section>
+  </div>
+
+
+  <div class="action-dialog hidden"
+       id="actionDialog"
+       role="dialog"
+       aria-modal="true"
+       aria-labelledby="actionDialogTitle">
+    <div class="action-dialog-backdrop" id="actionDialogBackdrop" aria-hidden="true"></div>
+    <section class="action-dialog-card">
+      <p class="eyebrow" id="actionDialogEyebrow">Hinweis</p>
+      <h2 id="actionDialogTitle">Hinweis</h2>
+      <div class="action-dialog-copy" id="actionDialogCopy"></div>
+      <div class="action-dialog-actions">
+        <button class="secondary-button hidden"
+                id="actionDialogSecondary"
+                type="button">Abbrechen</button>
+        <button class="primary-button"
+                id="actionDialogPrimary"
+                type="button">OK</button>
+      </div>
     </section>
   </div>
 

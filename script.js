@@ -47,6 +47,9 @@
   const bringNo = document.getElementById("bringNo");
   const showNeeds = document.getElementById("showNeeds");
   const needsTableBody = document.getElementById("needsTableBody");
+  const needsTableWrap = document.getElementById("needsTableWrap");
+  const needsScrollIndicator = document.getElementById("needsScrollIndicator");
+  const needsScrollThumb = document.getElementById("needsScrollThumb");
   const needsNote = document.getElementById("needsNote");
   const contributionSelects = document.getElementById("contributionSelects");
   const presetSelection = document.getElementById("presetSelection");
@@ -58,6 +61,7 @@
   const subtype = document.getElementById("subtype");
   const contribution = document.getElementById("contribution");
   const contributionError = document.getElementById("contributionError");
+  const alcoholSafetyNote = document.getElementById("alcoholSafetyNote");
   const contributionBack = document.getElementById("contributionBack");
   const contributionContinue = document.getElementById("contributionContinue");
   const paymentSummary = document.getElementById("paymentSummary");
@@ -82,6 +86,13 @@
   const processNextButton = document.getElementById("processNextButton");
   const firstVisitNotice = document.getElementById("firstVisitNotice");
   const firstVisitNoticeOk = document.getElementById("firstVisitNoticeOk");
+  const actionDialog = document.getElementById("actionDialog");
+  const actionDialogBackdrop = document.getElementById("actionDialogBackdrop");
+  const actionDialogEyebrow = document.getElementById("actionDialogEyebrow");
+  const actionDialogTitle = document.getElementById("actionDialogTitle");
+  const actionDialogCopy = document.getElementById("actionDialogCopy");
+  const actionDialogSecondary = document.getElementById("actionDialogSecondary");
+  const actionDialogPrimary = document.getElementById("actionDialogPrimary");
   const modalBackdrop = document.getElementById("modalBackdrop");
   const modalClose = document.getElementById("modalClose");
   const modalTitle = document.getElementById("modalTitle");
@@ -94,6 +105,7 @@
   const confirmationPaymentMethod = document.getElementById("confirmationPaymentMethod");
   const confirmationPaymentAmount = document.getElementById("confirmationPaymentAmount");
   const confirmationPaypalArea = document.getElementById("confirmationPaypalArea");
+  const confirmationPaypalLink = document.getElementById("confirmationPaypalLink");
   const changePaymentAfterSubmitButton = document.getElementById("changePaymentAfterSubmitButton");
   const downloadPdfButton = document.getElementById("downloadPdfButton");
   const codeContinueButton = document.getElementById("codeContinueButton");
@@ -1034,6 +1046,100 @@
     event.target.closest?.(".validation-error-target")?.classList.remove("validation-error-target");
   });
 
+  let actionDialogResolver = null;
+  let actionDialogPrimaryCallback = null;
+  let actionDialogSecondaryCallback = null;
+
+  function settleActionDialog(result) {
+    if (result === "primary") {
+      try {
+        actionDialogPrimaryCallback?.();
+      } catch (error) {
+        console.error("Dialog-Aktion konnte nicht ausgeführt werden:", error);
+      }
+    } else if (result === "secondary") {
+      try {
+        actionDialogSecondaryCallback?.();
+      } catch (error) {
+        console.error("Dialog-Aktion konnte nicht ausgeführt werden:", error);
+      }
+    }
+
+    actionDialog?.classList.add("hidden");
+
+    const resolver = actionDialogResolver;
+    actionDialogResolver = null;
+    actionDialogPrimaryCallback = null;
+    actionDialogSecondaryCallback = null;
+    resolver?.(result);
+  }
+
+  function showActionDialog({
+    eyebrow = "Hinweis",
+    title,
+    html,
+    primaryLabel = "OK",
+    secondaryLabel = "",
+    onPrimary = null,
+    onSecondary = null
+  }) {
+    if (!actionDialog) {
+      onPrimary?.();
+      return Promise.resolve("primary");
+    }
+
+    if (actionDialogResolver) {
+      settleActionDialog("cancel");
+    }
+
+    actionDialogEyebrow.textContent = eyebrow;
+    actionDialogTitle.textContent = title;
+    actionDialogCopy.innerHTML = html;
+    actionDialogPrimary.textContent = primaryLabel;
+    actionDialogSecondary.textContent = secondaryLabel || "Abbrechen";
+    actionDialogSecondary.classList.toggle("hidden", !secondaryLabel);
+    actionDialogPrimaryCallback = onPrimary;
+    actionDialogSecondaryCallback = onSecondary;
+    actionDialog.classList.remove("hidden");
+
+    window.setTimeout(() => actionDialogPrimary?.focus(), 40);
+
+    return new Promise((resolve) => {
+      actionDialogResolver = resolve;
+    });
+  }
+
+  actionDialogPrimary?.addEventListener("click", () => {
+    settleActionDialog("primary");
+  });
+
+  actionDialogSecondary?.addEventListener("click", () => {
+    settleActionDialog("secondary");
+  });
+
+  actionDialogBackdrop?.addEventListener("click", () => {
+    settleActionDialog("cancel");
+  });
+
+  function contributionBudgetNotice() {
+    return showActionDialog({
+      eyebrow: "Mitbringen & Erstattung",
+      title: "Kurzer Hinweis zu Ausgaben",
+      html: `
+        <p>
+          Wenn du für dein Mitbringsel etwas einkaufst, kannst du den
+          <strong>Kassenbon später auf der Startseite unter „Zahlungen“</strong>
+          einreichen und dir den entsprechenden Betrag erstatten lassen.
+        </p>
+        <p>
+          Bitte plane dafür grundsätzlich <strong>höchstens 20 €</strong> ein.
+          Höhere Ausgaben bitte vorher kurz absprechen, damit das gemeinsame
+          Budget für alle Einkäufe verlässlich planbar bleibt.
+        </p>`,
+      primaryLabel: "OK"
+    });
+  }
+
   const processBackActionMap = {
     intro: "#introBack",
     "payments-home": "#paymentsHomeBack",
@@ -1070,7 +1176,7 @@
     "1": "#peopleContinue",
     "3": "#contributionContinue",
     "4": "#paymentContinue",
-    "5": "#submitButton",
+    "5": "#finalSubmitButton",
     code: "#codeContinueButton"
   };
 
@@ -1080,25 +1186,61 @@
       : null;
   }
 
+  function processStepReady(nextAction) {
+    switch (state.step) {
+      case "intro":
+        return true;
+      case "payment":
+        return Boolean(paymentStatusCode.value.trim());
+      case "payment-change-lookup":
+        return Boolean(changePaymentLookupCode.value.trim());
+      case "payment-change":
+        return !changePaymentSave.classList.contains("hidden") &&
+          Boolean(state.paymentChangeMethod);
+      case "receipt-lookup":
+        return Boolean(receiptLookupCode.value.trim());
+      case "receipt-upload":
+        return !receiptSubmitButton.disabled;
+      case "existing":
+        return Boolean(frontLookupCode.value.trim());
+      case "1":
+        return state.people.length > 0;
+      case "3": { 
+        const categoryValue = state.presetContribution
+          ? state.category
+          : category.value;
+        const subtypeValue = state.presetContribution
+          ? state.subtype
+          : subtype.value;
+        return Boolean(
+          categoryValue &&
+          (!subtypeOptions[categoryValue] || subtypeValue) &&
+          contribution.value.trim()
+        );
+      }
+      case "4":
+        return state.totalCost === 0 || Boolean(
+          state.paymentMode &&
+          (state.paymentMode !== "cash" || state.paymentMethod)
+        );
+      case "5":
+        return !state.submitting;
+      case "code":
+        return !codeContinueButton.disabled;
+      default:
+        return Boolean(nextAction && !nextAction.disabled);
+    }
+  }
+
   function updateProcessNavigation() {
     const home = state.step === "home";
 
-    document.body.classList.toggle(
-      "process-mode",
-      !home
-    );
-
-    wizardCard.classList.toggle(
-      "process-card",
-      !home
-    );
-
-    processTopNav?.classList.toggle(
-      "hidden",
-      home
-    );
+    document.body.classList.toggle("process-mode", !home);
+    wizardCard.classList.toggle("process-card", !home);
+    processTopNav?.classList.toggle("hidden", home);
 
     if (home) {
+      processNextButton?.classList.remove("is-ready");
       return;
     }
 
@@ -1108,8 +1250,11 @@
     }
 
     const nextAction = processAction(processNextActionMap[state.step]);
+    const ready = processStepReady(nextAction);
+
     if (processNextButton) {
-      processNextButton.disabled = !nextAction || Boolean(nextAction.disabled);
+      processNextButton.disabled = !nextAction || !ready;
+      processNextButton.classList.toggle("is-ready", Boolean(nextAction && ready));
     }
   }
 
@@ -1137,8 +1282,26 @@
 
   processHomeButton?.addEventListener(
     "click",
-    () => {
-      setStep("home");
+    async () => {
+      const result = await showActionDialog({
+        eyebrow: "Zur Startseite",
+        title: "Wirklich zur Startseite wechseln?",
+        html: `
+          <p>
+            Möchtest du den aktuellen Schritt verlassen und zur Startseite
+            zurückkehren?
+          </p>
+          <p>
+            Deine bisherigen Eingaben bleiben erhalten, solange diese Seite
+            geöffnet bleibt.
+          </p>`,
+        secondaryLabel: "Hier bleiben",
+        primaryLabel: "Zur Startseite"
+      });
+
+      if (result === "primary") {
+        setStep("home");
+      }
     }
   );
 
@@ -1176,6 +1339,13 @@
         updateProcessNavigation,
         0
       );
+    }
+  );
+
+  document.addEventListener(
+    "click",
+    () => {
+      window.setTimeout(updateProcessNavigation, 0);
     }
   );
 
@@ -1577,6 +1747,20 @@
     }
   );
 
+  function updateAlcoholSafetyNote() {
+    const categoryValue = state.presetContribution
+      ? state.category
+      : category.value;
+    const subtypeValue = state.presetContribution
+      ? state.subtype
+      : subtype.value;
+
+    alcoholSafetyNote?.classList.toggle(
+      "hidden",
+      !(categoryValue === "Getränke" && subtypeValue === "Alkoholisch")
+    );
+  }
+
   function resetContribution() {
     state.category = "";
     state.subtype = "";
@@ -1594,6 +1778,7 @@
     presetSelection.classList.add("hidden");
     contributionIntro.textContent = "Wähle die Kategorie und beschreibe kurz deinen Beitrag.";
     contributionError.textContent = "";
+    updateAlcoholSafetyNote();
   }
 
   function matchingContributionStats(categoryValue, subtypeValue = "") {
@@ -1692,11 +1877,17 @@
     contributionIntro.textContent = "Der Bereich ist bereits ausgewählt. Trage nur noch ein, was du mitbringst.";
     contributionError.textContent = "";
     renderExistingContributions(categoryValue, subtypeValue || "");
+    updateAlcoholSafetyNote();
     setStep(3);
     void refreshContributionStats();
   }
 
-  bringYes.addEventListener("click", openNormalContribution);
+  bringYes.addEventListener("click", async () => {
+    const result = await contributionBudgetNotice();
+    if (result === "primary") {
+      openNormalContribution();
+    }
+  });
 
   bringNo.addEventListener("click", () => {
     state.bringing = false;
@@ -1711,8 +1902,12 @@
   });
 
   showNeeds.addEventListener("click", async () => {
+    const noticeResult = await contributionBudgetNotice();
+    if (noticeResult !== "primary") return;
+
     setButtonBusy(showNeeds, true, "Wird geladen …");
     setStep("needs");
+    window.requestAnimationFrame(updateNeedsScrollbar);
 
     try {
       await renderNeeds();
@@ -1745,6 +1940,7 @@
     }
 
     renderExistingContributions(state.category, "");
+    updateAlcoholSafetyNote();
   });
 
   subtype.addEventListener("change", () => {
@@ -1755,6 +1951,7 @@
     contribution.placeholder = state.subtype ? "Was genau möchtest du mitbringen?" : "Bitte zuerst beide Auswahlfelder treffen";
     clearValidationMarks();
     renderExistingContributions(state.category, state.subtype);
+    updateAlcoholSafetyNote();
   });
 
   contribution.addEventListener("input", () => {
@@ -1824,6 +2021,35 @@
     };
   }
 
+  function updateNeedsScrollbar() {
+    if (!needsTableWrap || !needsScrollIndicator || !needsScrollThumb) return;
+
+    const viewportHeight = Math.max(1, needsTableWrap.clientHeight);
+    const contentHeight = Math.max(viewportHeight, needsTableWrap.scrollHeight);
+    const trackHeight = Math.max(1, needsScrollIndicator.clientHeight);
+    const overflow = Math.max(0, contentHeight - viewportHeight);
+
+    const thumbHeight = overflow > 0
+      ? Math.max(34, Math.round(trackHeight * viewportHeight / contentHeight))
+      : trackHeight;
+
+    const maxThumbTop = Math.max(0, trackHeight - thumbHeight);
+    const thumbTop = overflow > 0
+      ? Math.round(maxThumbTop * needsTableWrap.scrollTop / overflow)
+      : 0;
+
+    needsScrollThumb.style.height = `${thumbHeight}px`;
+    needsScrollThumb.style.transform = `translateY(${thumbTop}px)`;
+    needsScrollIndicator.classList.toggle("is-static", overflow <= 0);
+  }
+
+  needsTableWrap?.addEventListener("scroll", updateNeedsScrollbar, { passive: true });
+  window.addEventListener("resize", () => {
+    if (state.step === "needs") {
+      window.requestAnimationFrame(updateNeedsScrollbar);
+    }
+  }, { passive: true });
+
   function renderNeedsFromStats(stats, note) {
     needsTableBody.innerHTML = needsBuckets.map((bucket) => {
       const match = stats.find((item) =>
@@ -1833,12 +2059,16 @@
 
       const count = Number(match?.count || 0);
       const notes = Array.isArray(match?.notes) ? match.notes.slice(0, 3) : [];
+      const alcoholNote = bucket.category === "Getränke" && bucket.subtype === "Alkoholisch"
+        ? '<span class="needs-safety-note">Bitte kein Schnaps oder hochprozentige Spirituosen.</span>'
+        : '';
 
       return `
         <tr>
           <td>
             <span class="needs-label">${escapeHtml(bucket.label)}</span>
             <span class="needs-items">${notes.length ? escapeHtml(notes.join(" · ")) : "Noch nichts eingetragen"}</span>
+            ${alcoholNote}
           </td>
           <td>${count}</td>
           <td>
@@ -1852,6 +2082,7 @@
     }).join("");
 
     needsNote.textContent = note;
+    window.requestAnimationFrame(updateNeedsScrollbar);
   }
 
   async function renderNeeds() {
@@ -1865,6 +2096,7 @@
         </td>
       </tr>`;
     needsNote.textContent = "Die Angaben werden aus der gemeinsamen Anmeldung geladen.";
+    window.requestAnimationFrame(updateNeedsScrollbar);
 
     try {
       const result = await apiRequest("stats");
@@ -2982,6 +3214,42 @@
     setStep("done");
   });
 
+
+
+  confirmationPaypalLink?.addEventListener("click", async (event) => {
+    event.preventDefault();
+
+    await showActionDialog({
+      eyebrow: "Vor der PayPal-Zahlung",
+      title: "Anmeldedaten am besten als PDF sichern",
+      html: `
+        <p>
+          In der PDF stehen dein <strong>Anmeldecode und alle Angaben aus der
+          Anmeldung</strong>. So hast du die Informationen später schnell zur Hand.
+        </p>
+        <p>
+          Du kannst die PDF auch später noch auf dieser Seite herunterladen,
+          solange diese Seite geöffnet bleibt.
+        </p>`,
+      secondaryLabel: "PDF herunterladen",
+      primaryLabel: "Weiter zu PayPal",
+      onSecondary: () => {
+        if (state.savedRegistration) {
+          void downloadRegistrationPdf(state.savedRegistration);
+        }
+      },
+      onPrimary: () => {
+        const link = document.createElement("a");
+        link.href = confirmationPaypalLink.href;
+        link.target = "_blank";
+        link.rel = "noopener noreferrer";
+        link.style.display = "none";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+      }
+    });
+  });
 
   changePaymentAfterSubmitButton.addEventListener("click", () => {
     if (!state.savedRegistration) return;

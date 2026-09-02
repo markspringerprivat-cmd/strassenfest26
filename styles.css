@@ -3598,303 +3598,261 @@ body.keyboard-returning .step[data-step="1"] .step-actions {
 }
 
 
+
+
 /* ================================================================
-   v45 – Desktop-/Laptop-Optimierung
-   Mobile bleibt Basis. Ab breiteren Viewports wird die Oberfläche
-   automatisch breiter, ruhiger und teilweise zweispaltig.
+   v46 – Bedarf, Desktop-Zentrierung, Dialoge & Prozessnavigation
    ================================================================ */
 
+/* Desktop bleibt bewusst wie eine zentrierte Mobilansicht. */
 @media (min-width: 980px) {
-  /* ---------- Startseite ---------- */
   body:not(.process-mode) .registration-stage {
-    width: min(920px, calc(100vw - 80px)) !important;
-    max-width: 920px !important;
+    width: min(455px, calc(100vw - 72px)) !important;
+    max-width: 455px !important;
   }
 
-  body:not(.process-mode) .wizard-card {
-    padding: 28px 32px 30px !important;
-    border-radius: 30px !important;
-  }
-
-  body:not(.process-mode) .landing-heading {
-    max-width: 720px;
-    margin-left: auto;
-    margin-right: auto;
-    margin-bottom: 24px;
-  }
-
-  body:not(.process-mode) .landing-heading h1 {
-    font-size: clamp(2.15rem, 3.1vw, 3rem);
-  }
-
-  body:not(.process-mode) .landing-heading > p:last-child {
-    max-width: 680px;
-    font-size: .98rem;
-  }
-
-  body:not(.process-mode) .landing-choice-list {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 14px;
-  }
-
-  body:not(.process-mode) .landing-choice {
-    min-height: 92px;
-    grid-template-columns: 48px minmax(0, 1fr) 22px;
-    gap: 14px;
-    padding: 15px 17px;
-    border-radius: 17px;
-  }
-
-  body:not(.process-mode) .landing-choice-icon {
-    width: 46px;
-    height: 46px;
-    border-radius: 13px;
-    font-size: 1.08rem;
-  }
-
-  body:not(.process-mode) .landing-choice strong {
-    font-size: .95rem;
-  }
-
-  body:not(.process-mode) .landing-choice small {
-    font-size: .76rem;
-    line-height: 1.38;
-  }
-
-  /* ---------- Vollbild-Prozesse ---------- */
   body.process-mode .process-top-nav,
   body.process-mode .step.active {
-    width: min(1120px, calc(100vw - 72px)) !important;
-    max-width: 1120px !important;
+    width: min(500px, calc(100vw - 56px)) !important;
+    max-width: 500px !important;
     margin-left: auto !important;
     margin-right: auto !important;
   }
 
   body.process-mode .process-top-nav {
-    grid-template-columns: 170px minmax(220px, 1fr) 170px !important;
-    padding-top: 18px !important;
-    padding-bottom: 14px !important;
-    gap: 14px !important;
-  }
-
-  body.process-mode .process-nav-button {
-    min-height: 50px !important;
-    font-size: .83rem !important;
-    border-radius: 14px !important;
+    grid-template-columns: 1fr 1.15fr 1fr !important;
   }
 
   body.process-mode .step.active {
-    padding: 36px 44px 38px !important;
-  }
-
-  body.process-mode .step-heading {
-    max-width: 860px;
-    margin-bottom: 26px;
-  }
-
-  body.process-mode .step-heading h1,
-  body.process-mode .step-heading h2,
-  body.process-mode .thank-you h2 {
-    font-size: clamp(2rem, 2.6vw, 2.7rem) !important;
-  }
-
-  body.process-mode .step-heading p:not(.eyebrow),
-  body.process-mode .landing-heading p,
-  body.process-mode .thank-you p {
-    font-size: .98rem !important;
-  }
-
-  body.process-mode .field > span,
-  body.process-mode .section-label {
-    font-size: .79rem !important;
-  }
-
-  body.process-mode .field input,
-  body.process-mode .field select,
-  body.process-mode .field textarea {
-    min-height: 52px !important;
-    font-size: 16px !important;
-  }
-
-  body.process-mode .step-actions {
-    width: min(640px, 100%);
-    margin-left: auto !important;
-    margin-right: auto !important;
-  }
-
-  /* ---------- Anmeldung / Personen ---------- */
-  body.process-mode .people-step {
-    padding-bottom: 30px !important;
-  }
-
-  body.process-mode .people-card {
-    display: grid !important;
-    grid-template-columns: minmax(420px, .95fr) minmax(430px, 1.05fr) !important;
-    grid-template-areas:
-      "head head"
-      "composer listhead"
-      "error listcols"
-      "add list"
-      ". list" !important;
-    column-gap: 28px !important;
-    row-gap: 8px !important;
-    padding: 22px 24px !important;
-  }
-
-  body.process-mode .people-card-heading {
-    grid-area: head;
-    margin-bottom: 8px !important;
-  }
-
-  body.process-mode .person-composer-single-row {
-    grid-area: composer;
-    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr) 88px !important;
-    gap: 10px !important;
-  }
-
-  body.process-mode .person-inline-error {
-    grid-area: error;
-    min-height: 22px;
-    margin: 2px 0 0;
-  }
-
-  body.process-mode .people-card .person-composer-add {
-    grid-area: add;
-    align-self: start;
-    min-height: 48px !important;
-    margin-top: 0 !important;
-  }
-
-  body.process-mode .people-list-divider {
-    display: none;
-  }
-
-  body.process-mode .people-list-heading {
-    grid-area: listhead;
-    align-self: end;
-    padding: 0 2px 8px !important;
-  }
-
-  body.process-mode .people-list-columns {
-    grid-area: listcols;
-  }
-
-  body.process-mode .people-added-list {
-    grid-area: list;
-    min-height: 210px !important;
-    max-height: min(42vh, 410px) !important;
-  }
-
-  body.process-mode .people-step-actions {
-    width: min(560px, 100%);
-    margin-top: 24px !important;
-  }
-
-  /* ---------- Auswahl-/Zahlungsseiten ---------- */
-  body.process-mode .bring-choice-grid {
-    grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 16px;
-  }
-
-  body.process-mode .choice-button {
-    min-height: 112px;
-    padding: 18px 20px;
-  }
-
-  body.process-mode .payment-choice-grid,
-  body.process-mode .payment-mode-grid {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16px;
-  }
-
-  body.process-mode .payment-choice {
-    min-height: 108px;
-    padding: 18px 20px;
-  }
-
-  body.process-mode #contributionSelects {
-    display: grid;
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 16px;
-  }
-
-  body.process-mode .contribution-field textarea {
-    min-height: 180px;
-  }
-
-  body.process-mode .summary-panel {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-    gap: 14px;
-  }
-
-  body.process-mode .summary-panel .summary-block:last-child:nth-child(odd) {
-    grid-column: 1 / -1;
-  }
-
-  /* ---------- Ablaufübersicht ---------- */
-  body.process-mode .registration-flow {
-    grid-template-columns: repeat(4, minmax(0, 1fr));
-    gap: 14px;
-    align-items: stretch;
-  }
-
-  body.process-mode .registration-flow .flow-arrow {
-    display: none;
-  }
-
-  body.process-mode .flow-step {
-    min-height: 96px;
-    grid-template-columns: 44px minmax(0, 1fr);
-    padding: 15px 16px;
-  }
-
-  body.process-mode .flow-number {
-    width: 40px;
-    height: 40px;
-    font-size: .82rem;
-  }
-
-  body.process-mode .flow-step strong {
-    font-size: .84rem;
-  }
-
-  /* ---------- Lookup-/Statusseiten ---------- */
-  body.process-mode .front-lookup-form,
-  body.process-mode .payment-status-result,
-  body.process-mode .payment-change-summary,
-  body.process-mode .receipt-registration-card,
-  body.process-mode .receipt-completion-card,
-  body.process-mode .completion-card,
-  body.process-mode .access-code-card {
-    max-width: 760px;
-  }
-
-  body.process-mode .receipt-simple-fields,
-  body.process-mode .receipt-payout-fieldset {
-    max-width: 820px;
-  }
-
-  /* Desktop hover/focus clarity. */
-  body.process-mode .process-nav-button:hover:not(:disabled),
-  body.process-mode .choice-button:hover,
-  body.process-mode .payment-choice:hover,
-  body.process-mode .primary-button:hover,
-  body.process-mode .secondary-button:hover,
-  body:not(.process-mode) .landing-choice:hover {
-    transform: translateY(-1px);
+    padding-left: 18px !important;
+    padding-right: 18px !important;
   }
 }
 
-/* Large desktop: leave generous margins rather than stretching endlessly. */
-@media (min-width: 1500px) {
-  body.process-mode .process-top-nav,
-  body.process-mode .step.active {
-    width: 1180px !important;
-    max-width: 1180px !important;
-  }
+/* Doppelte Zurück-/Weiter-Aktionen unten im Anmeldeprozess ausblenden.
+   Die Buttons bleiben im DOM, damit die obere Navigation dieselbe Logik nutzt. */
+body.process-mode .step[data-step="1"] > .step-actions,
+body.process-mode .step[data-step="2"] > .step-actions,
+body.process-mode .step[data-step="needs"] > .step-actions,
+body.process-mode .step[data-step="3"] > .step-actions,
+body.process-mode .step[data-step="4"] > .step-actions {
+  display: none !important;
+}
 
-  body:not(.process-mode) .registration-stage {
-    width: 980px !important;
-    max-width: 980px !important;
+/* Wenn der nächste Schritt vollständig ausgefüllt ist, wird „Weiter“ sichtbar aktiv. */
+body.process-mode .process-next-button {
+  position: relative;
+  overflow: visible;
+}
+
+body.process-mode .process-next-button.is-ready:not(:disabled) {
+  border-color: rgba(255, 211, 82, .95) !important;
+  box-shadow:
+    0 0 0 2px rgba(255, 205, 63, .10),
+    0 0 16px rgba(255, 194, 48, .22),
+    inset 0 0 12px rgba(255, 210, 80, .045);
+  animation: process-ready-glow 1.9s ease-in-out infinite;
+}
+
+body.process-mode .process-next-button.is-ready:not(:disabled)::after {
+  content: "✦";
+  position: absolute;
+  top: -8px;
+  right: 7px;
+  color: #ffe37b;
+  font-size: .72rem;
+  text-shadow: 0 0 7px rgba(255, 211, 91, .9);
+  pointer-events: none;
+  animation: process-ready-spark 1.9s ease-in-out infinite;
+}
+
+@keyframes process-ready-glow {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(255,205,63,.08), 0 0 11px rgba(255,194,48,.14); }
+  50% { box-shadow: 0 0 0 2px rgba(255,213,79,.2), 0 0 23px rgba(255,194,48,.33); }
+}
+
+@keyframes process-ready-spark {
+  0%, 100% { opacity: .35; transform: scale(.78) rotate(0deg); }
+  50% { opacity: 1; transform: scale(1.18) rotate(18deg); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  body.process-mode .process-next-button.is-ready:not(:disabled),
+  body.process-mode .process-next-button.is-ready:not(:disabled)::after {
+    animation: none !important;
+  }
+}
+
+/* Bedarfsliste füllt dynamisch den verfügbaren Rest des Displays. */
+body.process-mode .step[data-step="needs"].active {
+  overflow: hidden !important;
+}
+
+body.process-mode .step[data-step="needs"] .step-heading {
+  flex: 0 0 auto;
+}
+
+body.process-mode .needs-panel {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.needs-panel-heading,
+.needs-note {
+  flex: 0 0 auto;
+}
+
+.needs-table-shell {
+  position: relative;
+  flex: 1 1 auto;
+  min-height: 180px;
+  overflow: hidden;
+  padding-right: 13px;
+  border-top: 1px solid rgba(196, 166, 250, .12);
+}
+
+.needs-table-wrap {
+  width: 100%;
+  height: 100%;
+  max-height: none !important;
+  overflow-y: scroll !important;
+  overflow-x: hidden;
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  scrollbar-width: none !important;
+}
+
+.needs-table-wrap::-webkit-scrollbar {
+  width: 0 !important;
+  height: 0 !important;
+  display: none !important;
+}
+
+.needs-table thead th {
+  position: sticky;
+  z-index: 2;
+  top: 0;
+  background: rgba(31, 27, 91, .985);
+  box-shadow: 0 1px 0 rgba(196,166,250,.14);
+}
+
+.needs-scroll-indicator {
+  position: absolute;
+  z-index: 4;
+  top: 8px;
+  right: 4px;
+  bottom: 8px;
+  width: 5px;
+  border-radius: 999px;
+  background: rgba(255,255,255,.10);
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.04);
+  pointer-events: none;
+}
+
+.needs-scroll-thumb {
+  width: 100%;
+  min-height: 34px;
+  border-radius: inherit;
+  background: linear-gradient(#ffe06b, #ffb832);
+  box-shadow: 0 0 8px rgba(255, 190, 50, .45);
+  transform: translateY(0);
+  transition: height .14s ease-out;
+}
+
+.needs-scroll-indicator.is-static {
+  opacity: .42;
+}
+
+.needs-safety-note {
+  display: block;
+  margin-top: 4px;
+  color: #ffe18a;
+  font-size: .56rem;
+  line-height: 1.25;
+}
+
+.alcohol-safety-note {
+  margin: 9px 0 2px;
+  padding: 10px 11px;
+  border: 1px solid rgba(255, 205, 73, .34);
+  border-radius: 12px;
+  background: rgba(255, 196, 52, .065);
+  color: rgba(255,255,255,.88);
+  font-size: .68rem;
+  line-height: 1.42;
+}
+
+.alcohol-safety-note strong {
+  color: #ffe27a;
+}
+
+/* Universeller, kurzer Bestätigungs-/Hinweisdialog. */
+.action-dialog {
+  position: fixed;
+  z-index: 800;
+  inset: 0;
+  display: grid;
+  place-items: center;
+  padding:
+    max(18px, env(safe-area-inset-top))
+    18px
+    max(18px, env(safe-area-inset-bottom));
+}
+
+.action-dialog-backdrop {
+  position: absolute;
+  inset: 0;
+  background: rgba(3, 6, 31, .79);
+  backdrop-filter: blur(7px);
+  -webkit-backdrop-filter: blur(7px);
+}
+
+.action-dialog-card {
+  position: relative;
+  z-index: 1;
+  width: min(100%, 430px);
+  box-sizing: border-box;
+  padding: 19px;
+  border: 1px solid rgba(255, 211, 95, .62);
+  border-radius: 20px;
+  background: linear-gradient(155deg, rgba(55,39,122,.995), rgba(19,20,76,.998));
+  box-shadow: 0 22px 64px rgba(0,0,0,.48), 0 0 20px rgba(255,190,50,.10);
+}
+
+.action-dialog-card h2 {
+  margin: 4px 0 11px;
+  font-size: clamp(1.2rem, 5.2vw, 1.55rem);
+  line-height: 1.1;
+}
+
+.action-dialog-copy {
+  display: grid;
+  gap: 9px;
+}
+
+.action-dialog-copy p {
+  margin: 0;
+  color: rgba(255,255,255,.88);
+  font-size: clamp(.76rem, 3.15vw, .9rem);
+  line-height: 1.48;
+}
+
+.action-dialog-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 8px;
+  margin-top: 16px;
+}
+
+.action-dialog-actions .primary-button:only-child,
+.action-dialog-actions .secondary-button.hidden + .primary-button {
+  grid-column: 1 / -1;
+}
+
+@media (max-width: 370px) {
+  .action-dialog-actions {
+    grid-template-columns: 1fr;
   }
 }

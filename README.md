@@ -584,3 +584,21 @@ zum Timeout geführt haben konnten.
 - Ablaufübersicht wird horizontal dargestellt.
 - Informations-, Kontakt- und Adminseiten erhalten ebenfalls größere Desktop-Breiten.
 - Mobile Breakpoints und die spezielle Tastaturlogik von v44 bleiben unverändert.
+
+
+## Update v46 – Bedarfsliste, Hinweise und Navigation
+- Desktopansicht wieder bewusst auf eine zentrierte Mobilbreite zurückgeführt.
+- Bedarfsliste nutzt den verfügbaren Bildschirm dynamisch und besitzt eine eigene,
+  dauerhaft sichtbare goldene Scrollanzeige.
+- Bei alkoholischen Getränken erscheint der Hinweis, auf Schnaps und andere
+  hochprozentige Spirituosen zu verzichten.
+- Vor „Ja, ich bringe etwas mit“ und „Was wird noch gebraucht?“ erscheint ein
+  kurzer Hinweis zur möglichen Kassenbon-Erstattung und zur 20-Euro-Budgetgrenze.
+- Doppelte Zurück-/Weiter-Schaltflächen unten in den Anmeldeschritten ausgeblendet;
+  die obere Navigation verwendet weiterhin dieselbe Prüf-/Weiterlogik.
+- Sobald ein Schritt vollständig ist, erhält „Weiter“ einen dezenten animierten
+  goldenen Rahmen mit Glitzereffekt.
+- „Startseite“ in der oberen Navigation fragt nun vor dem Wechsel nach.
+- Der PayPal-Button auf der abschließenden Bestätigungsseite zeigt vorher einen
+  Hinweis zur PDF-Sicherung mit den Optionen „PDF herunterladen“ und
+  „Weiter zu PayPal“.
