@@ -8,7 +8,7 @@
   <title>Straßenfest in Hilchenbach – Anmeldung</title>
   <meta name="description" content="Anmeldung zum Straßenfest in Hilchenbach" />
   <link rel="preload" as="image" href="assets/strassenfest-hilchenbach.png" />
-  <link rel="stylesheet" href="styles.css" />
+  <link rel="stylesheet" href="styles.css?v=40" />
 </head>
 <body>
   <div class="app-shell" id="appShell">
@@ -21,6 +21,31 @@
     <main class="registration-stage" id="registrationStage" aria-label="Anmeldung zum Straßenfest">
       <section class="wizard-card" id="wizardCard">
         <div class="card-glow" aria-hidden="true"></div>
+
+        <nav class="process-top-nav hidden"
+             id="processTopNav"
+             aria-label="Navigation">
+          <button class="process-nav-button"
+                  id="processBackButton"
+                  type="button">
+            <span aria-hidden="true">‹</span>
+            <span>Zurück</span>
+          </button>
+
+          <button class="process-nav-button process-home-button"
+                  id="processHomeButton"
+                  type="button">
+            <span aria-hidden="true">⌂</span>
+            <span>Startseite</span>
+          </button>
+
+          <button class="process-nav-button process-next-button"
+                  id="processNextButton"
+                  type="button">
+            <span>Weiter</span>
+            <span aria-hidden="true">›</span>
+          </button>
+        </nav>
 
         <div class="step-progress hidden" id="stepProgress" aria-label="Fortschritt">
           <span class="progress-dot active" data-progress="1"></span>
@@ -1258,7 +1283,44 @@
     </section>
   </div>
 
-  <script src="api-client.js?v=39" defer></script>
-  <script src="script.js?v=39" defer></script>
+  <script src="api-client.js?v=40" defer></script>
+  <script src="script.js?v=40" defer></script>
+
+  <div class="first-visit-notice hidden"
+       id="firstVisitNotice"
+       role="dialog"
+       aria-modal="true"
+       aria-labelledby="firstVisitNoticeTitle">
+    <div class="first-visit-notice-backdrop"></div>
+
+    <section class="first-visit-notice-card">
+      <p class="eyebrow">Kurzer Hinweis</p>
+      <h2 id="firstVisitNoticeTitle">Dieses Jahr etwas kurzfristiger</h2>
+
+      <div class="first-visit-notice-copy">
+        <p>
+          Durch Änderungen im Anmelde- und Genehmigungsprozess hat sich die
+          Vorbereitung des Straßenfestes in diesem Jahr verzögert.
+        </p>
+
+        <p>
+          Bitte schließt deshalb <strong>Anmeldungen und Zahlungen innerhalb
+          der angegebenen Fristen</strong> ab.
+        </p>
+
+        <p>
+          So können wir bereits in der kommenden Woche verbindlich planen und
+          die benötigten Dinge für das Straßenfest beschaffen.
+        </p>
+      </div>
+
+      <button class="primary-button first-visit-notice-ok"
+              id="firstVisitNoticeOk"
+              type="button">
+        OK
+      </button>
+    </section>
+  </div>
+
 </body>
 </html>

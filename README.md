@@ -524,3 +524,14 @@ zum Timeout geführt haben konnten.
 - Hinweis auf die Gastzahlung ergänzt.
 - Falls PayPal im Ablauf zusätzlich die Kontoerstellung anbietet, wird erklärt,
   dass diese Option nicht ausgewählt werden soll, wenn nur als Gast gezahlt wird.
+
+
+## Update v40 – Vollbild-Navigation und Erstbesuchs-Hinweis
+- Die schwebende Karte bleibt nur auf der Startseite.
+- Alle Menü- und Prozessseiten öffnen als vollflächige, scrollbare Ansicht.
+- Schrift, Eingabefelder und Bedienelemente sind in der Prozessansicht größer.
+- Oben stehen dauerhaft Zurück, Startseite und Weiter.
+- Der Weiter-Button nutzt die vorhandenen Validierungen. Auf Auswahlseiten,
+  bei denen zuerst eine konkrete Auswahl getroffen werden muss, bleibt er deaktiviert.
+- Beim ersten Besuch erscheint einmalig ein kurzer Hinweis zur verzögerten
+  diesjährigen Vorbereitung sowie zur fristgerechten Anmeldung und Zahlung.

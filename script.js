@@ -71,6 +71,12 @@
   const submitStatus = document.getElementById("submitStatus");
   const restartButton = document.getElementById("restartButton");
   const stepProgress = document.getElementById("stepProgress");
+  const processTopNav = document.getElementById("processTopNav");
+  const processBackButton = document.getElementById("processBackButton");
+  const processHomeButton = document.getElementById("processHomeButton");
+  const processNextButton = document.getElementById("processNextButton");
+  const firstVisitNotice = document.getElementById("firstVisitNotice");
+  const firstVisitNoticeOk = document.getElementById("firstVisitNoticeOk");
   const modalBackdrop = document.getElementById("modalBackdrop");
   const modalClose = document.getElementById("modalClose");
   const modalTitle = document.getElementById("modalTitle");
@@ -977,6 +983,218 @@
     event.target.closest?.(".validation-error-target")?.classList.remove("validation-error-target");
   });
 
+  const processBackActionMap = {
+    intro: "#introBack",
+    "payments-home": "#paymentsHomeBack",
+    payment: "#paymentStatusBack",
+    "payment-view": "#paymentStatusHome",
+    "payment-change-lookup": "#changePaymentLookupBack",
+    "payment-change": "#changePaymentBack",
+    "receipt-lookup": "#receiptLookupBack",
+    "receipt-upload": "#receiptUploadBack",
+    existing: "#existingBack",
+    "1": null,
+    "2": '[data-step="2"] [data-go="1"]',
+    needs: '[data-step="needs"] [data-go="2"]',
+    "3": "#contributionBack",
+    "4": "#paymentBack",
+    "5": '[data-step="5"] [data-go="4"]',
+    code: null,
+    done: "#restartButton"
+  };
+
+  const processBackStepFallback = {
+    "1": "intro",
+    code: "5",
+    "receipt-done": "receipt-upload",
+    "existing-view": "existing",
+    done: "home"
+  };
+
+  const processNextActionMap = {
+    intro: "#introStart",
+    payment: "#paymentStatusSubmit",
+    "payment-change-lookup": "#changePaymentLookupSubmit",
+    "payment-change": "#changePaymentSave",
+    "receipt-lookup": "#receiptLookupSubmit",
+    "receipt-upload": "#receiptSubmitButton",
+    existing: "#frontLookupSubmit",
+    "1": "#peopleContinue",
+    "3": "#contributionContinue",
+    "4": "#paymentContinue",
+    "5": "#finalSubmitButton",
+    code: "#codeContinueButton"
+  };
+
+  const processSelectionSteps = new Set([
+    "payments-home",
+    "payment-view",
+    "2",
+    "needs",
+    "receipt-done",
+    "existing-view",
+    "done"
+  ]);
+
+  function resolveProcessAction(selector) {
+    if (!selector) {
+      return null;
+    }
+
+    return document.querySelector(
+      selector
+    );
+  }
+
+  function updateProcessNavigation() {
+    const isHome =
+      state.step === "home";
+
+    document.body.classList.toggle(
+      "process-mode",
+      !isHome
+    );
+
+    processTopNav.classList.toggle(
+      "hidden",
+      isHome
+    );
+
+    if (isHome) {
+      return;
+    }
+
+    const backAction =
+      resolveProcessAction(
+        processBackActionMap[
+          state.step
+        ]
+      );
+
+    processBackButton.disabled =
+      !backAction &&
+      !processBackStepFallback[
+        state.step
+      ];
+
+    const nextAction =
+      resolveProcessAction(
+        processNextActionMap[
+          state.step
+        ]
+      );
+
+    processNextButton.disabled =
+      !nextAction ||
+      Boolean(
+        nextAction.disabled
+      );
+
+    const isSelection =
+      processSelectionSteps.has(
+        state.step
+      );
+
+    processNextButton.classList.toggle(
+      "is-context-disabled",
+      isSelection
+    );
+
+    processNextButton.title =
+      isSelection
+        ? "Bitte die gewünschte Auswahl auf der Seite treffen."
+        : processNextButton.disabled
+          ? "Bitte zuerst die erforderlichen Angaben ausfüllen."
+          : "Weiter";
+  }
+
+  processBackButton.addEventListener(
+    "click",
+    () => {
+      const action =
+        resolveProcessAction(
+          processBackActionMap[
+            state.step
+          ]
+        );
+
+      if (
+        action &&
+        !action.disabled
+      ) {
+        action.click();
+        return;
+      }
+
+      const fallback =
+        processBackStepFallback[
+          state.step
+        ];
+
+      if (fallback) {
+        setStep(fallback);
+      }
+    }
+  );
+
+  processHomeButton.addEventListener(
+    "click",
+    () => {
+      setStep("home");
+    }
+  );
+
+  processNextButton.addEventListener(
+    "click",
+    () => {
+      const action =
+        resolveProcessAction(
+          processNextActionMap[
+            state.step
+          ]
+        );
+
+      if (
+        !action ||
+        action.disabled
+      ) {
+        return;
+      }
+
+      action.click();
+    }
+  );
+
+  document.addEventListener(
+    "input",
+    () => {
+      window.setTimeout(
+        updateProcessNavigation,
+        0
+      );
+    }
+  );
+
+  document.addEventListener(
+    "change",
+    () => {
+      window.setTimeout(
+        updateProcessNavigation,
+        0
+      );
+    }
+  );
+
+  document.addEventListener(
+    "click",
+    () => {
+      window.setTimeout(
+        updateProcessNavigation,
+        0
+      );
+    }
+  );
+
   function setStep(step) {
     const nextStep = String(step);
     const currentPanel = activeStepPanel;
@@ -1020,7 +1238,57 @@
     stepProgress.classList.toggle("hidden", progressHidden);
 
     wizardCard.scrollTop = 0;
-    updateNormalGeometry();
+    const FIRST_VISIT_NOTICE_KEY =
+    "strassenfest-hilchenbach-planungshinweis-2026-v1";
+
+  function showFirstVisitNoticeIfNeeded() {
+    let seen = false;
+
+    try {
+      seen =
+        localStorage.getItem(
+          FIRST_VISIT_NOTICE_KEY
+        ) === "1";
+    } catch {}
+
+    if (seen) {
+      return;
+    }
+
+    firstVisitNotice.classList.remove(
+      "hidden"
+    );
+
+    window.setTimeout(
+      () => {
+        firstVisitNoticeOk.focus();
+      },
+      80
+    );
+  }
+
+  function closeFirstVisitNotice() {
+    firstVisitNotice.classList.add(
+      "hidden"
+    );
+
+    try {
+      localStorage.setItem(
+        FIRST_VISIT_NOTICE_KEY,
+        "1"
+      );
+    } catch {}
+  }
+
+  firstVisitNoticeOk.addEventListener(
+    "click",
+    closeFirstVisitNotice
+  );
+
+  showFirstVisitNoticeIfNeeded();
+  updateProcessNavigation();
+
+  updateNormalGeometry();
 
     // Exakt die zurückgesetzte v25-Animation – keine Layoutklassen aus v26.
     animateElement(nextPanel, [
@@ -1032,6 +1300,8 @@
       { transform: "scale(.997)" },
       { transform: "scale(1)" }
     ], { duration: 230 });
+
+    updateProcessNavigation();
   }
 
   let personRowSerial = 0;
