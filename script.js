@@ -1040,7 +1040,12 @@
       !home
     );
 
-    processTopNav.classList.toggle(
+    wizardCard.classList.toggle(
+      "process-card",
+      !home
+    );
+
+    processTopNav?.classList.toggle(
       "hidden",
       home
     );
@@ -1049,26 +1054,18 @@
       return;
     }
 
-    const backAction =
-      processAction(
-        processBackActionMap[state.step]
-      );
+    const backAction = processAction(processBackActionMap[state.step]);
+    if (processBackButton) {
+      processBackButton.disabled = !backAction && !processBackFallbackMap[state.step];
+    }
 
-    processBackButton.disabled =
-      !backAction &&
-      !processBackFallbackMap[state.step];
-
-    const nextAction =
-      processAction(
-        processNextActionMap[state.step]
-      );
-
-    processNextButton.disabled =
-      !nextAction ||
-      Boolean(nextAction.disabled);
+    const nextAction = processAction(processNextActionMap[state.step]);
+    if (processNextButton) {
+      processNextButton.disabled = !nextAction || Boolean(nextAction.disabled);
+    }
   }
 
-  processBackButton.addEventListener(
+  processBackButton?.addEventListener(
     "click",
     () => {
       const action =
@@ -1090,14 +1087,14 @@
     }
   );
 
-  processHomeButton.addEventListener(
+  processHomeButton?.addEventListener(
     "click",
     () => {
       setStep("home");
     }
   );
 
-  processNextButton.addEventListener(
+  processNextButton?.addEventListener(
     "click",
     () => {
       const action =
@@ -1141,82 +1138,44 @@
 
     if (!nextPanel) return;
 
-    if (nextPanel === currentPanel) {
-      document.body.classList.toggle(
-        "process-mode",
-        nextStep !== "home"
-      );
-      processTopNav.classList.toggle(
-        "hidden",
-        nextStep === "home"
-      );
-      updateProcessNavigation();
-      return;
+    // Zielseite zuerst aktivieren. Zusatznavigation darf den Wechsel nie blockieren.
+    if (nextPanel !== currentPanel) {
+      currentPanel?.classList.remove("active");
+      nextPanel.classList.add("active");
+      activeStepPanel = nextPanel;
     }
 
     state.step = nextStep;
 
-    // v42: Prozessmodus zuerst setzen. So kann der Browser die neue
-    // Vollbild-Geometrie bereits berechnen, bevor das Zielpanel sichtbar wird.
-    document.body.classList.toggle(
-      "process-mode",
-      nextStep !== "home"
-    );
-
-    processTopNav.classList.toggle(
-      "hidden",
-      nextStep === "home"
-    );
-
-    resetKeyboardViewForStepChange();
-
-    currentPanel?.classList.remove("active");
-    nextPanel.classList.add("active");
-    activeStepPanel = nextPanel;
-
     const progressStep = state.step === "needs" ? 2 : Number(state.step);
-
     progressDots.forEach((dot) => {
-      dot.classList.toggle(
-        "active",
-        Number(dot.dataset.progress) === progressStep
-      );
+      dot.classList.toggle("active", Number(dot.dataset.progress) === progressStep);
     });
 
     const progressHidden = [
-      "home",
-      "payments-home",
-      "receipt-lookup",
-      "receipt-upload",
-      "receipt-done",
-      "intro",
-      "existing",
-      "existing-view",
-      "payment",
-      "payment-view",
-      "payment-change-lookup",
-      "payment-change",
-      "code",
-      "done"
+      "home", "payments-home", "receipt-lookup", "receipt-upload",
+      "receipt-done", "intro", "existing", "existing-view", "payment",
+      "payment-view", "payment-change-lookup", "payment-change", "code", "done"
     ].includes(state.step);
+    stepProgress?.classList.toggle("hidden", progressHidden);
 
-    stepProgress.classList.toggle("hidden", progressHidden);
+    try { resetKeyboardViewForStepChange(); } catch (error) { console.warn("Keyboard reset skipped", error); }
 
-    wizardCard.scrollTop = 0;
-    updateNormalGeometry();
+    try {
+      updateProcessNavigation();
+    } catch (error) {
+      console.error("Process navigation skipped", error);
+      document.body.classList.toggle("process-mode", nextStep !== "home");
+      wizardCard.classList.toggle("process-card", nextStep !== "home");
+    }
 
-    // Exakt die zurückgesetzte v25-Animation – keine Layoutklassen aus v26.
+    if (nextStep === "home") { try { updateNormalGeometry(); } catch {} }
+    try { wizardCard.scrollTop = 0; } catch {}
+
     animateElement(nextPanel, [
-      { opacity: 0, transform: "translateY(7px) scale(.996)" },
-      { opacity: 1, transform: "translateY(0) scale(1)" }
-    ], { duration: 260 });
-
-    animateElement(wizardCard, [
-      { transform: "scale(.997)" },
-      { transform: "scale(1)" }
-    ], { duration: 230 });
-
-    updateProcessNavigation();
+      { opacity: 0, transform: "translateY(5px)" },
+      { opacity: 1, transform: "translateY(0)" }
+    ], { duration: 190 });
   }
 
   let personRowSerial = 0;
@@ -3430,20 +3389,20 @@
       return;
     }
 
-    firstVisitNotice.classList.remove(
+    firstVisitNotice?.classList.remove(
       "hidden"
     );
 
     window.setTimeout(
       () => {
-        firstVisitNoticeOk.focus();
+        firstVisitNoticeOk?.focus();
       },
       80
     );
   }
 
   function closeFirstVisitNotice() {
-    firstVisitNotice.classList.add(
+    firstVisitNotice?.classList.add(
       "hidden"
     );
 
@@ -3455,7 +3414,7 @@
     } catch {}
   }
 
-  firstVisitNoticeOk.addEventListener(
+  firstVisitNoticeOk?.addEventListener(
     "click",
     closeFirstVisitNotice
   );

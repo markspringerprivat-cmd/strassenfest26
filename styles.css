@@ -3302,3 +3302,23 @@ body.process-mode.keyboard-returning .wizard-card {
     min-height: calc(100vh - 74px) !important;
   }
 }
+
+
+/* v43 – stabiler Vollbildmodus ohne separate Overlay-Ebene */
+body.process-mode::before { content:none !important; display:none !important; }
+body.process-mode { overflow:hidden !important; background:#17175b !important; }
+body.process-mode .registration-stage { position:fixed !important; z-index:100 !important; inset:0 !important; width:100vw !important; height:100dvh !important; min-height:100dvh !important; max-width:none !important; margin:0 !important; transform:none !important; transition:none !important; }
+body.process-mode .wizard-card, .wizard-card.process-card { position:fixed !important; z-index:101 !important; inset:0 !important; display:flex !important; flex-direction:column !important; width:100vw !important; height:100dvh !important; min-height:100dvh !important; max-height:none !important; margin:0 !important; padding:0 !important; overflow:hidden !important; box-sizing:border-box !important; border:0 !important; border-radius:0 !important; background:linear-gradient(165deg,#2a2176 0%,#1b195f 50%,#10194f 100%) !important; box-shadow:none !important; backdrop-filter:none !important; -webkit-backdrop-filter:none !important; }
+body.process-mode .process-top-nav { position:relative !important; z-index:130 !important; flex:0 0 auto !important; display:grid !important; grid-template-columns:1fr 1.15fr 1fr !important; gap:7px !important; width:100% !important; box-sizing:border-box !important; margin:0 !important; padding:max(10px,env(safe-area-inset-top)) clamp(10px,3.2vw,18px) 10px !important; background:linear-gradient(165deg,#2a2176,#211d6b) !important; border-bottom:1px solid rgba(255,255,255,.09) !important; }
+body.process-mode .process-top-nav.hidden { display:none !important; }
+body.process-mode #registrationForm { flex:1 1 auto !important; min-height:0 !important; display:block !important; overflow:hidden !important; }
+body.process-mode .step { display:none !important; }
+body.process-mode .step.active { display:flex !important; flex-direction:column !important; height:100% !important; min-height:0 !important; width:100% !important; overflow-y:auto !important; overflow-x:hidden !important; -webkit-overflow-scrolling:touch !important; box-sizing:border-box !important; padding:clamp(18px,4vw,28px) clamp(16px,4.5vw,28px) max(24px,env(safe-area-inset-bottom)) !important; }
+body.process-mode .step.active > .step-actions { margin-top:auto !important; padding-top:clamp(18px,4vh,38px) !important; background:transparent !important; }
+body.process-mode .card-glow, body.process-mode .footer-bar { display:none !important; }
+body.process-mode.keyboard-open .registration-stage, body.process-mode.keyboard-returning .registration-stage, body.process-mode.keyboard-open .wizard-card, body.process-mode.keyboard-returning .wizard-card { inset:0 !important; top:0 !important; width:100vw !important; height:100dvh !important; max-height:none !important; transform:none !important; }
+body.process-mode .people-step { overflow:hidden !important; }
+body.process-mode .people-builder { flex:1 1 auto !important; min-height:0 !important; }
+body.process-mode .people-list-panel { flex:1 1 auto !important; min-height:170px !important; }
+body.process-mode .people-added-list { flex:1 1 auto !important; min-height:0 !important; max-height:none !important; overflow-y:auto !important; }
+@supports not (height:100dvh) { body.process-mode .registration-stage, body.process-mode .wizard-card, .wizard-card.process-card { height:100vh !important; min-height:100vh !important; } }

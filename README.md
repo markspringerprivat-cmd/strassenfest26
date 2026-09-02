@@ -553,3 +553,10 @@ zum Timeout geführt haben konnten.
 - Der Prozessmodus wird bereits zu Beginn des Seitenwechsels gesetzt, bevor
   Geometrie und Animation berechnet werden.
 - Fallback für Browser ohne `100dvh` auf `100vh`.
+
+
+## Update v43 – Fix des blauen/leeren Bildschirms
+- Separate blaue Overlay-Ebene entfernt.
+- Zielseite wird vor der Vollbild-/Navigationslogik sichtbar gemacht.
+- Fehler in der Zusatznavigation können den Seitenwechsel nicht mehr blockieren.
+- Vollbild ist ausschließlich die tatsächliche Wizard-Oberfläche.
