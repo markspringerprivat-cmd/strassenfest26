@@ -8,7 +8,7 @@
   <title>Straßenfest in Hilchenbach – Anmeldung</title>
   <meta name="description" content="Anmeldung zum Straßenfest in Hilchenbach" />
   <link rel="preload" as="image" href="assets/strassenfest-hilchenbach.png" />
-  <link rel="stylesheet" href="styles.css?v=43" />
+  <link rel="stylesheet" href="styles.css?v=44" />
 </head>
 <body>
   <div class="app-shell" id="appShell">
@@ -820,7 +820,7 @@
           </section>
 
           <section class="step people-step" data-step="1">
-            <div class="step-heading hero-heading">
+            <div class="step-heading hero-heading people-step-heading">
               <div class="heading-icon" aria-hidden="true">🎉</div>
               <div>
                 <p class="eyebrow">Schritt 1 von 5</p>
@@ -829,75 +829,84 @@
               </div>
             </div>
 
-            <div class="people-builder">
-              <section class="person-composer" aria-labelledby="personComposerTitle">
-                <div class="person-composer-heading">
-                  <strong id="personComposerTitle">Person hinzufügen</strong>
-                  <small>Eintragen und anschließend auf + tippen.</small>
+            <section class="people-card" aria-labelledby="peopleCardTitle">
+              <div class="people-card-heading">
+                <div>
+                  <strong id="peopleCardTitle">Personen eintragen</strong>
+                  <small>Person ausfüllen, hinzufügen und anschließend die nächste Person eintragen.</small>
                 </div>
+                <span class="people-count" id="peopleCount">0</span>
+              </div>
 
-                <div class="person-composer-grid">
-                  <label class="person-composer-field">
-                    <span>Vorname</span>
-                    <input id="personDraftFirst"
-                           type="text"
-                           autocomplete="off"
-                           autocapitalize="words"
-                           spellcheck="false"
-                           maxlength="50"
-                           placeholder="z. B. Mark" />
-                  </label>
+              <div class="person-composer-grid person-composer-single-row">
+                <label class="person-composer-field">
+                  <span>Vorname</span>
+                  <input id="personDraftFirst"
+                         type="text"
+                         autocomplete="off"
+                         autocapitalize="words"
+                         spellcheck="false"
+                         maxlength="50"
+                         placeholder="z. B. Mark" />
+                </label>
 
-                  <label class="person-composer-field">
-                    <span>Nachname</span>
-                    <input id="personDraftLast"
-                           type="text"
-                           autocomplete="off"
-                           autocapitalize="words"
-                           spellcheck="false"
-                           maxlength="60"
-                           placeholder="z. B. Springer" />
-                  </label>
+                <label class="person-composer-field">
+                  <span>Nachname</span>
+                  <input id="personDraftLast"
+                         type="text"
+                         autocomplete="off"
+                         autocapitalize="words"
+                         spellcheck="false"
+                         maxlength="60"
+                         placeholder="z. B. Springer" />
+                </label>
 
-                  <label class="person-composer-field person-composer-age">
-                    <span>Alter</span>
-                    <input id="personDraftAge"
-                           type="number"
-                           autocomplete="off"
-                           inputmode="numeric"
-                           min="0"
-                           max="120"
-                           placeholder="33" />
-                  </label>
+                <label class="person-composer-field person-composer-age">
+                  <span>Alter</span>
+                  <input id="personDraftAge"
+                         type="number"
+                         autocomplete="off"
+                         inputmode="numeric"
+                         min="0"
+                         max="120"
+                         placeholder="33" />
+                </label>
+              </div>
 
-                  <button class="person-composer-add"
-                          id="addPersonButton"
-                          type="button"
-                          aria-label="Person zur Liste hinzufügen">
-                    <span aria-hidden="true">＋</span>
-                    <span>Hinzufügen</span>
-                  </button>
+              <p class="person-inline-error"
+                 id="personError"
+                 role="alert"></p>
+
+              <button class="person-composer-add"
+                      id="addPersonButton"
+                      type="button">
+                <span aria-hidden="true">＋</span>
+                <span>Person hinzufügen</span>
+              </button>
+
+              <div class="people-list-divider" aria-hidden="true"></div>
+
+              <div class="people-list-heading">
+                <div>
+                  <strong>Teilnehmende Personen</strong>
+                  <small id="peopleListHint">Noch keine Personen hinzugefügt</small>
                 </div>
-              </section>
+              </div>
 
-              <section class="people-list-panel" aria-labelledby="peopleListTitle">
-                <div class="people-list-heading">
-                  <div>
-                    <strong id="peopleListTitle">Teilnehmende Personen</strong>
-                    <small id="peopleListHint">Noch niemand hinzugefügt</small>
-                  </div>
-                  <span class="people-count" id="peopleCount">0</span>
-                </div>
+              <div class="people-list-columns"
+                   aria-hidden="true">
+                <span>Vorname</span>
+                <span>Nachname</span>
+                <span>Alter</span>
+                <span></span>
+              </div>
 
-                <div class="people-rows people-added-list"
-                     id="peopleRows"
-                     aria-live="polite"></div>
-              </section>
-            </div>
+              <div class="people-rows people-added-list"
+                   id="peopleRows"
+                   aria-live="polite"></div>
+            </section>
 
-            <p class="field-error" id="personError" role="alert"></p>
-
-            <div class="step-actions step-actions-stack people-step-actions">
+            <div class="step-actions people-step-actions">
               <button class="primary-button" id="peopleContinue" type="button">
                 <span>Weiter</span>
                 <span class="button-chevron" aria-hidden="true">›</span>
@@ -1337,8 +1346,8 @@
     </section>
   </div>
 
-  <script src="api-client.js?v=43" defer></script>
-  <script src="script.js?v=43" defer></script>
+  <script src="api-client.js?v=44" defer></script>
+  <script src="script.js?v=44" defer></script>
 
   <div class="first-visit-notice hidden"
        id="firstVisitNotice"

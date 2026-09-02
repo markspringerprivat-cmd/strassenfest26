@@ -559,4 +559,16 @@ zum Timeout geführt haben konnten.
 - Separate blaue Overlay-Ebene entfernt.
 - Zielseite wird vor der Vollbild-/Navigationslogik sichtbar gemacht.
 - Fehler in der Zusatznavigation können den Seitenwechsel nicht mehr blockieren.
-- Vollbild ist ausschließlich die tatsächliche Wizard-Oberfläche.
+- Unterseiten verwenden ausschließlich die echte Wizard-Oberfläche als Vollbild.
+
+
+## Update v44 – Anmeldung ohne Tastatur-Verschiebung
+- Nur Schritt 1 ignoriert nun vollständig die alte Keyboard-Geometrie.
+- Beim Ein-/Ausblenden der Tastatur wird die Anmeldung nicht mehr neu angeordnet,
+  verkleinert oder automatisch hoch-/runtergescrollt.
+- Eingabe und Personenliste liegen gemeinsam in einem einzigen Kasten.
+- Vorname, Nachname und Alter stehen auch auf schmalen Handys in einer Zeile.
+- Hinzugefügte Personen erscheinen darunter als echte Tabellenzeilen:
+  Vorname | Nachname | Alter | Entfernen.
+- Fehlermeldungen erscheinen kompakt direkt im Kasten; der große globale
+  Warnhinweis/Scrollsprung wird bei der Personeneingabe nicht mehr verwendet.

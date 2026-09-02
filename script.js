@@ -652,6 +652,29 @@
     document.documentElement.style.setProperty("--card-max-height", `${cardHeight}px`);
   }
 
+  function usesStaticKeyboardLayout() {
+    return state.step === "1";
+  }
+
+  function clearKeyboardGeometryState() {
+    viewport.keyboardOpen = false;
+    viewport.returning = false;
+    document.body.classList.remove(
+      "keyboard-open",
+      "keyboard-returning"
+    );
+    document.documentElement.style.removeProperty(
+      "--keyboard-top"
+    );
+    document.documentElement.style.removeProperty(
+      "--keyboard-card-height"
+    );
+    document.documentElement.style.setProperty(
+      "--viewport-offset-y",
+      "0px"
+    );
+  }
+
   function keyboardViewportReduced() {
     const vv = window.visualViewport;
     return Boolean(
@@ -719,6 +742,11 @@
   }
 
   function openKeyboardMode() {
+    if (usesStaticKeyboardLayout()) {
+      clearKeyboardGeometryState();
+      return;
+    }
+
     if (viewport.keyboardOpen || viewport.returning) return;
 
     viewport.keyboardOpen = true;
@@ -828,6 +856,11 @@
   }
 
   function syncKeyboardMode() {
+    if (usesStaticKeyboardLayout()) {
+      clearKeyboardGeometryState();
+      return;
+    }
+
     if (keyboardShouldStayOpen()) {
       openKeyboardMode();
       applyKeyboardGeometry();
@@ -872,6 +905,10 @@
   updateNormalGeometry();
 
   window.addEventListener("resize", () => {
+    if (usesStaticKeyboardLayout()) {
+      return;
+    }
+
     if (viewport.keyboardOpen || viewport.returning) return;
 
     window.clearTimeout(viewport.closeTimer);
@@ -880,6 +917,11 @@
 
   if (window.visualViewport) {
     window.visualViewport.addEventListener("resize", () => {
+      if (usesStaticKeyboardLayout()) {
+        clearKeyboardGeometryState();
+        return;
+      }
+
       window.clearTimeout(viewport.closeTimer);
       viewport.closeTimer = window.setTimeout(() => {
         syncKeyboardMode();
@@ -891,12 +933,18 @@
     }, { passive: true });
 
     window.visualViewport.addEventListener("scroll", () => {
+      if (usesStaticKeyboardLayout()) return;
       if (viewport.keyboardOpen) applyKeyboardGeometry();
     }, { passive: true });
   }
 
   document.addEventListener("focusin", (event) => {
     if (!wizardCard.contains(event.target)) return;
+
+    if (usesStaticKeyboardLayout()) {
+      clearKeyboardGeometryState();
+      return;
+    }
 
     window.setTimeout(() => {
       syncKeyboardMode();
@@ -1190,7 +1238,7 @@
 
     peopleListHint.textContent =
       count === 0
-        ? "Noch niemand hinzugefügt"
+        ? "Noch keine Personen hinzugefügt"
         : count === 1
           ? "1 Person hinzugefügt"
           : `${count} Personen hinzugefügt`;
@@ -1198,8 +1246,7 @@
     if (!count) {
       peopleRows.innerHTML = `
         <div class="people-empty-state">
-          <strong>Noch keine Person in der Liste</strong>
-          <span>Oben Daten eingeben und auf „Hinzufügen“ tippen.</span>
+          Noch keine Personen hinzugefügt.
         </div>
       `;
       return;
@@ -1217,18 +1264,17 @@
           String(index);
 
         row.innerHTML = `
-          <div class="person-added-avatar"
-               aria-hidden="true">
-            ${index + 1}
-          </div>
+          <span class="person-added-first">
+            ${escapeHtml(person.firstName)}
+          </span>
 
-          <div class="person-added-data">
-            <strong>
-              ${escapeHtml(person.firstName)}
-              ${escapeHtml(person.lastName)}
-            </strong>
-            <span>${person.age} Jahre</span>
-          </div>
+          <span class="person-added-last">
+            ${escapeHtml(person.lastName)}
+          </span>
+
+          <span class="person-added-age">
+            ${person.age}
+          </span>
 
           <button type="button"
                   class="remove-person"
@@ -1290,33 +1336,39 @@
         ? NaN
         : Number(ageValue);
 
-    if (!firstName) {
-      const message =
-        "Bitte den Vornamen eintragen.";
-
-      personError.textContent =
-        message;
-
-      reportValidationError(
-        message,
-        personDraftFirst
+    [
+      personDraftFirst,
+      personDraftLast,
+      personDraftAge
+    ].forEach((input) => {
+      input.classList.remove(
+        "validation-error-target"
       );
+    });
 
+    personError.textContent = "";
+
+    if (!firstName) {
+      personDraftFirst.classList.add(
+        "validation-error-target"
+      );
+      personError.textContent =
+        "Bitte den Vornamen eintragen.";
+      personDraftFirst.focus({
+        preventScroll: true
+      });
       return null;
     }
 
     if (!lastName) {
-      const message =
-        "Bitte den Nachnamen eintragen.";
-
-      personError.textContent =
-        message;
-
-      reportValidationError(
-        message,
-        personDraftLast
+      personDraftLast.classList.add(
+        "validation-error-target"
       );
-
+      personError.textContent =
+        "Bitte den Nachnamen eintragen.";
+      personDraftLast.focus({
+        preventScroll: true
+      });
       return null;
     }
 
@@ -1325,17 +1377,14 @@
       age < 0 ||
       age > 120
     ) {
-      const message =
-        "Bitte ein Alter zwischen 0 und 120 Jahren eintragen.";
-
-      personError.textContent =
-        message;
-
-      reportValidationError(
-        message,
-        personDraftAge
+      personDraftAge.classList.add(
+        "validation-error-target"
       );
-
+      personError.textContent =
+        "Bitte ein Alter zwischen 0 und 120 Jahren eintragen.";
+      personDraftAge.focus({
+        preventScroll: true
+      });
       return null;
     }
 
@@ -1498,17 +1547,8 @@
 
   function readPeople() {
     if (!state.people.length) {
-      const message =
-        "Bitte mindestens eine Person hinzufügen.";
-
       personError.textContent =
-        message;
-
-      reportValidationError(
-        message,
-        personDraftFirst
-      );
-
+        "Bitte mindestens eine Person hinzufügen.";
       return null;
     }
 

@@ -3322,3 +3322,277 @@ body.process-mode .people-builder { flex:1 1 auto !important; min-height:0 !impo
 body.process-mode .people-list-panel { flex:1 1 auto !important; min-height:170px !important; }
 body.process-mode .people-added-list { flex:1 1 auto !important; min-height:0 !important; max-height:none !important; overflow-y:auto !important; }
 @supports not (height:100dvh) { body.process-mode .registration-stage, body.process-mode .wizard-card, .wizard-card.process-card { height:100vh !important; min-height:100vh !important; } }
+
+
+/* ================================================================
+   v44 – Schritt 1: stabil, kompakt und ohne Tastatur-Verschiebung
+   ================================================================ */
+
+/* Auf Schritt 1 bleibt die Vollbildhöhe die beim Laden gemessene Höhe.
+   Der alte Tastaturmodus darf die Seite nicht mehr zusammenschieben. */
+body.process-mode:has(.people-step.active) .registration-stage,
+body.process-mode:has(.people-step.active) .wizard-card,
+body.process-mode:has(.people-step.active) .wizard-card.process-card {
+  height: var(--base-height, 100vh) !important;
+  min-height: var(--base-height, 100vh) !important;
+  max-height: var(--base-height, 100vh) !important;
+}
+
+body.process-mode.keyboard-open:has(.people-step.active) .registration-stage,
+body.process-mode.keyboard-returning:has(.people-step.active) .registration-stage,
+body.process-mode.keyboard-open:has(.people-step.active) .wizard-card,
+body.process-mode.keyboard-returning:has(.people-step.active) .wizard-card {
+  inset: 0 !important;
+  top: 0 !important;
+  height: var(--base-height, 100vh) !important;
+  min-height: var(--base-height, 100vh) !important;
+  max-height: var(--base-height, 100vh) !important;
+  transform: none !important;
+}
+
+body.process-mode .people-step {
+  overflow: hidden !important;
+}
+
+body.process-mode .people-step-heading {
+  flex: 0 0 auto;
+  margin-bottom: clamp(14px, 2.5vh, 22px);
+}
+
+body.process-mode .people-card {
+  flex: 1 1 auto;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  padding: clamp(12px, 3.3vw, 17px);
+  border: 1px solid rgba(255, 211, 98, .31);
+  border-radius: 18px;
+  background: rgba(255,255,255,.035);
+  overflow: hidden;
+}
+
+.people-card-heading {
+  flex: 0 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.people-card-heading > div {
+  display: grid;
+  gap: 2px;
+  min-width: 0;
+}
+
+.people-card-heading strong {
+  font-size: clamp(.82rem, 3.4vw, .96rem);
+}
+
+.people-card-heading small {
+  color: var(--muted);
+  font-size: clamp(.56rem, 2.45vw, .69rem);
+  line-height: 1.3;
+}
+
+.person-composer-single-row {
+  flex: 0 0 auto;
+  display: grid !important;
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(0, 1fr)
+    minmax(68px, .42fr) !important;
+  gap: 8px !important;
+  align-items: end;
+}
+
+.person-composer-single-row .person-composer-age {
+  grid-column: auto !important;
+}
+
+.person-composer-single-row .person-composer-field input {
+  min-height: 50px;
+  padding-inline: 9px;
+}
+
+.person-inline-error {
+  flex: 0 0 auto;
+  min-height: 18px;
+  margin: 6px 1px 3px;
+  color: #ffd7d7;
+  font-size: clamp(.58rem, 2.55vw, .7rem);
+  line-height: 1.28;
+}
+
+body.process-mode .people-card .person-composer-add {
+  flex: 0 0 auto;
+  width: 100%;
+  min-height: 45px;
+  margin-top: 2px;
+}
+
+.people-list-divider {
+  flex: 0 0 auto;
+  height: 1px;
+  margin: 12px -4px 10px;
+  background: rgba(255,255,255,.09);
+}
+
+.people-list-heading {
+  flex: 0 0 auto;
+  padding: 0 2px 8px !important;
+  border: 0 !important;
+}
+
+.people-list-columns {
+  flex: 0 0 auto;
+  display: grid;
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(0, 1fr)
+    56px
+    40px;
+  gap: 8px;
+  padding: 0 8px 7px;
+  color: rgba(255,255,255,.58);
+  font-size: clamp(.52rem, 2.2vw, .62rem);
+  font-weight: 750;
+}
+
+body.process-mode .people-added-list {
+  flex: 1 1 auto !important;
+  min-height: 84px !important;
+  max-height: none !important;
+  overflow-y: auto !important;
+  padding: 0 !important;
+  border: 1px solid rgba(190, 164, 244, .15);
+  border-radius: 12px;
+  background: rgba(19, 23, 81, .25);
+}
+
+.people-empty-state {
+  min-height: 84px !important;
+  display: grid !important;
+  place-items: center !important;
+  padding: 16px !important;
+  color: rgba(255,255,255,.52) !important;
+  font-size: clamp(.61rem, 2.7vw, .72rem);
+  text-align: center;
+}
+
+.person-added-row {
+  display: grid !important;
+  grid-template-columns:
+    minmax(0, 1fr)
+    minmax(0, 1fr)
+    56px
+    40px !important;
+  gap: 8px !important;
+  align-items: center !important;
+  min-height: 52px !important;
+  padding: 7px 8px !important;
+  border-bottom: 1px solid rgba(196,166,250,.1) !important;
+}
+
+.person-added-row:last-child {
+  border-bottom: 0 !important;
+}
+
+.person-added-first,
+.person-added-last {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: rgba(255,255,255,.94);
+  font-size: clamp(.67rem, 2.9vw, .8rem);
+  font-weight: 760;
+}
+
+.person-added-age {
+  color: rgba(255,255,255,.78);
+  font-size: clamp(.65rem, 2.8vw, .78rem);
+  text-align: center;
+}
+
+.person-added-row .remove-person {
+  width: 36px !important;
+  height: 36px !important;
+  min-height: 36px !important;
+}
+
+body.process-mode .people-step-actions {
+  flex: 0 0 auto !important;
+  margin-top: clamp(12px, 2vh, 18px) !important;
+  padding-top: 0 !important;
+}
+
+body.process-mode .people-step-actions #peopleContinue {
+  width: 100%;
+  min-height: 54px;
+}
+
+/* Alte v25-Tastaturregeln für Schritt 1 vollständig neutralisieren. */
+body.keyboard-open .step[data-step="1"].active,
+body.keyboard-returning .step[data-step="1"].active {
+  display: flex !important;
+  grid-template-rows: none !important;
+  height: auto !important;
+  max-height: none !important;
+  min-height: 0 !important;
+  overflow: hidden !important;
+}
+
+body.keyboard-open .step[data-step="1"] .step-heading,
+body.keyboard-returning .step[data-step="1"] .step-heading {
+  margin-bottom: clamp(14px, 2.5vh, 22px) !important;
+}
+
+body.keyboard-open .step[data-step="1"] .field-error,
+body.keyboard-returning .step[data-step="1"] .field-error {
+  margin: 6px 1px 3px !important;
+  min-height: 18px !important;
+}
+
+body.keyboard-open .step[data-step="1"] .step-actions,
+body.keyboard-returning .step[data-step="1"] .step-actions {
+  position: static !important;
+  margin-top: clamp(12px, 2vh, 18px) !important;
+  padding: 0 !important;
+  background: transparent !important;
+  border-radius: 0 !important;
+}
+
+/* Auch auf schmalen Handys bleiben Vorname, Nachname und Alter nebeneinander. */
+@media (max-width: 640px) {
+  .person-composer-single-row {
+    grid-template-columns:
+      minmax(0, 1fr)
+      minmax(0, 1fr)
+      72px !important;
+  }
+}
+
+@media (max-width: 365px) {
+  .person-composer-single-row {
+    grid-template-columns:
+      minmax(0, 1fr)
+      minmax(0, 1fr)
+      64px !important;
+    gap: 6px !important;
+  }
+
+  .person-composer-single-row .person-composer-field input {
+    padding-inline: 7px;
+  }
+
+  .people-list-columns,
+  .person-added-row {
+    grid-template-columns:
+      minmax(0, 1fr)
+      minmax(0, 1fr)
+      48px
+      36px !important;
+    gap: 6px !important;
+  }
+}
