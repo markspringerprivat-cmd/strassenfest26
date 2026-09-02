@@ -35,6 +35,11 @@
   const footerBar = document.querySelector(".footer-bar");
   const form = document.getElementById("registrationForm");
   const peopleRows = document.getElementById("peopleRows");
+  const peopleListHint = document.getElementById("peopleListHint");
+  const peopleCount = document.getElementById("peopleCount");
+  const personDraftFirst = document.getElementById("personDraftFirst");
+  const personDraftLast = document.getElementById("personDraftLast");
+  const personDraftAge = document.getElementById("personDraftAge");
   const personError = document.getElementById("personError");
   const addPersonButton = document.getElementById("addPersonButton");
   const peopleContinue = document.getElementById("peopleContinue");
@@ -224,9 +229,7 @@
   }
 
   function ensureInitialPersonRow() {
-    if (!peopleRows.querySelector(".person-row")) {
-      addPersonRow();
-    }
+    renderPeopleList();
   }
 
   function apiRequest(action, data = {}, options = {}) {
@@ -993,18 +996,15 @@
     "receipt-lookup": "#receiptLookupBack",
     "receipt-upload": "#receiptUploadBack",
     existing: "#existingBack",
-    "1": null,
     "2": '[data-step="2"] [data-go="1"]',
     needs: '[data-step="needs"] [data-go="2"]',
     "3": "#contributionBack",
-    "4": "#paymentBack",
-    "5": '[data-step="5"] [data-go="4"]',
-    code: null,
-    done: "#restartButton"
+    "4": "#paymentBack"
   };
 
-  const processBackStepFallback = {
+  const processBackFallbackMap = {
     "1": "intro",
+    "5": "4",
     code: "5",
     "receipt-done": "receipt-upload",
     "existing-view": "existing",
@@ -1022,114 +1022,67 @@
     "1": "#peopleContinue",
     "3": "#contributionContinue",
     "4": "#paymentContinue",
-    "5": "#finalSubmitButton",
+    "5": "#submitButton",
     code: "#codeContinueButton"
   };
 
-  const processSelectionSteps = new Set([
-    "payments-home",
-    "payment-view",
-    "2",
-    "needs",
-    "receipt-done",
-    "existing-view",
-    "done"
-  ]);
-
-  function resolveProcessAction(selector) {
-    if (!selector) {
-      return null;
-    }
-
-    return document.querySelector(
-      selector
-    );
+  function processAction(selector) {
+    return selector
+      ? document.querySelector(selector)
+      : null;
   }
 
   function updateProcessNavigation() {
-    const isHome =
-      state.step === "home";
+    const home = state.step === "home";
 
     document.body.classList.toggle(
       "process-mode",
-      !isHome
+      !home
     );
 
     processTopNav.classList.toggle(
       "hidden",
-      isHome
+      home
     );
 
-    if (isHome) {
+    if (home) {
       return;
     }
 
     const backAction =
-      resolveProcessAction(
-        processBackActionMap[
-          state.step
-        ]
+      processAction(
+        processBackActionMap[state.step]
       );
 
     processBackButton.disabled =
       !backAction &&
-      !processBackStepFallback[
-        state.step
-      ];
+      !processBackFallbackMap[state.step];
 
     const nextAction =
-      resolveProcessAction(
-        processNextActionMap[
-          state.step
-        ]
+      processAction(
+        processNextActionMap[state.step]
       );
 
     processNextButton.disabled =
       !nextAction ||
-      Boolean(
-        nextAction.disabled
-      );
-
-    const isSelection =
-      processSelectionSteps.has(
-        state.step
-      );
-
-    processNextButton.classList.toggle(
-      "is-context-disabled",
-      isSelection
-    );
-
-    processNextButton.title =
-      isSelection
-        ? "Bitte die gewünschte Auswahl auf der Seite treffen."
-        : processNextButton.disabled
-          ? "Bitte zuerst die erforderlichen Angaben ausfüllen."
-          : "Weiter";
+      Boolean(nextAction.disabled);
   }
 
   processBackButton.addEventListener(
     "click",
     () => {
       const action =
-        resolveProcessAction(
-          processBackActionMap[
-            state.step
-          ]
+        processAction(
+          processBackActionMap[state.step]
         );
 
-      if (
-        action &&
-        !action.disabled
-      ) {
+      if (action && !action.disabled) {
         action.click();
         return;
       }
 
       const fallback =
-        processBackStepFallback[
-          state.step
-        ];
+        processBackFallbackMap[state.step];
 
       if (fallback) {
         setStep(fallback);
@@ -1148,20 +1101,16 @@
     "click",
     () => {
       const action =
-        resolveProcessAction(
-          processNextActionMap[
-            state.step
-          ]
+        processAction(
+          processNextActionMap[state.step]
         );
 
       if (
-        !action ||
-        action.disabled
+        action &&
+        !action.disabled
       ) {
-        return;
+        action.click();
       }
-
-      action.click();
     }
   );
 
@@ -1177,16 +1126,6 @@
 
   document.addEventListener(
     "change",
-    () => {
-      window.setTimeout(
-        updateProcessNavigation,
-        0
-      );
-    }
-  );
-
-  document.addEventListener(
-    "click",
     () => {
       window.setTimeout(
         updateProcessNavigation,
@@ -1238,57 +1177,7 @@
     stepProgress.classList.toggle("hidden", progressHidden);
 
     wizardCard.scrollTop = 0;
-    const FIRST_VISIT_NOTICE_KEY =
-    "strassenfest-hilchenbach-planungshinweis-2026-v1";
-
-  function showFirstVisitNoticeIfNeeded() {
-    let seen = false;
-
-    try {
-      seen =
-        localStorage.getItem(
-          FIRST_VISIT_NOTICE_KEY
-        ) === "1";
-    } catch {}
-
-    if (seen) {
-      return;
-    }
-
-    firstVisitNotice.classList.remove(
-      "hidden"
-    );
-
-    window.setTimeout(
-      () => {
-        firstVisitNoticeOk.focus();
-      },
-      80
-    );
-  }
-
-  function closeFirstVisitNotice() {
-    firstVisitNotice.classList.add(
-      "hidden"
-    );
-
-    try {
-      localStorage.setItem(
-        FIRST_VISIT_NOTICE_KEY,
-        "1"
-      );
-    } catch {}
-  }
-
-  firstVisitNoticeOk.addEventListener(
-    "click",
-    closeFirstVisitNotice
-  );
-
-  showFirstVisitNoticeIfNeeded();
-  updateProcessNavigation();
-
-  updateNormalGeometry();
+    updateNormalGeometry();
 
     // Exakt die zurückgesetzte v25-Animation – keine Layoutklassen aus v26.
     animateElement(nextPanel, [
@@ -1306,181 +1195,362 @@
 
   let personRowSerial = 0;
 
-  function createPersonRow(data = {}) {
-    const rowId = ++personRowSerial;
-    const row = document.createElement("div");
-    row.className = "person-row";
-    row.dataset.rowId = String(rowId);
+  function renderPeopleList() {
+    peopleRows.innerHTML = "";
 
-    row.innerHTML = `
-      <input type="text"
-             class="person-first"
-             name="guest_first_${rowId}"
-             autocomplete="off"
-             autocapitalize="words"
-             spellcheck="false"
-             data-form-type="other"
-             data-lpignore="true"
-             maxlength="50"
-             placeholder="z. B. Mark"
-             aria-label="Vorname"
-             value="${escapeAttr(data.firstName || "")}">
-      <input type="text"
-             class="person-last"
-             name="guest_last_${rowId}"
-             autocomplete="off"
-             autocapitalize="words"
-             spellcheck="false"
-             data-form-type="other"
-             data-lpignore="true"
-             maxlength="60"
-             placeholder="z. B. Springer"
-             aria-label="Nachname"
-             value="${escapeAttr(data.lastName || "")}">
-      <input type="number"
-             class="person-age"
-             name="guest_age_${rowId}"
-             autocomplete="off"
-             inputmode="numeric"
-             min="0"
-             max="120"
-             placeholder="33"
-             aria-label="Alter"
-             value="${data.age ?? ""}">
-      <button type="button" class="remove-person" aria-label="Person entfernen">×</button>
-    `;
-    return row;
-  }
+    const count = state.people.length;
 
-  function refreshRemoveButtons() {
-    const rows = [...peopleRows.querySelectorAll(".person-row")];
-    rows.forEach((row) => {
-      row.querySelector(".remove-person").disabled = rows.length === 1;
-    });
-  }
+    peopleCount.textContent =
+      String(count);
 
-  function addPersonRow(data = {}, focus = false) {
-    const hasInitialData = Boolean(data.firstName || data.lastName || data.age !== undefined);
-    const row = createPersonRow(data);
+    peopleListHint.textContent =
+      count === 0
+        ? "Noch niemand hinzugefügt"
+        : count === 1
+          ? "1 Person hinzugefügt"
+          : `${count} Personen hinzugefügt`;
 
-    peopleRows.appendChild(row);
-    refreshRemoveButtons();
-    animateCreated(row);
-
-    const inputs = [...row.querySelectorAll("input")];
-
-    if (!hasInitialData) {
-      // Neue Zeilen immer garantiert leer anlegen.
-      inputs.forEach((input) => {
-        input.value = "";
-        input.setAttribute("value", "");
-      });
+    if (!count) {
+      peopleRows.innerHTML = `
+        <div class="people-empty-state">
+          <strong>Noch keine Person in der Liste</strong>
+          <span>Oben Daten eingeben und auf „Hinzufügen“ tippen.</span>
+        </div>
+      `;
+      return;
     }
 
-    if (!focus) return row;
+    state.people.forEach(
+      (person, index) => {
+        const row =
+          document.createElement("article");
 
-    const first = row.querySelector(".person-first");
+        row.className =
+          "person-added-row";
 
-    // WICHTIG für iPhone / mobile Browser:
-    // Der Fokus wird direkt im ursprünglichen Klick-Ereignis gesetzt.
-    // Dadurch darf der Browser die Bildschirmtastatur sofort öffnen.
-    first.focus({ preventScroll: true });
+        row.dataset.personIndex =
+          String(index);
 
-    // Die neue Zeile direkt in den sichtbaren Bereich der Personenliste holen.
-    // Kein scrollIntoView(), weil das die komplette Webseite verschieben könnte.
-    peopleRows.scrollTop = peopleRows.scrollHeight;
+        row.innerHTML = `
+          <div class="person-added-avatar"
+               aria-hidden="true">
+            ${index + 1}
+          </div>
 
-    // Nach dem Layout-Update die Position noch einmal sauber ausrichten.
-    requestAnimationFrame(() => {
-      centerPersonRow(row);
+          <div class="person-added-data">
+            <strong>
+              ${escapeHtml(person.firstName)}
+              ${escapeHtml(person.lastName)}
+            </strong>
+            <span>${person.age} Jahre</span>
+          </div>
 
-      requestAnimationFrame(() => {
-        // Falls die Tastatur inzwischen sichtbar ist, wird nur der Inhalt
-        // innerhalb der oben angehefteten Kachel zum neuen Eintrag gescrollt.
-        syncKeyboardMode();
+          <button type="button"
+                  class="remove-person"
+                  aria-label="${escapeAttr(
+                    `${person.firstName} ${person.lastName} entfernen`
+                  )}">
+            ×
+          </button>
+        `;
 
-        if (viewport.keyboardOpen) {
-          scrollControlIntoCard(first, 20);
-        }
-      });
-    });
-
-    return row;
+        peopleRows.appendChild(
+          row
+        );
+      }
+    );
   }
 
-  addPersonButton.addEventListener("click", () => {
-    addPersonRow({}, true);
+  function clearPersonComposer({
+    focus = true
+  } = {}) {
+    personDraftFirst.value = "";
+    personDraftLast.value = "";
+    personDraftAge.value = "";
+    personError.textContent = "";
+
+    [
+      personDraftFirst,
+      personDraftLast,
+      personDraftAge
+    ].forEach((input) => {
+      input.classList.remove(
+        "validation-error-target"
+      );
+    });
+
+    if (focus) {
+      personDraftFirst.focus({
+        preventScroll: true
+      });
+    }
+  }
+
+  function validatePersonComposer() {
+    const firstName =
+      personDraftFirst.value
+        .replace(/\s+/g, " ")
+        .trim();
+
+    const lastName =
+      personDraftLast.value
+        .replace(/\s+/g, " ")
+        .trim();
+
+    const ageValue =
+      personDraftAge.value;
+
+    const age =
+      ageValue === ""
+        ? NaN
+        : Number(ageValue);
+
+    if (!firstName) {
+      const message =
+        "Bitte den Vornamen eintragen.";
+
+      personError.textContent =
+        message;
+
+      reportValidationError(
+        message,
+        personDraftFirst
+      );
+
+      return null;
+    }
+
+    if (!lastName) {
+      const message =
+        "Bitte den Nachnamen eintragen.";
+
+      personError.textContent =
+        message;
+
+      reportValidationError(
+        message,
+        personDraftLast
+      );
+
+      return null;
+    }
+
+    if (
+      !Number.isFinite(age) ||
+      age < 0 ||
+      age > 120
+    ) {
+      const message =
+        "Bitte ein Alter zwischen 0 und 120 Jahren eintragen.";
+
+      personError.textContent =
+        message;
+
+      reportValidationError(
+        message,
+        personDraftAge
+      );
+
+      return null;
+    }
+
+    return {
+      firstName,
+      lastName,
+      age
+    };
+  }
+
+  function addPersonFromComposer() {
+    const person =
+      validatePersonComposer();
+
+    if (!person) {
+      return false;
+    }
+
+    state.people.push(person);
+    clearValidationMarks();
+    clearPersonComposer({
+      focus: false
+    });
+    renderPeopleList();
+    updateProcessNavigation();
+
+    animateElement(
+      peopleRows.lastElementChild,
+      [
+        {
+          opacity: 0,
+          transform:
+            "translateY(-4px) scale(.99)"
+        },
+        {
+          opacity: 1,
+          transform:
+            "translateY(0) scale(1)"
+        }
+      ],
+      {
+        duration: 190
+      }
+    );
+
+    return true;
+  }
+
+  addPersonButton.addEventListener(
+    "click",
+    () => {
+      if (addPersonFromComposer()) {
+        personDraftFirst.focus({
+          preventScroll: true
+        });
+      }
+    }
+  );
+
+  [
+    personDraftFirst,
+    personDraftLast,
+    personDraftAge
+  ].forEach((input) => {
+    input.addEventListener(
+      "keydown",
+      (event) => {
+        if (event.key !== "Enter") {
+          return;
+        }
+
+        event.preventDefault();
+
+        if (input === personDraftFirst) {
+          personDraftLast.focus({
+            preventScroll: true
+          });
+          return;
+        }
+
+        if (input === personDraftLast) {
+          personDraftAge.focus({
+            preventScroll: true
+          });
+          return;
+        }
+
+        if (addPersonFromComposer()) {
+          personDraftFirst.focus({
+            preventScroll: true
+          });
+        }
+      }
+    );
   });
 
-  peopleRows.addEventListener("click", async (event) => {
-    const removeButton = event.target.closest(".remove-person");
-    if (!removeButton || removeButton.disabled) return;
+  peopleRows.addEventListener(
+    "click",
+    async (event) => {
+      const removeButton =
+        event.target.closest(
+          ".remove-person"
+        );
 
-    const row = removeButton.closest(".person-row");
-    if (!row) return;
+      if (!removeButton) {
+        return;
+      }
 
-    const animation = animateElement(row, [
-      { opacity: 1, transform: "translateY(0) scale(1)" },
-      { opacity: 0, transform: "translateY(-5px) scale(.985)" }
-    ], { duration: 180, easing: "cubic-bezier(.4,0,.2,1)" });
+      const row =
+        removeButton.closest(
+          ".person-added-row"
+        );
 
-    try {
-      await animation?.finished;
-    } catch {}
+      if (!row) {
+        return;
+      }
 
-    row.remove();
-    refreshRemoveButtons();
-  });
+      const index =
+        Number(
+          row.dataset.personIndex
+        );
+
+      if (
+        !Number.isInteger(index) ||
+        index < 0 ||
+        index >= state.people.length
+      ) {
+        return;
+      }
+
+      const animation =
+        animateElement(
+          row,
+          [
+            {
+              opacity: 1,
+              transform:
+                "translateY(0) scale(1)"
+            },
+            {
+              opacity: 0,
+              transform:
+                "translateY(-4px) scale(.985)"
+            }
+          ],
+          {
+            duration: 150
+          }
+        );
+
+      try {
+        await animation?.finished;
+      } catch {}
+
+      state.people.splice(index, 1);
+      renderPeopleList();
+      updateProcessNavigation();
+    }
+  );
 
   function readPeople() {
-    const rows = [...peopleRows.querySelectorAll(".person-row")];
-    const people = [];
+    if (!state.people.length) {
+      const message =
+        "Bitte mindestens eine Person hinzufügen.";
 
-    for (const [index, row] of rows.entries()) {
-      const firstInput = row.querySelector(".person-first");
-      const lastInput = row.querySelector(".person-last");
-      const ageInput = row.querySelector(".person-age");
+      personError.textContent =
+        message;
 
-      const firstName = firstInput.value.replace(/\s+/g, " ").trim();
-      const lastName = lastInput.value.replace(/\s+/g, " ").trim();
-      const rawAge = ageInput.value;
-      const age = rawAge === "" ? NaN : Number(rawAge);
+      reportValidationError(
+        message,
+        personDraftFirst
+      );
 
-      let target = null;
-      let detail = "";
-
-      if (!firstName) {
-        target = firstInput;
-        detail = "Vorname fehlt.";
-      } else if (!lastName) {
-        target = lastInput;
-        detail = "Nachname fehlt.";
-      } else if (!Number.isFinite(age) || age < 0 || age > 120) {
-        target = ageInput;
-        detail = "Bitte ein Alter zwischen 0 und 120 Jahren eintragen.";
-      }
-
-      if (target) {
-        const message = `Fehler in Zeile ${index + 1}: ${detail}`;
-        personError.textContent = message;
-        reportValidationError(message, target);
-        return null;
-      }
-
-      people.push({ firstName, lastName, age });
+      return null;
     }
 
     clearValidationMarks();
     personError.textContent = "";
-    return people;
+
+    return state.people.map(
+      (person) => ({
+        ...person
+      })
+    );
   }
 
-  peopleContinue.addEventListener("click", () => {
-    const people = readPeople();
-    if (!people) return;
-    state.people = people;
-    setStep(2);
-  });
+  peopleContinue.addEventListener(
+    "click",
+    () => {
+      const people =
+        readPeople();
+
+      if (!people) {
+        return;
+      }
+
+      state.people = people;
+      setStep(2);
+    }
+  );
 
   function resetContribution() {
     state.category = "";
@@ -3284,7 +3354,8 @@
     state.submitting = false;
     form.reset();
     peopleRows.innerHTML = "";
-    addPersonRow();
+    clearPersonComposer({ focus: false });
+    renderPeopleList();
     resetContribution();
     personError.textContent = "";
     paymentError.textContent = "";
@@ -3316,8 +3387,57 @@
     animateButtonPress(button);
   });
 
+  const FIRST_VISIT_NOTICE_KEY =
+    "strassenfest-hilchenbach-planungshinweis-2026-v1";
+
+  function showFirstVisitNoticeIfNeeded() {
+    let seen = false;
+
+    try {
+      seen =
+        localStorage.getItem(
+          FIRST_VISIT_NOTICE_KEY
+        ) === "1";
+    } catch {}
+
+    if (seen) {
+      return;
+    }
+
+    firstVisitNotice.classList.remove(
+      "hidden"
+    );
+
+    window.setTimeout(
+      () => {
+        firstVisitNoticeOk.focus();
+      },
+      80
+    );
+  }
+
+  function closeFirstVisitNotice() {
+    firstVisitNotice.classList.add(
+      "hidden"
+    );
+
+    try {
+      localStorage.setItem(
+        FIRST_VISIT_NOTICE_KEY,
+        "1"
+      );
+    } catch {}
+  }
+
+  firstVisitNoticeOk.addEventListener(
+    "click",
+    closeFirstVisitNotice
+  );
+
   refreshMyRegistrationHint();
   ensureInitialPersonRow();
+  updateProcessNavigation();
+  showFirstVisitNoticeIfNeeded();
 
   // Feuerwerk v22: sauber auf die tatsächliche Canvas-Größe skaliert,
   // etwas heller und mit runderen, klareren Explosionen.

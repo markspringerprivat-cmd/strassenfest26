@@ -526,12 +526,19 @@ zum Timeout geführt haben konnten.
   dass diese Option nicht ausgewählt werden soll, wenn nur als Gast gezahlt wird.
 
 
-## Update v40 – Vollbild-Navigation und Erstbesuchs-Hinweis
-- Die schwebende Karte bleibt nur auf der Startseite.
-- Alle Menü- und Prozessseiten öffnen als vollflächige, scrollbare Ansicht.
-- Schrift, Eingabefelder und Bedienelemente sind in der Prozessansicht größer.
-- Oben stehen dauerhaft Zurück, Startseite und Weiter.
-- Der Weiter-Button nutzt die vorhandenen Validierungen. Auf Auswahlseiten,
-  bei denen zuerst eine konkrete Auswahl getroffen werden muss, bleibt er deaktiviert.
-- Beim ersten Besuch erscheint einmalig ein kurzer Hinweis zur verzögerten
-  diesjährigen Vorbereitung sowie zur fristgerechten Anmeldung und Zahlung.
+## Update v41 – dynamische Vollbildansicht und neue Personenlogik
+- Prozessansichten füllen jetzt technisch das komplette dynamische Viewport
+  (`100dvh`) aus; der Flyerhintergrund kann in einem geöffneten Prozess nicht
+  mehr unterhalb der dunkelblauen Oberfläche sichtbar werden.
+- Die obere Navigation liegt direkt im selben dunkelblauen Vollbildbereich und
+  besitzt keinen optisch abgesetzten dunklen Kasten mehr.
+- Jede Unterseite nutzt den verfügbaren Bildschirm vertikal; bei kurzen
+  Inhalten wandern die Hauptaktionen nach unten, bei langen Inhalten scrollt
+  die eigentliche Seite.
+- Schritt 1 wurde neu aufgebaut:
+  feste Eingabezeile oben → „Hinzufügen“ → Person erscheint in einer separaten,
+  dynamisch wachsenden/scrollbaren Liste darunter.
+- Die Liste selbst enthält keine Textfelder mehr, dadurch verschiebt sich beim
+  Hinzufügen weiterer Personen nichts durch neue Eingabefelder.
+- Der „Weiter“-Button bleibt unten im Prozessbereich.
+- Beim ersten Besuch erscheint einmalig der kurze Planungshinweis.
