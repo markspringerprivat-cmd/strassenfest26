@@ -602,3 +602,17 @@ zum Timeout geführt haben konnten.
 - Der PayPal-Button auf der abschließenden Bestätigungsseite zeigt vorher einen
   Hinweis zur PDF-Sicherung mit den Optionen „PDF herunterladen“ und
   „Weiter zu PayPal“.
+
+
+## Update v48 – Admin-Datenverwaltung und Jahresreset
+- Auf jedem datenführenden Admin-Reiter gibt es jetzt eine Funktion zum
+  vollständigen Leeren des jeweiligen Bereichs:
+  Anmeldungen, Einkauf, Tickets und Kassenbons.
+- Auf der Admin-Übersicht sowie im Abschlussbericht steht zusätzlich
+  „Alle Veranstaltungsdaten löschen“ für einen vollständigen Jahresreset.
+- Vollreset löscht alle von der Webseite verwalteten Veranstaltungsinhalte,
+  erhält aber Tabellenstruktur und Admin-Zugang.
+- Kassenbonbilder werden beim Löschen der Kassenbons in den Papierkorb von
+  Google Drive verschoben.
+- Der vollständige Reset verlangt zusätzlich die Eingabe „ALLES LÖSCHEN“,
+  damit er nicht versehentlich ausgelöst werden kann.

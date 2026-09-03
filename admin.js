@@ -19,7 +19,8 @@
     },
     expandedRegistrations: new Set(),
     editingExpenseId: "",
-    pendingPrimaryDeletion: null
+    pendingPrimaryDeletion: null,
+    pendingBulkDeleteScope: ""
   };
 
   const loginCard = document.getElementById("loginCard");
@@ -141,6 +142,17 @@
   const expenseModalError = document.getElementById("expenseModalError");
   const cancelExpenseModal = document.getElementById("cancelExpenseModal");
   const saveExpenseModal = document.getElementById("saveExpenseModal");
+
+  const bulkDeleteTriggers = [...document.querySelectorAll(".bulk-delete-trigger")];
+  const bulkDeleteModal = document.getElementById("bulkDeleteModal");
+  const bulkDeleteTitle = document.getElementById("bulkDeleteTitle");
+  const bulkDeleteText = document.getElementById("bulkDeleteText");
+  const bulkDeleteExtra = document.getElementById("bulkDeleteExtra");
+  const bulkDeleteConfirmField = document.getElementById("bulkDeleteConfirmField");
+  const bulkDeleteConfirmInput = document.getElementById("bulkDeleteConfirmInput");
+  const bulkDeleteError = document.getElementById("bulkDeleteError");
+  const cancelBulkDelete = document.getElementById("cancelBulkDelete");
+  const confirmBulkDelete = document.getElementById("confirmBulkDelete");
 
   function apiRequest(action, data = {}, options = {}) {
     return window.StrassenfestApi.request(
@@ -1828,6 +1840,252 @@
   receiptFilter.addEventListener("change", renderReceipts);
   receiptSort.addEventListener("change", renderReceipts);
   refreshReceipts.addEventListener("click", () => void loadReceipts());
+
+  const BULK_DELETE_CONFIG = {
+    registrations: {
+      title: "Alle Anmeldungen löschen?",
+      text:
+        "Alle Anmeldungen, teilnehmenden Personen und zugehörigen Zahlungsstatus werden entfernt.",
+      extra:
+        "Einkauf, Tickets und Kassenbons bleiben erhalten.",
+      action: "adminClearCategory"
+    },
+    expenses: {
+      title: "Einkaufsliste vollständig leeren?",
+      text:
+        "Alle gespeicherten Einkaufsposten und Beträge werden aus der Einkaufsliste entfernt.",
+      extra:
+        "Anmeldungen, Tickets und Kassenbons bleiben erhalten.",
+      action: "adminClearCategory"
+    },
+    tickets: {
+      title: "Alle Tickets löschen?",
+      text:
+        "Alle Kontaktanfragen im Ticketbereich werden vollständig gelöscht.",
+      extra:
+        "Andere Veranstaltungsdaten bleiben erhalten.",
+      action: "adminClearCategory"
+    },
+    receipts: {
+      title: "Alle Kassenbons löschen?",
+      text:
+        "Alle Kassenbon-Einträge werden gelöscht. Die zugehörigen Kassenbonbilder werden in den Papierkorb von Google Drive verschoben.",
+      extra:
+        "Anmeldungen, Einkauf und Tickets bleiben erhalten.",
+      action: "adminClearCategory"
+    },
+    all: {
+      title: "Alle Veranstaltungsdaten löschen?",
+      text:
+        "Damit wird die Datenbasis für ein neues Straßenfest geleert: Anmeldungen, Personen, Zahlungsstatus, Einkauf, Tickets und Kassenbons.",
+      extra:
+        "Tabellenstruktur und Admin-Zugang bleiben erhalten. Kassenbonbilder werden in den Papierkorb von Google Drive verschoben.",
+      action: "adminResetDatabase",
+      phraseRequired: true
+    }
+  };
+
+  function closeBulkDeleteModal() {
+    state.pendingBulkDeleteScope = "";
+    bulkDeleteModal.classList.add("hidden");
+    bulkDeleteConfirmInput.value = "";
+    bulkDeleteError.textContent = "";
+    confirmBulkDelete.disabled = false;
+    confirmBulkDelete.textContent = "Löschen";
+  }
+
+  function openBulkDeleteModal(scope) {
+    const config =
+      BULK_DELETE_CONFIG[scope];
+
+    if (!config) {
+      return;
+    }
+
+    state.pendingBulkDeleteScope =
+      scope;
+
+    bulkDeleteTitle.textContent =
+      config.title;
+
+    bulkDeleteText.textContent =
+      config.text;
+
+    bulkDeleteExtra.textContent =
+      config.extra;
+
+    bulkDeleteConfirmField.classList.toggle(
+      "hidden",
+      !config.phraseRequired
+    );
+
+    bulkDeleteConfirmInput.value = "";
+    bulkDeleteError.textContent = "";
+
+    confirmBulkDelete.textContent =
+      scope === "all"
+        ? "Alles endgültig löschen"
+        : "Bereich leeren";
+
+    bulkDeleteModal.classList.remove(
+      "hidden"
+    );
+
+    if (config.phraseRequired) {
+      window.setTimeout(
+        () => bulkDeleteConfirmInput.focus(),
+        60
+      );
+    }
+  }
+
+  bulkDeleteTriggers.forEach((button) => {
+    button.addEventListener(
+      "click",
+      () => {
+        openBulkDeleteModal(
+          button.dataset.bulkScope || ""
+        );
+      }
+    );
+  });
+
+  cancelBulkDelete.addEventListener(
+    "click",
+    closeBulkDeleteModal
+  );
+
+  bulkDeleteModal.addEventListener(
+    "click",
+    (event) => {
+      if (
+        event.target.matches(
+          "[data-close-bulk-delete-modal]"
+        )
+      ) {
+        closeBulkDeleteModal();
+      }
+    }
+  );
+
+  confirmBulkDelete.addEventListener(
+    "click",
+    async () => {
+      const scope =
+        state.pendingBulkDeleteScope;
+
+      const config =
+        BULK_DELETE_CONFIG[scope];
+
+      if (!config) {
+        return;
+      }
+
+      if (
+        config.phraseRequired &&
+        bulkDeleteConfirmInput.value
+          .trim()
+          .toLocaleUpperCase("de-DE") !==
+          "ALLES LÖSCHEN"
+      ) {
+        bulkDeleteError.textContent =
+          "Bitte zur Bestätigung exakt „ALLES LÖSCHEN“ eingeben.";
+        bulkDeleteConfirmInput.focus();
+        return;
+      }
+
+      confirmBulkDelete.disabled = true;
+      bulkDeleteError.textContent = "";
+      confirmBulkDelete.textContent =
+        "Wird gelöscht …";
+
+      try {
+        if (scope === "all") {
+          await apiRequest(
+            "adminResetDatabase",
+            {
+              token: state.token,
+              confirmation:
+                bulkDeleteConfirmInput.value
+                  .trim()
+            },
+            {
+              timeoutMs: 90000
+            }
+          );
+        } else {
+          await apiRequest(
+            "adminClearCategory",
+            {
+              token: state.token,
+              category: scope
+            },
+            {
+              timeoutMs:
+                scope === "receipts"
+                  ? 90000
+                  : 45000
+            }
+          );
+        }
+
+        closeBulkDeleteModal();
+
+        // Lokalen Zustand sofort neutralisieren, danach sauber neu laden.
+        if (
+          scope === "registrations" ||
+          scope === "all"
+        ) {
+          state.people = [];
+        }
+
+        if (
+          scope === "expenses" ||
+          scope === "all"
+        ) {
+          state.expenses = [];
+        }
+
+        if (
+          scope === "tickets" ||
+          scope === "all"
+        ) {
+          state.tickets = [];
+        }
+
+        if (
+          scope === "receipts" ||
+          scope === "all"
+        ) {
+          state.receipts = [];
+        }
+
+        await loadAll();
+
+        showToast(
+          scope === "all"
+            ? "Alle Veranstaltungsdaten wurden gelöscht."
+            : "Der Bereich wurde vollständig geleert."
+        );
+      } catch (error) {
+        if (!handleApiError(error)) {
+          bulkDeleteError.textContent =
+            error.message;
+        }
+      } finally {
+        confirmBulkDelete.disabled = false;
+
+        if (
+          state.pendingBulkDeleteScope
+        ) {
+          confirmBulkDelete.textContent =
+            state.pendingBulkDeleteScope === "all"
+              ? "Alles endgültig löschen"
+              : "Bereich leeren";
+        }
+      }
+    }
+  );
 
   function finalReportData() {
     const registrations = groupRegistrations().map((group) => ({

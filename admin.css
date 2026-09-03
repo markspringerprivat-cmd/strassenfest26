@@ -2199,3 +2199,122 @@ textarea,
     width: min(900px, calc(100vw - 80px));
   }
 }
+
+
+/* ================================================================
+   v48 – Datenverwaltung / Jahresreset
+   ================================================================ */
+
+.card-heading-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.section-danger-button {
+  min-height: 34px;
+  padding: 7px 10px;
+  border: 1px solid rgba(255, 130, 145, .34);
+  border-radius: 9px;
+  background: rgba(139, 34, 58, .12);
+  color: #ffd6dd;
+  font: inherit;
+  font-size: .62rem;
+  font-weight: 780;
+  cursor: pointer;
+}
+
+.section-danger-button:hover,
+.section-danger-button:focus-visible {
+  border-color: rgba(255, 150, 162, .58);
+  background: rgba(157, 38, 65, .2);
+}
+
+.admin-reset-card {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 18px;
+  margin-top: 14px;
+  border-color: rgba(255, 129, 146, .24);
+  background:
+    linear-gradient(
+      135deg,
+      rgba(125, 31, 55, .08),
+      rgba(255,255,255,.025)
+    );
+}
+
+.admin-reset-copy {
+  display: grid;
+  gap: 5px;
+}
+
+.admin-reset-copy h2 {
+  margin: 0;
+}
+
+.admin-reset-copy p:last-child {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.bulk-delete-modal-card {
+  border-color: rgba(255, 130, 145, .36);
+}
+
+.bulk-delete-text {
+  margin: 0;
+  color: rgba(255,255,255,.88);
+  line-height: 1.5;
+}
+
+.bulk-delete-warning {
+  display: grid;
+  gap: 4px;
+  margin: 12px 0;
+  padding: 11px 12px;
+  border: 1px solid rgba(255, 134, 150, .25);
+  border-radius: 11px;
+  background: rgba(145, 31, 56, .1);
+}
+
+.bulk-delete-warning strong {
+  color: #ffd4dc;
+}
+
+.bulk-delete-warning span {
+  color: var(--muted);
+  font-size: .67rem;
+  line-height: 1.4;
+}
+
+#bulkDeleteConfirmField {
+  margin-top: 12px;
+}
+
+#bulkDeleteConfirmInput {
+  text-transform: uppercase;
+}
+
+@media (max-width: 680px) {
+  .card-heading-actions {
+    align-items: flex-end;
+    flex-direction: column;
+  }
+
+  .section-danger-button {
+    min-height: 32px;
+  }
+
+  .admin-reset-card {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-reset-card > .danger-button {
+    width: 100%;
+  }
+}
