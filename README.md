@@ -616,3 +616,11 @@ zum Timeout geführt haben konnten.
   Google Drive verschoben.
 - Der vollständige Reset verlangt zusätzlich die Eingabe „ALLES LÖSCHEN“,
   damit er nicht versehentlich ausgelöst werden kann.
+
+
+## Update v49 – Impressum und Datenschutz
+- Verantwortliche Person ergänzt: Mark Springer.
+- Anschrift ergänzt: Nassauische Straße 15, 57271 Hilchenbach.
+- Kontakt über Kontaktformular oder WhatsApp 0162 8233627 ergänzt.
+- Klarer Hinweis: WhatsApp dient nur Rückfragen und ersetzt nicht die Anmeldung über die Webseite.
+- Die bisherigen Platzhalterhinweise in Impressum und Datenschutz wurden entfernt.
